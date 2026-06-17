@@ -1,0 +1,25 @@
+[0.012s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/nav_server -- -j12 -l12
+[0.213s] [ 50%] Building CXX object CMakeFiles/nav_server_node.dir/src/nav_server_node.cpp.o
+[7.705s] [100%] Linking CXX executable nav_server_node
+[8.091s] [100%] Built target nav_server_node
+[8.100s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/nav_server -- -j12 -l12
+[8.101s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/nav_server
+[8.108s] -- Install configuration: ""
+[8.108s] -- Installing: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/lib/nav_server/nav_server_node
+[8.115s] -- Set non-toolchain portion of runtime path of "/home/lucifer/anscer_workspace/LineFollower/install/nav_server/lib/nav_server/nav_server_node" to ""
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/package_run_dependencies/nav_server
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/parent_prefix_path/nav_server
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.sh
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.dsv
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.sh
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.dsv
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.bash
+[8.115s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.sh
+[8.116s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.zsh
+[8.116s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.dsv
+[8.116s] -- Installing: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.dsv
+[8.117s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/packages/nav_server
+[8.117s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig.cmake
+[8.117s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig-version.cmake
+[8.117s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.xml
+[8.117s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/nav_server

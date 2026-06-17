@@ -1,0 +1,1 @@
+/home/lucifer/anscer_workspace/LineFollower/src/hardware_sim/scripts/TapeMap.py

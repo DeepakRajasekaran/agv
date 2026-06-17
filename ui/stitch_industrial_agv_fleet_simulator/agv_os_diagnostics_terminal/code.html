@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AGV-OS | Diagnostics &amp; Systems Health</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface": "#0b1326",
+                        "primary-fixed-dim": "#eec200",
+                        "error-container": "#93000a",
+                        "tertiary": "#ffe8e6",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-tertiary-container": "#b2131f",
+                        "on-secondary-container": "#00311f",
+                        "primary-container": "#facc15",
+                        "on-surface-variant": "#d1c6ab",
+                        "on-secondary-fixed": "#002113",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-background": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary": "#68000a",
+                        "on-error": "#690005",
+                        "on-secondary": "#003824",
+                        "primary": "#ffecb9",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "surface-variant": "#2d3449",
+                        "secondary-container": "#00a572",
+                        "tertiary-container": "#ffc2bd",
+                        "on-primary-fixed-variant": "#574500",
+                        "outline": "#9a9078",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "on-primary-fixed": "#231b00",
+                        "on-primary": "#3c2f00",
+                        "surface-bright": "#31394d",
+                        "primary-fixed": "#ffe083",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-surface": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "secondary": "#4edea3",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#eec200",
+                        "secondary-fixed-dim": "#4edea3",
+                        "inverse-primary": "#735c00",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#4d4632",
+                        "on-tertiary-fixed": "#410004",
+                        "inverse-on-surface": "#283044",
+                        "surface-container": "#171f33",
+                        "on-primary-container": "#6c5700",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "panel-padding": "20px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["JetBrains Mono"],
+                        "headline-lg": ["JetBrains Mono"],
+                        "headline-sm": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "data-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0b1326; color: #dae2fd; }
+        .glow-active { box-shadow: 0 0 8px 0 rgba(250, 204, 21, 0.5); }
+        .glow-error { box-shadow: 0 0 8px 0 rgba(239, 68, 68, 0.5); }
+        .glow-idle { box-shadow: 0 0 8px 0 rgba(16, 185, 129, 0.5); }
+        .data-grid { background-image: linear-gradient(to right, #131b2e 1px, transparent 1px), linear-gradient(to bottom, #131b2e 1px, transparent 1px); background-size: 20px 20px; }
+        
+        /* Custom Scrollbar for dark theme */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #060e20; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4d4632; }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(239, 68, 68, 0.4); }
+            50% { border-color: rgba(239, 68, 68, 1); }
+            100% { border-color: rgba(239, 68, 68, 0.4); }
+        }
+        .anim-pulse-border { animation: pulse-border 2s infinite; }
+    </style>
+</head>
+<body class="min-h-screen font-body-md bg-background text-on-background overflow-hidden flex flex-col">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full h-16 flex justify-between items-center px-lg z-50 bg-surface dark:bg-surface border-b-2 border-outline-variant dark:border-outline-variant flat no shadows">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary tracking-tighter">AGV-OS</span>
+</div>
+<div class="flex items-center gap-gutter">
+<button class="font-label-caps text-label-caps px-md py-sm bg-error-container text-on-error rounded border-2 border-error hover:bg-error hover:text-on-error-container transition-colors anim-pulse-border flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+                E-STOP
+            </button>
+<button class="font-label-caps text-label-caps px-md py-sm border-2 border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors rounded">
+                FLEET STATUS
+            </button>
+<div class="flex items-center gap-sm ml-sm pl-md border-l-2 border-surface-variant">
+<button aria-label="notifications" class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="settings" class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 pt-16 relative">
+<!-- Main SideNavBar (Left) -->
+<nav class="fixed top-16 left-0 h-[calc(100vh-64px)] flex flex-col py-panel-padding z-40 bg-surface-container-low dark:bg-surface-container-low border-r-2 border-outline-variant dark:border-outline-variant w-64">
+<div class="px-gutter mb-xl flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center border border-outline-variant overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant">terminal</span>
+</div>
+<div>
+<h2 class="font-label-caps text-label-caps text-on-surface">CONTROL TERMINAL</h2>
+<p class="font-data-mono text-xs text-on-surface-variant mt-1">SECTOR-07</p>
+</div>
+</div>
+<div class="px-gutter mb-xl">
+<button class="w-full font-label-caps text-label-caps py-sm bg-primary-container text-on-primary-container rounded flex items-center justify-center gap-xs hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                    NEW MISSION
+                </button>
+</div>
+<ul class="flex-1 flex flex-col gap-sm px-sm overflow-y-auto">
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps font-data-mono text-data-mono" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+                        MISSION CONTROL
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps font-data-mono text-data-mono" href="#">
+<span class="material-symbols-outlined">map</span>
+                        MAP STUDIO
+                    </a>
+</li>
+<li>
+<!-- Active State -->
+<a class="flex items-center gap-md px-md py-sm rounded bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container border-l-4 border-primary font-label-caps text-label-caps font-data-mono text-data-mono transform scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                        DIAGNOSTICS
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant dark:text-on-surface-variant opacity-70 hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps font-data-mono text-data-mono" href="#">
+<span class="material-symbols-outlined">group_work</span>
+                        FLEET
+                    </a>
+</li>
+</ul>
+<div class="mt-auto px-sm flex flex-col gap-sm border-t border-surface-variant pt-md">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps font-data-mono text-data-mono" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+                    SYSTEMS
+                </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-error hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps font-data-mono text-data-mono" href="#">
+<span class="material-symbols-outlined">warning</span>
+                    FAULTS
+                </a>
+</div>
+</nav>
+<!-- Main Canvas Area -->
+<!-- Subtract width of left nav (256px) and right nav (320px) = 576px -->
+<main class="flex-1 ml-64 mr-80 h-[calc(100vh-64px)] overflow-y-auto bg-background p-lg relative data-grid z-0">
+<div class="flex items-center justify-between mb-lg border-b border-surface-variant pb-md">
+<h1 class="font-headline-sm text-headline-sm text-on-surface">SYSTEMS HEALTH DASHBOARD</h1>
+<div class="flex items-center gap-md text-data-mono text-on-surface-variant">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary glow-idle"></div>
+<span>STATUS: OPERATIONAL</span>
+</div>
+<span>UPTIME: 14h 22m 10s</span>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- 1. Live Telemetry (Spans 8 cols) -->
+<div class="col-span-12 xl:col-span-8 bg-surface-container border-t-2 border-primary rounded flex flex-col">
+<div class="px-md py-sm bg-surface-bright flex justify-between items-center border-b border-outline-variant">
+<h3 class="font-label-caps text-label-caps text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+                            LIVE TELEMETRY
+                        </h3>
+<span class="font-data-mono text-xs text-secondary">STREAMING: 50Hz</span>
+</div>
+<div class="p-panel-padding grid grid-cols-3 gap-md flex-1">
+<!-- Speed Gauge Sim -->
+<div class="bg-surface p-md border border-surface-variant rounded flex flex-col items-center justify-center">
+<span class="font-label-caps text-on-surface-variant mb-md">VELOCITY (m/s)</span>
+<div class="relative w-32 h-16 overflow-hidden mb-sm">
+<!-- Half circle gauge placeholder -->
+<div class="absolute bottom-0 left-0 w-32 h-32 rounded-full border-[12px] border-surface-variant border-b-transparent border-r-transparent transform -rotate-45"></div>
+<div class="absolute bottom-0 left-0 w-32 h-32 rounded-full border-[12px] border-primary border-b-transparent border-r-transparent transform -rotate-45" style="clip-path: polygon(0 0, 100% 0, 100% 60%, 0 60%);"></div>
+</div>
+<span class="font-headline-lg text-primary">1.24</span>
+<span class="font-data-mono text-xs text-on-surface-variant mt-sm">TGT: 1.25 m/s</span>
+</div>
+<!-- Battery -->
+<div class="bg-surface p-md border border-surface-variant rounded flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="font-label-caps text-on-surface-variant">BATTERY PACK A</span>
+<span class="material-symbols-outlined text-secondary">battery_5_bar</span>
+</div>
+<div>
+<span class="font-headline-md text-on-surface block">48.2 V</span>
+<span class="font-data-mono text-xs text-secondary block mb-md">-12.4 A (DISCHARGE)</span>
+<div class="w-full h-4 flex gap-[2px]">
+<div class="h-full flex-1 bg-secondary rounded-l-sm"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-secondary"></div>
+<div class="h-full flex-1 bg-surface-variant"></div>
+<div class="h-full flex-1 bg-surface-variant"></div>
+<div class="h-full flex-1 bg-surface-variant rounded-r-sm"></div>
+</div>
+</div>
+</div>
+<!-- Motor Temp -->
+<div class="bg-surface p-md border border-surface-variant rounded flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<span class="font-label-caps text-on-surface-variant">DRIVE MOTORS</span>
+<span class="material-symbols-outlined text-primary">thermostat</span>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs">
+<span class="font-data-mono text-on-surface">L_MOTOR</span>
+<span class="font-data-mono text-primary">42°C</span>
+</div>
+<div class="flex justify-between items-center border-b border-surface-variant pb-xs">
+<span class="font-data-mono text-on-surface">R_MOTOR</span>
+<span class="font-data-mono text-primary">44°C</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-data-mono text-on-surface">STEER_SRV</span>
+<span class="font-data-mono text-secondary">38°C</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 2. ROS 2 Node Status (Spans 4 cols) -->
+<div class="col-span-12 xl:col-span-4 bg-surface-container border-t-2 border-surface-variant rounded flex flex-col">
+<div class="px-md py-sm bg-surface-bright flex justify-between items-center border-b border-outline-variant">
+<h3 class="font-label-caps text-label-caps text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+                            ROS_NODES
+                        </h3>
+</div>
+<div class="p-md flex-1 overflow-y-auto flex flex-col gap-xs">
+<!-- Node Items -->
+<div class="flex items-center justify-between p-sm bg-surface border border-surface-variant rounded">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary glow-idle"></div>
+<span class="font-data-mono text-on-surface">/nav_server</span>
+</div>
+<span class="font-data-mono text-xs text-on-surface-variant">OK (100Hz)</span>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface border border-surface-variant rounded">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary glow-idle"></div>
+<span class="font-data-mono text-on-surface">/hw_interface</span>
+</div>
+<span class="font-data-mono text-xs text-on-surface-variant">OK (500Hz)</span>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface border border-primary rounded glow-active">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-data-mono text-primary">/line_follower</span>
+</div>
+<span class="font-data-mono text-xs text-primary">WAITING</span>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface border border-surface-variant rounded">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary glow-idle"></div>
+<span class="font-data-mono text-on-surface">/lidar_filter</span>
+</div>
+<span class="font-data-mono text-xs text-on-surface-variant">OK (15Hz)</span>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface border border-error rounded">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error glow-error"></div>
+<span class="font-data-mono text-error">/cam_obj_detect</span>
+</div>
+<span class="font-data-mono text-xs text-error">DEAD</span>
+</div>
+</div>
+</div>
+<!-- 3. PID Tuning / Cross-Track Error (Spans 6 cols) -->
+<div class="col-span-12 xl:col-span-6 bg-surface-container border-t-2 border-surface-variant rounded flex flex-col h-64">
+<div class="px-md py-sm bg-surface-bright flex justify-between items-center border-b border-outline-variant">
+<h3 class="font-label-caps text-label-caps text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">show_chart</span>
+                            CROSS-TRACK ERROR (CTE)
+                        </h3>
+<div class="flex gap-sm">
+<span class="font-data-mono text-xs text-primary flex items-center gap-xs"><span class="w-2 h-px bg-primary inline-block"></span> ACTUAL</span>
+<span class="font-data-mono text-xs text-on-surface-variant flex items-center gap-xs"><span class="w-2 h-px border-t border-dashed border-on-surface-variant inline-block"></span> SETPT</span>
+</div>
+</div>
+<div class="p-md flex-1 relative bg-surface m-md border border-surface-variant rounded flex items-end justify-between px-xs pb-xs overflow-hidden">
+<!-- Mock Graph Lines -->
+<div class="absolute top-1/2 left-0 w-full border-t border-dashed border-on-surface-variant opacity-50"></div>
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path class="opacity-80" d="M0,50 Q10,40 20,55 T40,45 T60,52 T80,48 T100,50" fill="none" stroke="#facc15" stroke-width="2"></path>
+</svg>
+<!-- Grid lines -->
+<div class="w-full h-full absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none">
+<div class="border-b border-on-surface w-full h-0"></div>
+<div class="border-b border-on-surface w-full h-0"></div>
+<div class="border-b border-on-surface w-full h-0"></div>
+<div class="border-b border-on-surface w-full h-0"></div>
+</div>
+</div>
+</div>
+<!-- 4. Sensor Heatmap / Logs (Spans 6 cols) -->
+<div class="col-span-12 xl:col-span-6 bg-surface-container border-t-2 border-surface-variant rounded flex flex-col h-64">
+<div class="px-md py-sm bg-surface-bright flex justify-between items-center border-b border-outline-variant">
+<div class="flex gap-md border-b-2 border-surface-variant">
+<button class="font-label-caps text-label-caps text-primary border-b-2 border-primary pb-xs -mb-[2px]">LIDAR CLOUD</button>
+<button class="font-label-caps text-label-caps text-on-surface-variant pb-xs hover:text-on-surface">SYS LOGS</button>
+</div>
+</div>
+<div class="p-panel-padding flex-1 relative overflow-hidden flex items-center justify-center bg-surface m-sm border border-surface-variant rounded">
+<!-- Simulated Lidar View Placeholder -->
+<div class="w-full h-full rounded-full border border-primary opacity-20 absolute scale-150"></div>
+<div class="w-full h-full rounded-full border border-primary opacity-30 absolute scale-100"></div>
+<div class="w-full h-full rounded-full border border-primary opacity-50 absolute scale-50"></div>
+<!-- AGV Icon in center -->
+<div class="w-4 h-6 bg-secondary absolute rounded-sm shadow-[0_0_10px_rgba(78,222,163,0.8)] z-10"></div>
+<!-- Simulated points -->
+<div class="absolute w-2 h-2 bg-error rounded-full top-10 left-20 shadow-[0_0_5px_red]"></div>
+<div class="absolute w-2 h-2 bg-primary rounded-full bottom-10 right-30 shadow-[0_0_5px_yellow]"></div>
+<!-- Radar sweep anim -->
+<div class="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/10 to-transparent w-full h-full origin-center animate-spin" style="animation-duration: 3s;"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right SideNavBar (Diagnostics Detail) -->
+<aside class="fixed top-16 right-0 h-[calc(100vh-64px)] flex flex-col py-panel-padding z-40 bg-surface-container-low dark:bg-surface-container-low border-l-2 border-outline-variant dark:border-outline-variant w-80">
+<div class="px-gutter mb-md">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">DIAGNOSTICS</h2>
+<p class="font-data-mono text-xs text-primary">REAL-TIME</p>
+</div>
+<!-- Tab Navigation internal to Sidebar -->
+<div class="flex px-gutter border-b border-outline-variant mb-md">
+<!-- Active Navigation -->
+<button class="flex-1 font-label-caps text-label-caps py-sm flex justify-center gap-xs text-primary dark:text-primary border-b-2 border-primary pb-2 transition-all shadow-[0_0_8px_0_rgba(242,204,15,0.5)] bg-surface-container-highest">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+                    TELEMETRY
+                 </button>
+<!-- Inactive Navigation -->
+<button class="flex-1 font-label-caps text-label-caps py-sm flex justify-center gap-xs text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+                    STATE
+                 </button>
+<button class="flex-1 font-label-caps text-label-caps py-sm flex justify-center gap-xs text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">sensors</span>
+                    SENSORS
+                 </button>
+</div>
+<div class="flex-1 overflow-y-auto px-gutter flex flex-col gap-md">
+<!-- Telemetry Details Content -->
+<div class="bg-surface border border-surface-variant rounded p-sm">
+<h4 class="font-label-caps text-on-surface-variant border-b border-surface-variant pb-xs mb-sm">KINEMATICS</h4>
+<div class="grid grid-cols-2 gap-sm">
+<div>
+<span class="block font-data-mono text-[10px] text-on-surface-variant">LIN_X (m/s)</span>
+<span class="block font-data-mono text-on-surface">1.240</span>
+</div>
+<div>
+<span class="block font-data-mono text-[10px] text-on-surface-variant">ANG_Z (rad/s)</span>
+<span class="block font-data-mono text-on-surface">-0.052</span>
+</div>
+<div>
+<span class="block font-data-mono text-[10px] text-on-surface-variant">ODOM_X (m)</span>
+<span class="block font-data-mono text-on-surface">145.22</span>
+</div>
+<div>
+<span class="block font-data-mono text-[10px] text-on-surface-variant">ODOM_Y (m)</span>
+<span class="block font-data-mono text-on-surface">88.91</span>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-surface-variant rounded p-sm">
+<h4 class="font-label-caps text-on-surface-variant border-b border-surface-variant pb-xs mb-sm">PAYLOAD SENSORS</h4>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface">LOAD_CELL_F</span>
+<span class="font-data-mono text-[11px] text-secondary">245 kg</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-data-mono text-[11px] text-on-surface">LOAD_CELL_R</span>
+<span class="font-data-mono text-[11px] text-secondary">250 kg</span>
+</div>
+<div class="w-full bg-surface-variant h-1 mt-1 rounded overflow-hidden">
+<div class="bg-secondary h-full" style="width: 45%;"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-error-container rounded p-sm">
+<h4 class="font-label-caps text-error border-b border-error-container pb-xs mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                        ACTIVE ALERTS
+                    </h4>
+<div class="font-data-mono text-[11px] text-error">
+                        [WARN] CAN_BUS_LATENCY &gt; 5ms (Node: Steer_Ctrl)
+                    </div>
+</div>
+<!-- Input field example -->
+<div class="mt-auto pt-md">
+<label class="font-label-caps text-on-surface-variant block mb-xs">OVERRIDE MAX SPEED</label>
+<div class="flex gap-sm">
+<input class="bg-surface border border-surface-variant text-on-surface font-data-mono text-sm rounded px-sm py-xs w-full focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" type="text" value="1.5"/>
+<button class="bg-surface-variant text-on-surface font-label-caps px-md rounded border border-outline-variant hover:bg-surface-bright">SET</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</body></html>

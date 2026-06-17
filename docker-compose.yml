@@ -1,0 +1,30 @@
+services:
+  ros-jazzy:
+    build:
+      context: .
+      dockerfile: Dockerfile.jazzy
+      args:
+        USER_UID: 1000
+        USER_GID: 1000
+        USERNAME: lucifer
+
+    image: ros-jazzy-magnetic-sim:latest
+    container_name: ros_jazzy_magnetic_sim_container
+
+    network_mode: host
+    ipc: host
+    privileged: true
+
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
+      - LIBGL_ALWAYS_SOFTWARE=1
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw,Z
+      - /home/lucifer/anscer_workspace/LineFollower:/home/lucifer/anscer_workspace/LineFollower:rw,Z
+
+    stdin_open: true
+    tty: true
+    command: /bin/bash

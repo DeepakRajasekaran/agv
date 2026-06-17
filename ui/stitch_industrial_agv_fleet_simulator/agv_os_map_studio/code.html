@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AGV-OS Map Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface": "#0b1326",
+                        "primary-fixed-dim": "#eec200",
+                        "error-container": "#93000a",
+                        "tertiary": "#ffe8e6",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-tertiary-container": "#b2131f",
+                        "on-secondary-container": "#00311f",
+                        "primary-container": "#facc15",
+                        "on-surface-variant": "#d1c6ab",
+                        "on-secondary-fixed": "#002113",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-background": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary": "#68000a",
+                        "on-error": "#690005",
+                        "on-secondary": "#003824",
+                        "primary": "#ffecb9",
+                        "on-surface": "#dae2fd",
+                        "background": "#0b1326",
+                        "surface-variant": "#2d3449",
+                        "secondary-container": "#00a572",
+                        "tertiary-container": "#ffc2bd",
+                        "on-primary-fixed-variant": "#574500",
+                        "outline": "#9a9078",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "on-primary-fixed": "#231b00",
+                        "on-primary": "#3c2f00",
+                        "surface-bright": "#31394d",
+                        "primary-fixed": "#ffe083",
+                        "surface-container-highest": "#2d3449",
+                        "inverse-surface": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "secondary": "#4edea3",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#eec200",
+                        "secondary-fixed-dim": "#4edea3",
+                        "inverse-primary": "#735c00",
+                        "surface-container-lowest": "#060e20",
+                        "outline-variant": "#4d4632",
+                        "on-tertiary-fixed": "#410004",
+                        "inverse-on-surface": "#283044",
+                        "surface-container": "#171f33",
+                        "on-primary-container": "#6c5700",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "panel-padding": "20px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "headline-md": ["JetBrains Mono", "monospace"],
+                        "headline-lg": ["JetBrains Mono", "monospace"],
+                        "headline-sm": ["JetBrains Mono", "monospace"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "data-mono": ["JetBrains Mono", "monospace"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "0", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased; }
+        
+        /* Grid Background Pattern */
+        .grid-bg {
+            background-image: 
+                linear-gradient(to right, #334155 1px, transparent 1px),
+                linear-gradient(to bottom, #334155 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        .grid-bg-major {
+            background-image: 
+                linear-gradient(to right, #4d4632 2px, transparent 2px),
+                linear-gradient(to bottom, #4d4632 2px, transparent 2px);
+            background-size: 200px 200px;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4d4632; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen overflow-hidden flex flex-col font-body-md select-none">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline-sm text-headline-sm font-label-caps text-label-caps border-b-2 border-outline-variant dark:border-outline-variant flat no shadows fixed top-0 left-0 w-full h-16 flex justify-between items-center px-lg z-50">
+<div class="flex items-center gap-lg">
+<div class="text-headline-md font-headline-md text-primary dark:text-primary tracking-tighter">AGV-OS</div>
+<div class="h-8 w-px bg-outline-variant mx-sm"></div>
+<div class="font-headline-sm text-on-surface">MAP STUDIO</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="flex items-center gap-sm px-4 py-2 border-2 border-outline text-on-surface font-label-caps text-label-caps rounded-DEFAULT hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">save</span>
+                SAVE REVISION
+            </button>
+<button class="flex items-center gap-sm px-4 py-2 bg-primary-container text-on-primary-container font-label-caps text-label-caps font-bold rounded-DEFAULT hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+                DEPLOY TO FLEET
+            </button>
+<button class="p-2 border-2 border-error text-error font-label-caps text-label-caps rounded-DEFAULT hover:bg-error-container hover:text-on-error-container transition-colors ml-4 flex items-center gap-xs">
+<span class="material-symbols-outlined">warning</span> E-STOP
+            </button>
+<div class="flex gap-2 ml-4 border-l-2 border-outline-variant pl-4">
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-full transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-high rounded-full transition-colors"><span class="material-symbols-outlined">settings</span></button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 mt-16 h-[calc(100vh-64px)] relative">
+<!-- SideNavBar (Left) -->
+<nav class="bg-surface-container-low dark:bg-surface-container-low text-secondary dark:text-secondary font-label-caps text-label-caps font-data-mono text-data-mono border-r-2 border-outline-variant dark:border-outline-variant flat no shadows h-full w-64 flex flex-col z-40 shrink-0">
+<!-- Header section of left sidebar (replaced tabs with map layers/meta) -->
+<div class="p-panel-padding border-b-2 border-outline-variant">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest">MAP METADATA</h2>
+<div class="space-y-4">
+<div>
+<div class="text-xs text-on-surface-variant mb-1 font-label-sm">NAME</div>
+<div class="font-data-mono text-on-surface">Assembly Line 1</div>
+</div>
+<div>
+<div class="text-xs text-on-surface-variant mb-1 font-label-sm">VERSION</div>
+<div class="font-data-mono text-primary">v2.4.1 <span class="text-[10px] bg-primary/20 px-1 rounded ml-1">STABLE</span></div>
+</div>
+<div>
+<div class="text-xs text-on-surface-variant mb-1 font-label-sm">GRID RESOLUTION</div>
+<div class="font-data-mono text-on-surface">0.05m / px</div>
+</div>
+</div>
+</div>
+<div class="p-panel-padding flex-1 overflow-y-auto">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant mb-4 tracking-widest flex justify-between items-center">
+                    LAYERS
+                    <button class="hover:text-primary"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</h2>
+<div class="space-y-2">
+<!-- Layer Item -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container-highest rounded border-l-2 border-transparent">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">grid_on</span>
+<span class="font-data-mono text-on-surface">Grid</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+</div>
+<!-- Layer Item (Active) -->
+<div class="flex items-center justify-between p-2 bg-secondary-container text-on-secondary-container border-l-4 border-primary rounded">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">route</span>
+<span class="font-data-mono font-bold">Paths</span>
+</div>
+<button class="hover:text-primary"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+</div>
+<!-- Layer Item -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container-highest rounded border-l-2 border-transparent">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">sell</span>
+<span class="font-data-mono text-on-surface">Tags</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">visibility</span></button>
+</div>
+<!-- Layer Item -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container-highest rounded border-l-2 border-transparent">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">dangerous</span>
+<span class="font-data-mono text-on-surface">Zones (Exclusion)</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">visibility_off</span></button>
+</div>
+</div>
+</div>
+<div class="p-panel-padding border-t-2 border-outline-variant bg-surface-container-lowest">
+<button class="w-full flex items-center justify-center gap-sm px-4 py-2 border-2 border-outline text-on-surface font-label-caps text-label-caps rounded-DEFAULT hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">file_download</span>
+                    EXPORT YAML
+                </button>
+</div>
+</nav>
+<!-- Main Canvas Area -->
+<main class="flex-1 relative bg-[#0F172A] overflow-hidden flex flex-col">
+<!-- Toolbar -->
+<div class="absolute top-4 left-1/2 -translate-x-1/2 bg-surface-container border-2 border-outline-variant rounded-lg p-1 flex gap-1 z-10 shadow-lg">
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center group relative" title="Selection Tool">
+<span class="material-symbols-outlined text-primary">arrow_selector_tool</span>
+</button>
+<div class="w-px bg-outline-variant mx-1 my-1"></div>
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center" title="Draw Path">
+<span class="material-symbols-outlined">polyline</span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center" title="Add Vertex">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center" title="Add Tag">
+<span class="material-symbols-outlined">sell</span>
+</button>
+<div class="w-px bg-outline-variant mx-1 my-1"></div>
+<button class="p-2 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center" title="Undo">
+<span class="material-symbols-outlined">undo</span>
+</button>
+</div>
+<!-- Zoom Controls -->
+<div class="absolute bottom-6 right-6 bg-surface-container border-2 border-outline-variant rounded-lg flex flex-col z-10 shadow-lg">
+<button class="p-2 hover:bg-surface-container-high text-on-surface border-b-2 border-outline-variant transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="p-2 font-data-mono text-center text-xs text-primary border-b-2 border-outline-variant">100%</div>
+<button class="p-2 hover:bg-surface-container-high text-on-surface transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+<!-- Canvas Background -->
+<div class="absolute inset-0 grid-bg-major z-0">
+<div class="absolute inset-0 grid-bg opacity-50"></div>
+<!-- Mock Map Content (SVG) -->
+<svg class="absolute inset-0 z-1 pointer-events-none" height="100%" style="filter: drop-shadow(0 0 4px rgba(0,0,0,0.5));" width="100%">
+<!-- Origin -->
+<circle cx="50" cy="50" fill="#FACC15" r="4"></circle>
+<text class="font-data-mono text-[10px]" fill="#94A3B8" x="60" y="55">0,0</text>
+<!-- Edges -->
+<path d="M 200 300 L 400 300 L 600 500" fill="none" opacity="0.6" stroke="#4edea3" stroke-width="4"></path>
+<path d="M 400 300 L 400 100 L 700 100" fill="none" opacity="0.6" stroke="#4edea3" stroke-dasharray="8 4" stroke-width="4"></path>
+<!-- Selected Edge -->
+<path class="animate-pulse" d="M 400 300 C 500 300, 500 500, 600 500" fill="none" stroke="#FACC15" stroke-width="6" style="filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.8));"></path>
+<!-- Control Points for Bezier -->
+<line stroke="#9a9078" stroke-dasharray="4 2" stroke-width="1" x1="400" x2="500" y1="300" y2="300"></line>
+<circle class="pointer-events-auto cursor-move" cx="500" cy="300" fill="#0b1326" r="4" stroke="#9a9078" stroke-width="2"></circle>
+<line stroke="#9a9078" stroke-dasharray="4 2" stroke-width="1" x1="600" x2="500" y1="500" y2="500"></line>
+<circle class="pointer-events-auto cursor-move" cx="500" cy="500" fill="#0b1326" r="4" stroke="#9a9078" stroke-width="2"></circle>
+<!-- Vertices -->
+<circle cx="200" cy="300" fill="#131b2e" r="8" stroke="#4edea3" stroke-width="2"></circle>
+<text class="font-data-mono text-[12px]" fill="#dae2fd" x="215" y="305">V-01</text>
+<circle cx="400" cy="100" fill="#131b2e" r="8" stroke="#4edea3" stroke-width="2"></circle>
+<text class="font-data-mono text-[12px]" fill="#dae2fd" x="415" y="105">V-02</text>
+<!-- Selected Vertex -->
+<circle cx="400" cy="300" fill="#facc15" r="10" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.8));"></circle>
+<text class="font-data-mono text-[14px] font-bold" fill="#facc15" x="420" y="305">V-03</text>
+<circle cx="600" cy="500" fill="#131b2e" r="8" stroke="#4edea3" stroke-width="2"></circle>
+<text class="font-data-mono text-[12px]" fill="#dae2fd" x="615" y="505">V-04</text>
+<circle cx="700" cy="100" fill="#131b2e" r="8" stroke="#4edea3" stroke-width="2"></circle>
+<!-- AGV Representation -->
+<g transform="translate(300, 300) rotate(0)">
+<rect fill="#0b1326" height="20" stroke="#facc15" stroke-width="2" width="30" x="-15" y="-10"></rect>
+<polygon fill="#facc15" points="10,-5 15,0 10,5"></polygon>
+<circle class="animate-ping" cx="0" cy="0" fill="#ef4444" r="2"></circle>
+</g>
+</svg>
+</div>
+</main>
+<!-- Properties Sidebar (Right) -->
+<aside class="bg-surface-container-low dark:bg-surface-container-low text-primary dark:text-primary font-label-caps text-label-caps font-data-mono text-data-mono border-l-2 border-outline-variant dark:border-outline-variant flat no shadows h-full w-80 flex flex-col z-40 shrink-0">
+<div class="p-panel-padding border-b-2 border-outline-variant bg-surface-container flex items-center justify-between">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface m-0">PROPERTIES</h2>
+<span class="text-on-surface-variant font-label-sm">VERTEX SELECTED</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[32px]">point_of_sale</span>
+</div>
+<div class="flex-1 overflow-y-auto p-panel-padding space-y-6">
+<!-- Identity -->
+<div class="space-y-2">
+<label class="block text-on-surface-variant font-label-caps text-label-caps">ID</label>
+<input class="w-full bg-[#0F172A] border border-outline-variant text-on-surface font-data-mono p-2 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="text" value="V-03"/>
+</div>
+<div class="space-y-2">
+<label class="block text-on-surface-variant font-label-caps text-label-caps">TYPE</label>
+<div class="flex border 2 border-outline-variant rounded overflow-hidden">
+<button class="flex-1 bg-surface-container-highest text-on-surface-variant p-2 font-label-caps border-r border-outline-variant hover:text-on-surface">STANDARD</button>
+<button class="flex-1 bg-primary text-[#0F172A] p-2 font-label-caps border-b-2 border-primary">CHARGING</button>
+<button class="flex-1 bg-surface-container-highest text-on-surface-variant p-2 font-label-caps border-l border-outline-variant hover:text-on-surface">STATION</button>
+</div>
+</div>
+<!-- Coordinates -->
+<div>
+<h3 class="text-on-surface-variant font-label-caps text-label-caps mb-3 border-b border-outline-variant pb-1">COORDINATES (m)</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-xs text-on-surface-variant">X</label>
+<input class="w-full bg-[#0F172A] border border-outline-variant text-primary font-data-mono p-2 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none" step="0.01" type="number" value="12.50"/>
+</div>
+<div class="space-y-1">
+<label class="text-xs text-on-surface-variant">Y</label>
+<input class="w-full bg-[#0F172A] border border-outline-variant text-primary font-data-mono p-2 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none" step="0.01" type="number" value="8.20"/>
+</div>
+<div class="space-y-1 col-span-2">
+<label class="text-xs text-on-surface-variant">HEADING (deg)</label>
+<input class="w-full bg-[#0F172A] border border-outline-variant text-on-surface font-data-mono p-2 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none" step="0.1" type="number" value="90.0"/>
+</div>
+</div>
+</div>
+<!-- Edges connected (Simulated info for complex UI) -->
+<div>
+<h3 class="text-on-surface-variant font-label-caps text-label-caps mb-3 border-b border-outline-variant pb-1">CONNECTED EDGES</h3>
+<ul class="space-y-2">
+<li class="flex justify-between items-center bg-surface p-2 rounded border border-outline-variant">
+<span class="font-data-mono text-on-surface">E-12 (Incoming)</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">arrow_forward</span>
+</li>
+<li class="flex justify-between items-center bg-surface p-2 rounded border border-outline-variant border-l-2 border-l-primary">
+<span class="font-data-mono text-primary">E-14 (Outgoing)</span>
+<span class="material-symbols-outlined text-primary text-[16px]">trending_flat</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="p-panel-padding border-t-2 border-outline-variant bg-surface-container-lowest flex gap-2">
+<button class="flex-1 py-2 border-2 border-error text-error font-label-caps text-label-caps rounded-DEFAULT hover:bg-error-container hover:text-on-error-container transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+                    DELETE
+                </button>
+</div>
+</aside>
+</div>
+</body></html>

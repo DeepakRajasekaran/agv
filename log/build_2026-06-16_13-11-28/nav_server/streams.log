@@ -1,0 +1,23 @@
+[0.014s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/nav_server -- -j12 -l12
+[0.263s] [100%] Built target nav_server_node
+[0.273s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/nav_server -- -j12 -l12
+[0.274s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/nav_server
+[0.283s] -- Install configuration: "Release"
+[0.283s] -- Execute custom install script
+[0.283s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/lib/nav_server/nav_server_node
+[0.284s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/package_run_dependencies/nav_server
+[0.284s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/parent_prefix_path/nav_server
+[0.284s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.sh
+[0.284s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.dsv
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.sh
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.dsv
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.bash
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.sh
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.zsh
+[0.285s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.dsv
+[0.286s] -- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.dsv
+[0.299s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/packages/nav_server
+[0.299s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig.cmake
+[0.299s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig-version.cmake
+[0.300s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.xml
+[0.320s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/nav_server

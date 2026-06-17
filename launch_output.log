@@ -1,0 +1,91 @@
+[INFO] [launch]: All log files can be found below /home/lucifer/.ros/log/2026-06-16-11-12-09-785557-fedora-9053
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [hardware_sim_node.py-1]: process started with pid [9056]
+[INFO] [line_follower_controller_node-2]: process started with pid [9057]
+[INFO] [nav_server_node-3]: process started with pid [9058]
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:09 | IDLE -> INITIALIZE | TRIGGER: NODE_START
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:09 | INITIALIZE -> IDLE | TRIGGER: INITIALIZATION_COMPLETE
+[line_follower_controller_node-2] [INFO] [1781608329.874806202] [line_follower_controller_node]: Line follower ROS 2 node running.
+[nav_server_node-3] [INFO] [1781608329.878171933] [nav_server_node]: Successfully connected to PostgreSQL map_db.
+[nav_server_node-3] [INFO] [1781608329.879108019] [nav_server_node]: NavServer Initialized. Nominal speed: 1.50
+[hardware_sim_node.py-1] [INFO] [1781608330.246708955] [hardware_sim_node]: Loading MuJoCo model from: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/models/scene.xml
+[hardware_sim_node.py-1] [INFO] [1781608330.255510414] [hardware_sim_node]: Hardware Simulator Node Initialized. Headless mode: True
+[line_follower_controller_node-2] [INFO] [1781608330.306005321] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[line_follower_controller_node-2] [INFO] [1781608331.515586149] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[hardware_sim_node.py-1] [INFO] [1781608332.652352405] [hardware_sim_node]: [ROBOT_POSE] step: 200, pos: (-2.500, 2.020), yaw: 0.000, dist_to_line: 0.020, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608332.713386457] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[line_follower_controller_node-2] [INFO] [1781608333.984008618] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[hardware_sim_node.py-1] [INFO] [1781608335.159702128] [hardware_sim_node]: [ROBOT_POSE] step: 400, pos: (-2.500, 2.020), yaw: 0.000, dist_to_line: 0.020, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608335.223082267] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[line_follower_controller_node-2] [INFO] [1781608335.607748948] [line_follower_controller_node]: Parameter pid.kp updated to 5.000
+[line_follower_controller_node-2] [INFO] [1781608336.446975112] [line_follower_controller_node]: State: IDLE | Err: -0.020 | Steer: 0.000 (PID Reset)
+[line_follower_controller_node-2] [INFO] [1781608336.588546955] [line_follower_controller_node]: Parameter pid.kd updated to 2.000
+[nav_server_node-3] [INFO] [1781608336.767437861] [nav_server_node]: Received goal request: Target [x: 2.000000, y: -2.000000]
+[nav_server_node-3] [INFO] [1781608336.767669238] [nav_server_node]: Executing goal...
+[nav_server_node-3] [INFO] [1781608336.769041716] [nav_server_node]: Planning path from start vertex ID 2 (TAG_TOP) to goal vertex ID 6 (TAG_BOT)
+[nav_server_node-3] [INFO] [1781608336.769084182] [nav_server_node]: Reconstructed Path: 2 (TAG_TOP) -> 3 (junction) -> 4 (waypoint) -> 5 (TAG_RIGHT) -> 6 (TAG_BOT)
+[nav_server_node-3] [INFO] [1781608336.769191331] [nav_server_node]: Published continuous path waypoints to /plan.
+[nav_server_node-3] [INFO] [1781608336.769202803] [nav_server_node]: Waiting for robot to reach target tag: TAG_BOT
+[line_follower_controller_node-2] [INFO] [1781608336.769319465] [line_follower_controller_node]: Received new navigation plan with 44 waypoints.
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:16 | IDLE -> FOLLOW_LINE | TRIGGER: NEW_PLAN_RECEIVED
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:16 | FOLLOW_LINE -> JUNCTION_DETECTED | TRIGGER: MARKER_DETECTED
+[hardware_sim_node.py-1] [INFO] [1781608336.804399520] [hardware_sim_node]: Simulator received new plan with 44 waypoints.
+[line_follower_controller_node-2] [INFO] [1781608336.806533325] [line_follower_controller_node]: State: JUNCTION_DETECTED | Err: -0.020 | Steer: -0.098
+[line_follower_controller_node-2] [INFO] [1781608337.573858356] [line_follower_controller_node]: READ TAG: ID=TAG_TOP
+[line_follower_controller_node-2] [INFO] [1781608337.573917771] [line_follower_controller_node]: Math Fork at junction (cross: 0.000): STRAIGHT
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:17 | JUNCTION_DETECTED -> READ_TAG | TRIGGER: TAG_READ_RECEIVED
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:17 | READ_TAG -> EXECUTE_TURN | TRIGGER: BRANCH_SELECTED
+[hardware_sim_node.py-1] [INFO] [1781608337.574377966] [hardware_sim_node]: READ TAG: ID=TAG_TOP
+[hardware_sim_node.py-1] [INFO] [1781608337.585846421] [hardware_sim_node]: [ROBOT_POSE] step: 600, pos: (-2.238, 2.017), yaw: -0.022, dist_to_line: 0.017, branch: OUTER
+[hardware_sim_node.py-1] [INFO] [1781608337.609237578] [hardware_sim_node]: Selecting track branch: STRAIGHT
+[line_follower_controller_node-2] [INFO] [1781608337.886920047] [line_follower_controller_node]: State: EXECUTE_TURN | Err: -0.014 | Steer: -0.040
+[line_follower_controller_node-2] [INFO] [1781608338.972604955] [line_follower_controller_node]: State: EXECUTE_TURN | Err: 0.002 | Steer: 0.040
+[hardware_sim_node.py-1] [INFO] [1781608340.001828683] [hardware_sim_node]: [ROBOT_POSE] step: 800, pos: (-1.303, 1.989), yaw: -0.008, dist_to_line: 0.011, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608340.072975703] [line_follower_controller_node]: State: EXECUTE_TURN | Err: 0.012 | Steer: 0.068
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:20 | EXECUTE_TURN -> RESUME_TRACKING | TRIGGER: JUNCTION_CLEARED
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:20 | RESUME_TRACKING -> FOLLOW_LINE | TRIGGER: RESUMED
+[line_follower_controller_node-2] [INFO] [1781608341.174065959] [line_follower_controller_node]: State: FOLLOW_LINE | Err: 0.008 | Steer: 0.036
+[line_follower_controller_node-2] [INFO] [1781608342.260427011] [line_follower_controller_node]: State: FOLLOW_LINE | Err: 0.023 | Steer: 0.238
+[hardware_sim_node.py-1] [INFO] [1781608342.445357268] [hardware_sim_node]: [ROBOT_POSE] step: 1000, pos: (0.151, 1.968), yaw: -0.058, dist_to_line: 0.032, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608343.371312332] [line_follower_controller_node]: State: FOLLOW_LINE | Err: 0.050 | Steer: 0.222
+[line_follower_controller_node-2] [INFO] [1781608344.474732093] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.002 | Steer: -0.171
+[hardware_sim_node.py-1] [INFO] [1781608344.907456723] [hardware_sim_node]: [ROBOT_POSE] step: 1200, pos: (1.743, 2.026), yaw: 0.059, dist_to_line: 0.026, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608345.567747782] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.048 | Steer: -0.243
+[line_follower_controller_node-2] [INFO] [1781608346.651107060] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.015 | Steer: 0.063
+[hardware_sim_node.py-1] [INFO] [1781608347.311971794] [hardware_sim_node]: [ROBOT_POSE] step: 1400, pos: (3.356, 1.980), yaw: -0.068, dist_to_line: 0.013, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608347.739977907] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.060 | Steer: -0.689
+[line_follower_controller_node-2] [INFO] [1781608348.831135273] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.121 | Steer: -0.649
+[hardware_sim_node.py-1] [INFO] [1781608349.741479593] [hardware_sim_node]: [ROBOT_POSE] step: 1600, pos: (4.053, 1.830), yaw: -0.663, dist_to_line: 0.113, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608349.921280845] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.106 | Steer: -0.454
+[line_follower_controller_node-2] [INFO] [1781608351.012036241] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.047 | Steer: -0.057
+[line_follower_controller_node-2] [INFO] [1781608352.120998215] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.036 | Steer: -0.607
+[hardware_sim_node.py-1] [INFO] [1781608352.187513120] [hardware_sim_node]: [ROBOT_POSE] step: 1800, pos: (4.831, 0.913), yaw: -0.910, dist_to_line: 0.048, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608353.240306055] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.113 | Steer: -0.609
+[line_follower_controller_node-2] [INFO] [1781608354.361271376] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.099 | Steer: -0.402
+[hardware_sim_node.py-1] [INFO] [1781608354.661027060] [hardware_sim_node]: [ROBOT_POSE] step: 2000, pos: (5.056, 0.361), yaw: -1.601, dist_to_line: 0.088, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608355.117007068] [line_follower_controller_node]: READ TAG: ID=TAG_RIGHT
+[hardware_sim_node.py-1] [INFO] [1781608355.117394256] [hardware_sim_node]: READ TAG: ID=TAG_RIGHT
+[line_follower_controller_node-2] [INFO] [1781608355.440667125] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.036 | Steer: 0.013
+[line_follower_controller_node-2] [INFO] [1781608356.524990761] [line_follower_controller_node]: State: FOLLOW_LINE | Err: 0.051 | Steer: 0.321
+[hardware_sim_node.py-1] [INFO] [1781608357.064329385] [hardware_sim_node]: [ROBOT_POSE] step: 2200, pos: (4.947, -0.975), yaw: -1.535, dist_to_line: 0.053, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608357.604051845] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.001 | Steer: -0.577
+[line_follower_controller_node-2] [INFO] [1781608358.681928137] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.160 | Steer: -0.995
+[hardware_sim_node.py-1] [INFO] [1781608359.459687408] [hardware_sim_node]: [ROBOT_POSE] step: 2400, pos: (4.876, -1.800), yaw: -2.357, dist_to_line: 0.186, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608359.758703246] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.179 | Steer: -0.811
+[line_follower_controller_node-2] [INFO] [1781608360.870101279] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.116 | Steer: -0.388
+[hardware_sim_node.py-1] [INFO] [1781608361.923617193] [hardware_sim_node]: [ROBOT_POSE] step: 2600, pos: (4.367, -1.961), yaw: -3.042, dist_to_line: 0.029, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608361.991013207] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.019 | Steer: 0.288
+[line_follower_controller_node-2] [INFO] [1781608363.094125062] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.082 | Steer: -0.551
+[line_follower_controller_node-2] [INFO] [1781608364.207026917] [line_follower_controller_node]: State: FOLLOW_LINE | Err: -0.084 | Steer: -0.351
+[hardware_sim_node.py-1] [INFO] [1781608364.389228281] [hardware_sim_node]: [ROBOT_POSE] step: 2800, pos: (3.303, -2.079), yaw: 2.974, dist_to_line: 0.079, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608365.297709442] [line_follower_controller_node]: State: FOLLOW_LINE | Err: 0.009 | Steer: 0.408
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:45 | FOLLOW_LINE -> JUNCTION_DETECTED | TRIGGER: MARKER_DETECTED
+[line_follower_controller_node-2] [INFO] [1781608366.412617596] [line_follower_controller_node]: State: JUNCTION_DETECTED | Err: 0.084 | Steer: 0.431
+[hardware_sim_node.py-1] [INFO] [1781608366.847215541] [hardware_sim_node]: [ROBOT_POSE] step: 3000, pos: (2.407, -1.918), yaw: -3.063, dist_to_line: 0.082, branch: OUTER
+[line_follower_controller_node-2] [INFO] [1781608367.508395456] [line_follower_controller_node]: State: JUNCTION_DETECTED | Err: 0.065 | Steer: 0.228
+[line_follower_controller_node-2] [INFO] [1781608367.715042618] [line_follower_controller_node]: READ TAG: ID=TAG_BOT
+[line_follower_controller_node-2] [INFO] [1781608367.715130221] [line_follower_controller_node]: Reached destination tag TAG_BOT. Goal reached.
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:47 | JUNCTION_DETECTED -> READ_TAG | TRIGGER: TAG_READ_RECEIVED
+[line_follower_controller_node-2] [STATE_TRANSITION] 2026-06-16 11:12:47 | READ_TAG -> ERROR | TRIGGER: FAULT_GOAL_REACHED
+[line_follower_controller_node-2] [ERROR] [1781608367.715183467] [line_follower_controller_node]: [SAFETY_FAULT] 2026-06-16 11:12:47 | NONE | STATE: READ_TAG | SENSOR_VALS: last_err=0.054873
+[hardware_sim_node.py-1] [INFO] [1781608367.715460047] [hardware_sim_node]: READ TAG: ID=TAG_BOT

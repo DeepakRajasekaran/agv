@@ -1,0 +1,10 @@
+[ 25%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o
+[ 50%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/FaultMonitor.cpp.o
+/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp: In member function ‘rcl_interfaces::msg::SetParametersResult line_follower::PidController::onParameterChange(const std::vector<rclcpp::Parameter>&)’:
+/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp:555:44: error: conversion from ‘int64_t’ {aka ‘long int’} to ‘int’ may change value [-Werror=conversion]
+  555 |             m_maxFrozenSteps = param.as_int();
+      |                                ~~~~~~~~~~~~^~
+cc1plus: all warnings being treated as errors
+gmake[2]: *** [CMakeFiles/line_follower_controller_node.dir/build.make:76: CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/line_follower_controller_node.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

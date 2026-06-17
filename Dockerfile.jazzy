@@ -1,0 +1,25 @@
+FROM osrf/ros:jazzy-desktop-full
+
+ARG USERNAME=lucifer
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Delete default ubuntu user to prevent UID conflict on 24.04
+RUN if getent passwd ubuntu > /dev/null 2>&1; then userdel -r ubuntu; fi
+
+# Create user with provided UID/GID
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y sudo python3-pip python3-colcon-common-extensions ros-jazzy-nav2-msgs libpqxx-dev \
+    && pip3 install mujoco numpy --break-system-packages \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && (getent group render || groupadd -r render) \
+    && usermod -aG video,render $USERNAME
+
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /home/$USERNAME/.bashrc
+
+USER $USERNAME
+WORKDIR /home/$USERNAME/anscer_workspace/LineFollower

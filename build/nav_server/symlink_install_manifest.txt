@@ -1,0 +1,16 @@
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/lib/nav_server/nav_server_node
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/package_run_dependencies/nav_server
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/parent_prefix_path/nav_server
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.sh
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.dsv
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.sh
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.dsv
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.bash
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.sh
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.zsh
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.dsv
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.dsv
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/packages/nav_server
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig.cmake
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig-version.cmake
+/home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.xml

@@ -1,0 +1,18 @@
+Fri Jun 12 08:50:51 2026
+ERROR: could not initialize GLFW
+
+Mon Jun 15 06:45:29 2026
+ERROR: could not initialize GLFW
+
+Mon Jun 15 07:56:17 2026
+WARNING: Nan, Inf or huge value in QACC at DOF 8. The simulation is unstable. Time = 75.4400.
+
+Mon Jun 15 08:02:18 2026
+WARNING: Nan, Inf or huge value in QACC at DOF 8. The simulation is unstable. Time = 86.3100.
+
+Mon Jun 15 10:17:59 2026
+ERROR: could not initialize GLFW
+
+Tue Jun 16 05:37:48 2026
+ERROR: could not initialize GLFW
+

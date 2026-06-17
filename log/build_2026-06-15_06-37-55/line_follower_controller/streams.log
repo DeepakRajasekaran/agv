@@ -1,0 +1,6 @@
+[0.011s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller -- -j12 -l12
+[0.165s] [ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o
+[0.165s] [ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/FaultMonitor.cpp.o
+[0.165s] [ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/NavigationStateMachine.cpp.o
+[11.055s] [100%] Linking CXX executable line_follower_controller_node
+[11.474s] [100%] Built target line_follower_controller_node

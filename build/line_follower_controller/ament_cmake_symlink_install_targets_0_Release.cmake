@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller/line_follower_controller_node" "TARGETS" "line_follower_controller_node" "DESTINATION" "lib/line_follower_controller")

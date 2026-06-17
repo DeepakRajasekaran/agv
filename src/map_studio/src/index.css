@@ -1,0 +1,15 @@
+@import './design-system.css';
+
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: var(--fs-body-md);
+  line-height: var(--lh-body-md);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+* {
+  box-sizing: border-box;
+}

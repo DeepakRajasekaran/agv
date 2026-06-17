@@ -1,0 +1,16 @@
+[INFO] [1781672063.608131114] [map_studio_node]: MapStudio Node initialized. Subscriptions: /robot_pose, /plan, /controller_state, /sensor/track_position, /sensor/tag_id, /nav_vel
+Traceback (most recent call last):
+  File "/home/lucifer/anscer_workspace/LineFollower/src/map_studio/map_studio_backend.py", line 513, in <module>
+    main()
+  File "/home/lucifer/anscer_workspace/LineFollower/src/map_studio/map_studio_backend.py", line 504, in main
+    run_http_server(8080)
+  File "/home/lucifer/anscer_workspace/LineFollower/src/map_studio/map_studio_backend.py", line 490, in run_http_server
+    httpd = HTTPServer(server_address, MapStudioHTTPHandler)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socketserver.py", line 457, in __init__
+    self.server_bind()
+  File "/usr/lib/python3.12/http/server.py", line 136, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/usr/lib/python3.12/socketserver.py", line 473, in server_bind
+    self.socket.bind(self.server_address)
+OSError: [Errno 98] Address already in use

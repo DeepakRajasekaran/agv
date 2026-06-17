@@ -1,0 +1,29 @@
+[0.028s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller -- -j12 -l12
+[0.180s] [ 25%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o
+[38.112s] [ 50%] Linking CXX executable line_follower_controller_node
+[39.764s] [100%] Built target line_follower_controller_node
+[39.807s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller -- -j12 -l12
+[39.836s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller
+[39.863s] -- Install configuration: ""
+[39.865s] -- Installing: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/lib/line_follower_controller/line_follower_controller_node
+[39.881s] -- Set non-toolchain portion of runtime path of "/home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/lib/line_follower_controller/line_follower_controller_node" to ""
+[39.883s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/config
+[39.883s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/config/params.yaml
+[39.883s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/launch
+[39.884s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/launch/play.launch.py
+[39.884s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/ament_index/resource_index/package_run_dependencies/line_follower_controller
+[39.884s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/ament_index/resource_index/parent_prefix_path/line_follower_controller
+[39.885s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/environment/ament_prefix_path.sh
+[39.885s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/environment/ament_prefix_path.dsv
+[39.885s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/environment/path.sh
+[39.886s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/environment/path.dsv
+[39.887s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/local_setup.bash
+[39.888s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/local_setup.sh
+[39.888s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/local_setup.zsh
+[39.888s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/local_setup.dsv
+[39.889s] -- Installing: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/package.dsv
+[39.889s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/ament_index/resource_index/packages/line_follower_controller
+[39.889s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/cmake/line_follower_controllerConfig.cmake
+[39.889s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/cmake/line_follower_controllerConfig-version.cmake
+[39.889s] -- Up-to-date: /home/lucifer/anscer_workspace/LineFollower/install/line_follower_controller/share/line_follower_controller/package.xml
+[39.889s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller

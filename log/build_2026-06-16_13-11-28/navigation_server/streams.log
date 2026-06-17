@@ -1,0 +1,31 @@
+[0.843s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/navigation_server': PYTHONPATH=/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --uninstall --editable --build-directory /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build
+[1.095s] running develop
+[1.276s] Removing /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation-server.egg-link (link to .)
+[1.311s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/navigation_server' returned '0': PYTHONPATH=/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --uninstall --editable --build-directory /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build
+[1.312s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/src/navigation_server': PYTHONPATH=/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/navigation_server build --build-base /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build install --record /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/install.log --single-version-externally-managed install_data --force
+[1.522s] running egg_info
+[1.535s] writing ../../build/navigation_server/navigation_server.egg-info/PKG-INFO
+[1.536s] writing dependency_links to ../../build/navigation_server/navigation_server.egg-info/dependency_links.txt
+[1.536s] writing entry points to ../../build/navigation_server/navigation_server.egg-info/entry_points.txt
+[1.536s] writing requirements to ../../build/navigation_server/navigation_server.egg-info/requires.txt
+[1.536s] writing top-level names to ../../build/navigation_server/navigation_server.egg-info/top_level.txt
+[1.562s] reading manifest file '../../build/navigation_server/navigation_server.egg-info/SOURCES.txt'
+[1.562s] writing manifest file '../../build/navigation_server/navigation_server.egg-info/SOURCES.txt'
+[1.563s] running build
+[1.563s] running build_py
+[1.563s] running install
+[1.568s] running install_lib
+[1.581s] creating /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+[1.581s] copying /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server/__init__.py -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+[1.581s] copying /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server/navigator_node.py -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+[1.583s] byte-compiling /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server/__init__.py to __init__.cpython-312.pyc
+[1.583s] byte-compiling /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server/navigator_node.py to navigator_node.cpython-312.pyc
+[1.585s] running install_data
+[1.586s] copying resource/navigation_server -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/ament_index/resource_index/packages
+[1.586s] copying package.xml -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/navigation_server
+[1.586s] running install_egg_info
+[1.603s] Copying ../../build/navigation_server/navigation_server.egg-info to /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server-0.0.0-py3.12.egg-info
+[1.603s] running install_scripts
+[1.757s] Installing navigator_node script to /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/navigation_server
+[1.757s] writing list of installed files to '/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/install.log'
+[1.795s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/src/navigation_server' returned '0': PYTHONPATH=/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/navigation_server build --build-base /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build install --record /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/install.log --single-version-externally-managed install_data --force

@@ -1,0 +1,1 @@
+/home/lucifer/anscer_workspace/LineFollower/src/hardware_sim/scripts/hardware_sim_node.py

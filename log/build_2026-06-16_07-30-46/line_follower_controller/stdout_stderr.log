@@ -1,0 +1,16 @@
+[ 25%] [32mBuilding CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o[0m
+In file included from [01m[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp:9[m[K:
+[01m[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:[m[K In constructor ‘[01m[Kline_follower::PidController::[01;32m[KPidController[m[K(const rclcpp::NodeOptions&)[m[K’:
+[01m[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:126:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kline_follower::PidController::m_logCounter[m[K’ will be initialized after [[01;31m[K-Werror=reorder[m[K]
+  126 |     int [01;31m[Km_logCounter[m[K;
+      |         [01;31m[K^~~~~~~~~~~~[m[K
+[01m[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:117:12:[m[K [01;31m[Kerror: [m[K  ‘[01m[Kdouble line_follower::PidController::m_navLinearVel[m[K’ [[01;31m[K-Werror=reorder[m[K]
+  117 |     double [01;31m[Km_navLinearVel[m[K;
+      |            [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp:26:1:[m[K [01;31m[Kerror: [m[K  when initialized here [[01;31m[K-Werror=reorder[m[K]
+   26 | [01;31m[KPidController[m[K::PidController(const rclcpp::NodeOptions& options)
+      | [01;31m[K^~~~~~~~~~~~~[m[K
+cc1plus: all warnings being treated as errors
+gmake[2]: *** [CMakeFiles/line_follower_controller_node.dir/build.make:76: CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/line_follower_controller_node.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

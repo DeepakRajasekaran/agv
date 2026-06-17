@@ -1,0 +1,25 @@
+-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/lib/hardware_sim/hardware_sim_node.py
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/lib/hardware_sim/TapeMap.py
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/models/scene.xml
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/package_run_dependencies/hardware_sim
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/parent_prefix_path/hardware_sim
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/ament_prefix_path.sh
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/ament_prefix_path.dsv
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/path.sh
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/path.dsv
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.bash
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.sh
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.zsh
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.dsv
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/package.dsv
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/packages/hardware_sim
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/cmake/hardware_simConfig.cmake
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/cmake/hardware_simConfig-version.cmake
+-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/package.xml

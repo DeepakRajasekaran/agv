@@ -1,0 +1,31 @@
+[0.012s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/lucifer/anscer_workspace/LineFollower/src/hardware_sim -DCMAKE_INSTALL_PREFIX=/home/lucifer/anscer_workspace/LineFollower/install/hardware_sim
+[0.041s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.206s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.284s] -- Configuring done (0.2s)
+[0.286s] -- Generating done (0.0s)
+[0.287s] -- Build files have been written to: /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim
+[0.290s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/lucifer/anscer_workspace/LineFollower/src/hardware_sim -DCMAKE_INSTALL_PREFIX=/home/lucifer/anscer_workspace/LineFollower/install/hardware_sim
+[0.291s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim -- -j12 -l12
+[0.327s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim -- -j12 -l12
+[0.338s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim
+[0.344s] -- Install configuration: "Release"
+[0.344s] -- Execute custom install script
+[0.345s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/lib/hardware_sim/hardware_sim_node.py
+[0.345s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/lib/hardware_sim/TapeMap.py
+[0.345s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/models/scene.xml
+[0.345s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/package_run_dependencies/hardware_sim
+[0.346s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/parent_prefix_path/hardware_sim
+[0.346s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/ament_prefix_path.sh
+[0.346s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/ament_prefix_path.dsv
+[0.346s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/path.sh
+[0.346s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/environment/path.dsv
+[0.347s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.bash
+[0.347s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.sh
+[0.347s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.zsh
+[0.347s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/local_setup.dsv
+[0.347s] -- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/package.dsv
+[0.356s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/ament_index/resource_index/packages/hardware_sim
+[0.356s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/cmake/hardware_simConfig.cmake
+[0.356s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/cmake/hardware_simConfig-version.cmake
+[0.356s] -- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/hardware_sim/share/hardware_sim/package.xml
+[0.358s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/lucifer/anscer_workspace/LineFollower/build/hardware_sim

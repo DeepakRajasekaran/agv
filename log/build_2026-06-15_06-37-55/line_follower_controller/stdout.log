@@ -1,0 +1,5 @@
+[ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o
+[ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/FaultMonitor.cpp.o
+[ 75%] Building CXX object CMakeFiles/line_follower_controller_node.dir/src/NavigationStateMachine.cpp.o
+[100%] Linking CXX executable line_follower_controller_node
+[100%] Built target line_follower_controller_node

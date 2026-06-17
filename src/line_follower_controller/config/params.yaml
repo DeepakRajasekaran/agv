@@ -1,0 +1,22 @@
+/line_follower_controller_node:
+  ros__parameters:
+    pid:
+      kp: 5.0
+      ki: 0.0
+      kd: 2.0
+      windup_limit: 0.5
+      max_output: 3.0
+    robot:
+      nominal_speed: 1.5
+      max_rpm: 300.0
+      wheel_base: 0.512
+      wheel_radius: 0.08
+    safety:
+      lost_threshold: 0.25
+      max_frozen_steps: 50
+      turn_duration: 3.0
+
+/nav_server_node:
+  ros__parameters:
+    nominal_speed: 1.5
+

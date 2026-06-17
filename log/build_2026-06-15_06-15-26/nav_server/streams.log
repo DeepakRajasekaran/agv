@@ -1,0 +1,45 @@
+[0.010s] Invoking command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/lucifer/anscer_workspace/LineFollower/src/nav_server -DCMAKE_INSTALL_PREFIX=/home/lucifer/anscer_workspace/LineFollower/install/nav_server
+[0.137s] -- The C compiler identification is GNU 13.3.0
+[0.220s] -- The CXX compiler identification is GNU 13.3.0
+[0.241s] -- Detecting C compiler ABI info
+[0.349s] -- Detecting C compiler ABI info - done
+[0.356s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.356s] -- Detecting C compile features
+[0.357s] -- Detecting C compile features - done
+[0.367s] -- Detecting CXX compiler ABI info
+[0.475s] -- Detecting CXX compiler ABI info - done
+[0.486s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.487s] -- Detecting CXX compile features
+[0.487s] -- Detecting CXX compile features - done
+[0.493s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.656s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.834s] -- Found rclcpp: 28.1.18 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.892s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.915s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.952s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.981s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.085s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[1.090s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[1.211s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[1.237s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[1.269s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.408s] -- Found rclcpp_action: 28.1.18 (/opt/ros/jazzy/share/rclcpp_action/cmake)
+[1.463s] [31mCMake Error at CMakeLists.txt:11 (find_package):
+[1.464s]   By not providing "Findnav2_msgs.cmake" in CMAKE_MODULE_PATH this project
+[1.464s]   has asked CMake to find a package configuration file provided by
+[1.464s]   "nav2_msgs", but CMake did not find one.
+[1.464s] 
+[1.464s]   Could not find a package configuration file provided by "nav2_msgs" with
+[1.464s]   any of the following names:
+[1.464s] 
+[1.464s]     nav2_msgsConfig.cmake
+[1.464s]     nav2_msgs-config.cmake
+[1.464s] 
+[1.465s]   Add the installation prefix of "nav2_msgs" to CMAKE_PREFIX_PATH or set
+[1.465s]   "nav2_msgs_DIR" to a directory containing one of the above files.  If
+[1.465s]   "nav2_msgs" provides a separate development package or SDK, be sure it has
+[1.465s]   been installed.
+[1.465s] 
+[1.465s] [0m
+[1.465s] -- Configuring incomplete, errors occurred!
+[1.470s] Invoked command in '/home/lucifer/anscer_workspace/LineFollower/build/nav_server' returned '1': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/lucifer/anscer_workspace/LineFollower/src/nav_server -DCMAKE_INSTALL_PREFIX=/home/lucifer/anscer_workspace/LineFollower/install/nav_server

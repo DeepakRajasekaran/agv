@@ -1,0 +1,319 @@
+[0.000000] (-) TimerEvent: {}
+[0.000302] (-) JobUnselected: {'identifier': 'hardware_sim'}
+[0.000388] (-) JobUnselected: {'identifier': 'navigation_server'}
+[0.000432] (line_follower_controller) JobQueued: {'identifier': 'line_follower_controller', 'dependencies': OrderedDict()}
+[0.000505] (nav_server) JobQueued: {'identifier': 'nav_server', 'dependencies': OrderedDict()}
+[0.000534] (line_follower_controller) JobStarted: {'identifier': 'line_follower_controller'}
+[0.005458] (nav_server) JobStarted: {'identifier': 'nav_server'}
+[0.008212] (line_follower_controller) JobProgress: {'identifier': 'line_follower_controller', 'progress': 'cmake'}
+[0.008577] (line_follower_controller) JobProgress: {'identifier': 'line_follower_controller', 'progress': 'build'}
+[0.008974] (line_follower_controller) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller', '--', '-j12', '-l12'], 'cwd': '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller', 'env': OrderedDict({'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'HOSTNAME': 'fedora', 'SHLVL': '0', 'LIBGL_ALWAYS_SOFTWARE': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/lucifer', 'OLDPWD': '/home/lucifer/anscer_workspace/LineFollower', 'ROS_PYTHON_VERSION': '3', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm', 'QT_X11_NO_MITSHM': '1', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'XDG_RUNTIME_DIR': '/tmp/runtime-root', 'DISPLAY': ':0', 'LANG': 'C.UTF-8', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/home/lucifer/anscer_workspace/LineFollower/build/line_follower_controller', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.011342] (nav_server) JobProgress: {'identifier': 'nav_server', 'progress': 'cmake'}
+[0.011915] (nav_server) Command: {'cmd': ['/usr/bin/cmake', '/home/lucifer/anscer_workspace/LineFollower/src/nav_server', '-DCMAKE_INSTALL_PREFIX=/home/lucifer/anscer_workspace/LineFollower/install/nav_server'], 'cwd': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'env': OrderedDict({'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'HOSTNAME': 'fedora', 'SHLVL': '0', 'LIBGL_ALWAYS_SOFTWARE': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/lucifer', 'OLDPWD': '/home/lucifer/anscer_workspace/LineFollower', 'ROS_PYTHON_VERSION': '3', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm', 'QT_X11_NO_MITSHM': '1', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'XDG_RUNTIME_DIR': '/tmp/runtime-root', 'DISPLAY': ':0', 'LANG': 'C.UTF-8', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.026324] (nav_server) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.075326] (line_follower_controller) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o\x1b[0m\n'}
+[0.099614] (-) TimerEvent: {}
+[0.199926] (-) TimerEvent: {}
+[0.215057] (nav_server) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.222028] (nav_server) StdoutLine: {'line': b'-- Found rclcpp: 28.1.18 (/opt/ros/jazzy/share/rclcpp/cmake)\n'}
+[0.243177] (nav_server) StdoutLine: {'line': b'-- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)\n'}
+[0.250209] (nav_server) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)\n'}
+[0.259686] (nav_server) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.270457] (nav_server) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.300147] (-) TimerEvent: {}
+[0.319190] (nav_server) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[0.320079] (nav_server) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)\n'}
+[0.377213] (nav_server) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[0.400275] (-) TimerEvent: {}
+[0.426953] (nav_server) StdoutLine: {'line': b'-- Found rclcpp_action: 28.1.18 (/opt/ros/jazzy/share/rclcpp_action/cmake)\n'}
+[0.471287] (nav_server) StdoutLine: {'line': b'-- Found nav2_msgs: 1.3.11 (/opt/ros/jazzy/share/nav2_msgs/cmake)\n'}
+[0.500510] (-) TimerEvent: {}
+[0.600818] (-) TimerEvent: {}
+[0.608339] (nav_server) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)\n'}
+[0.693987] (nav_server) StdoutLine: {'line': b"-- Added test 'copyright' to check source files copyright and LICENSE\n"}
+[0.694578] (nav_server) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[0.694831] (nav_server) StdoutLine: {'line': b'-- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/lucifer/anscer_workspace/LineFollower/src/nav_server/include>\n'}
+[0.694934] (nav_server) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[0.695112] (nav_server) StdoutLine: {'line': b"-- Added test 'cpplint' to check C / C++ code against the Google style\n"}
+[0.695244] (nav_server) StdoutLine: {'line': b'-- Configured cpplint exclude dirs and/or files: \n'}
+[0.695529] (nav_server) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.696037] (nav_server) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[0.696243] (nav_server) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[0.696352] (nav_server) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.697153] (nav_server) StdoutLine: {'line': b'-- Configuring done (0.7s)\n'}
+[0.700948] (-) TimerEvent: {}
+[0.709649] (nav_server) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[0.715270] (nav_server) StdoutLine: {'line': b'-- Build files have been written to: /home/lucifer/anscer_workspace/LineFollower/build/nav_server\n'}
+[0.722684] (nav_server) CommandEnded: {'returncode': 0}
+[0.723634] (nav_server) JobProgress: {'identifier': 'nav_server', 'progress': 'build'}
+[0.723678] (nav_server) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', '--', '-j12', '-l12'], 'cwd': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'env': OrderedDict({'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'HOSTNAME': 'fedora', 'SHLVL': '0', 'LIBGL_ALWAYS_SOFTWARE': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/lucifer', 'OLDPWD': '/home/lucifer/anscer_workspace/LineFollower', 'ROS_PYTHON_VERSION': '3', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm', 'QT_X11_NO_MITSHM': '1', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'XDG_RUNTIME_DIR': '/tmp/runtime-root', 'DISPLAY': ':0', 'LANG': 'C.UTF-8', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.797002] (nav_server) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/nav_server_node.dir/src/nav_server_node.cpp.o\x1b[0m\n'}
+[0.801057] (-) TimerEvent: {}
+[0.901490] (-) TimerEvent: {}
+[1.001905] (-) TimerEvent: {}
+[1.102209] (-) TimerEvent: {}
+[1.202847] (-) TimerEvent: {}
+[1.303152] (-) TimerEvent: {}
+[1.403532] (-) TimerEvent: {}
+[1.503954] (-) TimerEvent: {}
+[1.604268] (-) TimerEvent: {}
+[1.704600] (-) TimerEvent: {}
+[1.804988] (-) TimerEvent: {}
+[1.863499] (line_follower_controller) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp:9\x1b[m\x1b[K:\n'}
+[1.863765] (line_follower_controller) StderrLine: {'line': b'\x1b[01m\x1b[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:\x1b[m\x1b[K In constructor \xe2\x80\x98\x1b[01m\x1b[Kline_follower::PidController::\x1b[01;32m\x1b[KPidController\x1b[m\x1b[K(const rclcpp::NodeOptions&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[1.863901] (line_follower_controller) StderrLine: {'line': b'\x1b[01m\x1b[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:126:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kline_follower::PidController::m_logCounter\x1b[m\x1b[K\xe2\x80\x99 will be initialized after [\x1b[01;31m\x1b[K-Werror=reorder\x1b[m\x1b[K]\n'}
+[1.864014] (line_follower_controller) StderrLine: {'line': b'  126 |     int \x1b[01;31m\x1b[Km_logCounter\x1b[m\x1b[K;\n'}
+[1.864124] (line_follower_controller) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[1.864226] (line_follower_controller) StderrLine: {'line': b'\x1b[01m\x1b[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/include/PidController.h:117:12:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K  \xe2\x80\x98\x1b[01m\x1b[Kdouble line_follower::PidController::m_navLinearVel\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;31m\x1b[K-Werror=reorder\x1b[m\x1b[K]\n'}
+[1.864344] (line_follower_controller) StderrLine: {'line': b'  117 |     double \x1b[01;31m\x1b[Km_navLinearVel\x1b[m\x1b[K;\n'}
+[1.864450] (line_follower_controller) StderrLine: {'line': b'      |            \x1b[01;31m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[1.864559] (line_follower_controller) StderrLine: {'line': b'\x1b[01m\x1b[K/home/lucifer/anscer_workspace/LineFollower/src/line_follower_controller/src/PidController.cpp:26:1:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K  when initialized here [\x1b[01;31m\x1b[K-Werror=reorder\x1b[m\x1b[K]\n'}
+[1.864659] (line_follower_controller) StderrLine: {'line': b'   26 | \x1b[01;31m\x1b[KPidController\x1b[m\x1b[K::PidController(const rclcpp::NodeOptions& options)\n'}
+[1.864770] (line_follower_controller) StderrLine: {'line': b'      | \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[1.905104] (-) TimerEvent: {}
+[2.005490] (-) TimerEvent: {}
+[2.105926] (-) TimerEvent: {}
+[2.206369] (-) TimerEvent: {}
+[2.306679] (-) TimerEvent: {}
+[2.407125] (-) TimerEvent: {}
+[2.507436] (-) TimerEvent: {}
+[2.607764] (-) TimerEvent: {}
+[2.708074] (-) TimerEvent: {}
+[2.808448] (-) TimerEvent: {}
+[2.908804] (-) TimerEvent: {}
+[3.009127] (-) TimerEvent: {}
+[3.109435] (-) TimerEvent: {}
+[3.209850] (-) TimerEvent: {}
+[3.310179] (-) TimerEvent: {}
+[3.410537] (-) TimerEvent: {}
+[3.510831] (-) TimerEvent: {}
+[3.611213] (-) TimerEvent: {}
+[3.711523] (-) TimerEvent: {}
+[3.811859] (-) TimerEvent: {}
+[3.912156] (-) TimerEvent: {}
+[4.012547] (-) TimerEvent: {}
+[4.112890] (-) TimerEvent: {}
+[4.213191] (-) TimerEvent: {}
+[4.313497] (-) TimerEvent: {}
+[4.413820] (-) TimerEvent: {}
+[4.514145] (-) TimerEvent: {}
+[4.614429] (-) TimerEvent: {}
+[4.714762] (-) TimerEvent: {}
+[4.815184] (-) TimerEvent: {}
+[4.915492] (-) TimerEvent: {}
+[5.015817] (-) TimerEvent: {}
+[5.116212] (-) TimerEvent: {}
+[5.216635] (-) TimerEvent: {}
+[5.316957] (-) TimerEvent: {}
+[5.417380] (-) TimerEvent: {}
+[5.517756] (-) TimerEvent: {}
+[5.618078] (-) TimerEvent: {}
+[5.718498] (-) TimerEvent: {}
+[5.818813] (-) TimerEvent: {}
+[5.919109] (-) TimerEvent: {}
+[6.019515] (-) TimerEvent: {}
+[6.119809] (-) TimerEvent: {}
+[6.220149] (-) TimerEvent: {}
+[6.320574] (-) TimerEvent: {}
+[6.420871] (-) TimerEvent: {}
+[6.521312] (-) TimerEvent: {}
+[6.621630] (-) TimerEvent: {}
+[6.721957] (-) TimerEvent: {}
+[6.822251] (-) TimerEvent: {}
+[6.922597] (-) TimerEvent: {}
+[7.022952] (-) TimerEvent: {}
+[7.123232] (-) TimerEvent: {}
+[7.223641] (-) TimerEvent: {}
+[7.323960] (-) TimerEvent: {}
+[7.424248] (-) TimerEvent: {}
+[7.524563] (-) TimerEvent: {}
+[7.624983] (-) TimerEvent: {}
+[7.725380] (-) TimerEvent: {}
+[7.825707] (-) TimerEvent: {}
+[7.926094] (-) TimerEvent: {}
+[8.026509] (-) TimerEvent: {}
+[8.126806] (-) TimerEvent: {}
+[8.227145] (-) TimerEvent: {}
+[8.327715] (-) TimerEvent: {}
+[8.428111] (-) TimerEvent: {}
+[8.528521] (-) TimerEvent: {}
+[8.628814] (-) TimerEvent: {}
+[8.729127] (-) TimerEvent: {}
+[8.829435] (-) TimerEvent: {}
+[8.929849] (-) TimerEvent: {}
+[9.030167] (-) TimerEvent: {}
+[9.130547] (-) TimerEvent: {}
+[9.230886] (-) TimerEvent: {}
+[9.331239] (-) TimerEvent: {}
+[9.431582] (-) TimerEvent: {}
+[9.531948] (-) TimerEvent: {}
+[9.632269] (-) TimerEvent: {}
+[9.732559] (-) TimerEvent: {}
+[9.832852] (-) TimerEvent: {}
+[9.933272] (-) TimerEvent: {}
+[10.033576] (-) TimerEvent: {}
+[10.133905] (-) TimerEvent: {}
+[10.234234] (-) TimerEvent: {}
+[10.334542] (-) TimerEvent: {}
+[10.434814] (-) TimerEvent: {}
+[10.535224] (-) TimerEvent: {}
+[10.635516] (-) TimerEvent: {}
+[10.735803] (-) TimerEvent: {}
+[10.836229] (-) TimerEvent: {}
+[10.936566] (-) TimerEvent: {}
+[11.036885] (-) TimerEvent: {}
+[11.137200] (-) TimerEvent: {}
+[11.237496] (-) TimerEvent: {}
+[11.337929] (-) TimerEvent: {}
+[11.438252] (-) TimerEvent: {}
+[11.538614] (-) TimerEvent: {}
+[11.638907] (-) TimerEvent: {}
+[11.739204] (-) TimerEvent: {}
+[11.839463] (-) TimerEvent: {}
+[11.939729] (-) TimerEvent: {}
+[12.040043] (-) TimerEvent: {}
+[12.140434] (-) TimerEvent: {}
+[12.240727] (-) TimerEvent: {}
+[12.341417] (-) TimerEvent: {}
+[12.442319] (-) TimerEvent: {}
+[12.542730] (-) TimerEvent: {}
+[12.643146] (-) TimerEvent: {}
+[12.743577] (-) TimerEvent: {}
+[12.843975] (-) TimerEvent: {}
+[12.944247] (-) TimerEvent: {}
+[12.998170] (nav_server) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX executable nav_server_node\x1b[0m\n'}
+[13.044384] (-) TimerEvent: {}
+[13.144774] (-) TimerEvent: {}
+[13.247183] (-) TimerEvent: {}
+[13.347585] (-) TimerEvent: {}
+[13.437536] (nav_server) StdoutLine: {'line': b'[100%] Built target nav_server_node\n'}
+[13.447731] (-) TimerEvent: {}
+[13.454546] (nav_server) CommandEnded: {'returncode': 0}
+[13.455292] (nav_server) JobProgress: {'identifier': 'nav_server', 'progress': 'install'}
+[13.468558] (nav_server) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/lucifer/anscer_workspace/LineFollower/build/nav_server'], 'cwd': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'env': OrderedDict({'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'HOSTNAME': 'fedora', 'SHLVL': '0', 'LIBGL_ALWAYS_SOFTWARE': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/lucifer', 'OLDPWD': '/home/lucifer/anscer_workspace/LineFollower', 'ROS_PYTHON_VERSION': '3', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm', 'QT_X11_NO_MITSHM': '1', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'XDG_RUNTIME_DIR': '/tmp/runtime-root', 'DISPLAY': ':0', 'LANG': 'C.UTF-8', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/home/lucifer/anscer_workspace/LineFollower/build/nav_server', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[13.480721] (nav_server) StdoutLine: {'line': b'-- Install configuration: "Release"\n'}
+[13.481588] (nav_server) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[13.481975] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/lib/nav_server/nav_server_node\n'}
+[13.482223] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/package_run_dependencies/nav_server\n'}
+[13.482436] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/parent_prefix_path/nav_server\n'}
+[13.482611] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.sh\n'}
+[13.482924] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/ament_prefix_path.dsv\n'}
+[13.483158] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.sh\n'}
+[13.483346] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/environment/path.dsv\n'}
+[13.483523] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.bash\n'}
+[13.483707] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.sh\n'}
+[13.483865] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.zsh\n'}
+[13.485996] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/local_setup.dsv\n'}
+[13.486542] (nav_server) StdoutLine: {'line': b'-- Symlinking: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.dsv\n'}
+[13.502328] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/ament_index/resource_index/packages/nav_server\n'}
+[13.502662] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig.cmake\n'}
+[13.502924] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/cmake/nav_serverConfig-version.cmake\n'}
+[13.503255] (nav_server) StdoutLine: {'line': b'-- Up-to-date symlink: /home/lucifer/anscer_workspace/LineFollower/install/nav_server/share/nav_server/package.xml\n'}
+[13.506951] (nav_server) CommandEnded: {'returncode': 0}
+[13.538302] (nav_server) JobEnded: {'identifier': 'nav_server', 'rc': 0}
+[13.547857] (-) TimerEvent: {}
+[13.648378] (-) TimerEvent: {}
+[13.748786] (-) TimerEvent: {}
+[13.849121] (-) TimerEvent: {}
+[13.949635] (-) TimerEvent: {}
+[14.049989] (-) TimerEvent: {}
+[14.152102] (-) TimerEvent: {}
+[14.252593] (-) TimerEvent: {}
+[14.352906] (-) TimerEvent: {}
+[14.453247] (-) TimerEvent: {}
+[14.553597] (-) TimerEvent: {}
+[14.653894] (-) TimerEvent: {}
+[14.754418] (-) TimerEvent: {}
+[14.854772] (-) TimerEvent: {}
+[14.955098] (-) TimerEvent: {}
+[15.055395] (-) TimerEvent: {}
+[15.155839] (-) TimerEvent: {}
+[15.256363] (-) TimerEvent: {}
+[15.356705] (-) TimerEvent: {}
+[15.457016] (-) TimerEvent: {}
+[15.557377] (-) TimerEvent: {}
+[15.657682] (-) TimerEvent: {}
+[15.758051] (-) TimerEvent: {}
+[15.858451] (-) TimerEvent: {}
+[15.958858] (-) TimerEvent: {}
+[16.059319] (-) TimerEvent: {}
+[16.159685] (-) TimerEvent: {}
+[16.259985] (-) TimerEvent: {}
+[16.360274] (-) TimerEvent: {}
+[16.460654] (-) TimerEvent: {}
+[16.561087] (-) TimerEvent: {}
+[16.661406] (-) TimerEvent: {}
+[16.761734] (-) TimerEvent: {}
+[16.862410] (-) TimerEvent: {}
+[16.963405] (-) TimerEvent: {}
+[17.064849] (-) TimerEvent: {}
+[17.165203] (-) TimerEvent: {}
+[17.265501] (-) TimerEvent: {}
+[17.365814] (-) TimerEvent: {}
+[17.466138] (-) TimerEvent: {}
+[17.566468] (-) TimerEvent: {}
+[17.666785] (-) TimerEvent: {}
+[17.767079] (-) TimerEvent: {}
+[17.867464] (-) TimerEvent: {}
+[17.967838] (-) TimerEvent: {}
+[18.068141] (-) TimerEvent: {}
+[18.168458] (-) TimerEvent: {}
+[18.268739] (-) TimerEvent: {}
+[18.369133] (-) TimerEvent: {}
+[18.469458] (-) TimerEvent: {}
+[18.569814] (-) TimerEvent: {}
+[18.670131] (-) TimerEvent: {}
+[18.770396] (-) TimerEvent: {}
+[18.870809] (-) TimerEvent: {}
+[18.971232] (-) TimerEvent: {}
+[19.073831] (-) TimerEvent: {}
+[19.174198] (-) TimerEvent: {}
+[19.274511] (-) TimerEvent: {}
+[19.374825] (-) TimerEvent: {}
+[19.475155] (-) TimerEvent: {}
+[19.575439] (-) TimerEvent: {}
+[19.675781] (-) TimerEvent: {}
+[19.776309] (-) TimerEvent: {}
+[19.876622] (-) TimerEvent: {}
+[19.977142] (-) TimerEvent: {}
+[20.077480] (-) TimerEvent: {}
+[20.178419] (-) TimerEvent: {}
+[20.278817] (-) TimerEvent: {}
+[20.379235] (-) TimerEvent: {}
+[20.479683] (-) TimerEvent: {}
+[20.580005] (-) TimerEvent: {}
+[20.680385] (-) TimerEvent: {}
+[20.783407] (-) TimerEvent: {}
+[20.883948] (-) TimerEvent: {}
+[20.984389] (-) TimerEvent: {}
+[21.084717] (-) TimerEvent: {}
+[21.185030] (-) TimerEvent: {}
+[21.285297] (-) TimerEvent: {}
+[21.385612] (-) TimerEvent: {}
+[21.485853] (-) TimerEvent: {}
+[21.586128] (-) TimerEvent: {}
+[21.686378] (-) TimerEvent: {}
+[21.786638] (-) TimerEvent: {}
+[21.886899] (-) TimerEvent: {}
+[21.987112] (-) TimerEvent: {}
+[22.087397] (-) TimerEvent: {}
+[22.187624] (-) TimerEvent: {}
+[22.287840] (-) TimerEvent: {}
+[22.388173] (-) TimerEvent: {}
+[22.488469] (-) TimerEvent: {}
+[22.588676] (-) TimerEvent: {}
+[22.688941] (-) TimerEvent: {}
+[22.789271] (-) TimerEvent: {}
+[22.889532] (-) TimerEvent: {}
+[22.989790] (-) TimerEvent: {}
+[23.090048] (-) TimerEvent: {}
+[23.190381] (-) TimerEvent: {}
+[23.290604] (-) TimerEvent: {}
+[23.355556] (line_follower_controller) StderrLine: {'line': b'cc1plus: all warnings being treated as errors\n'}
+[23.390697] (-) TimerEvent: {}
+[23.403555] (line_follower_controller) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/line_follower_controller_node.dir/build.make:76: CMakeFiles/line_follower_controller_node.dir/src/PidController.cpp.o] Error 1\n'}
+[23.403726] (line_follower_controller) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/line_follower_controller_node.dir/all] Error 2\n'}
+[23.403843] (line_follower_controller) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[23.405797] (line_follower_controller) CommandEnded: {'returncode': 2}
+[23.412134] (line_follower_controller) JobEnded: {'identifier': 'line_follower_controller', 'rc': 2}
+[23.412837] (-) EventReactorShutdown: {}

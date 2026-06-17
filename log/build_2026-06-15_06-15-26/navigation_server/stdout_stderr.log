@@ -1,0 +1,35 @@
+running egg_info
+creating ../../build/navigation_server/navigation_server.egg-info
+writing ../../build/navigation_server/navigation_server.egg-info/PKG-INFO
+writing dependency_links to ../../build/navigation_server/navigation_server.egg-info/dependency_links.txt
+writing entry points to ../../build/navigation_server/navigation_server.egg-info/entry_points.txt
+writing requirements to ../../build/navigation_server/navigation_server.egg-info/requires.txt
+writing top-level names to ../../build/navigation_server/navigation_server.egg-info/top_level.txt
+writing manifest file '../../build/navigation_server/navigation_server.egg-info/SOURCES.txt'
+reading manifest file '../../build/navigation_server/navigation_server.egg-info/SOURCES.txt'
+writing manifest file '../../build/navigation_server/navigation_server.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build
+creating /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib
+creating /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server
+copying navigation_server/__init__.py -> /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server
+copying navigation_server/navigator_node.py -> /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server
+running install
+running install_lib
+creating /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+copying /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server/__init__.py -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+copying /home/lucifer/anscer_workspace/LineFollower/build/navigation_server/build/lib/navigation_server/navigator_node.py -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server
+byte-compiling /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server/navigator_node.py to navigator_node.cpython-312.pyc
+running install_data
+creating /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/ament_index
+creating /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/ament_index/resource_index
+creating /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/ament_index/resource_index/packages
+copying resource/navigation_server -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/ament_index/resource_index/packages
+copying package.xml -> /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/share/navigation_server
+running install_egg_info
+Copying ../../build/navigation_server/navigation_server.egg-info to /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/python3.12/site-packages/navigation_server-0.0.0-py3.12.egg-info
+running install_scripts
+Installing navigator_node script to /home/lucifer/anscer_workspace/LineFollower/install/navigation_server/lib/navigation_server
+writing list of installed files to '/home/lucifer/anscer_workspace/LineFollower/build/navigation_server/install.log'
