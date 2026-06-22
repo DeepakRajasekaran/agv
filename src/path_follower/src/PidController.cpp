@@ -254,38 +254,48 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     }
 
     // Manage State transitions & controls
-    if (currentState == State::FOLLOW_LINE) {
-        // Line Follower active
-        if (m_leftMarker || m_rightMarker) {
-            p_stateMachine->transitionTo(State::JUNCTION_DETECTED, "MARKER_DETECTED");
-            publishControllerState();
+    switch (currentState) {
+        case State::FOLLOW_LINE:
+            // Line Follower active
+            if (m_leftMarker || m_rightMarker) {
+                p_stateMachine->transitionTo(State::JUNCTION_DETECTED, "MARKER_DETECTED");
+                publishControllerState();
+            }
+            publishVelocity(linearVel, angularVel);
+            break;
+
+        case State::JUNCTION_DETECTED:
+            // Slow to 60% nominal approaching junction, keep steering active
+            publishVelocity(linearVel * 0.60, angularVel);
+            break;
+
+        case State::EXECUTE_TURN: {
+            // During turn execution: cap at 40% nominal for sharp cornering stability.
+            // The 60 kg robot cannot track a 1m-radius arc at full speed.
+            publishVelocity(linearVel * 0.40, angularVel);
+            
+            // Transition once marker is cleared and turn duration has elapsed
+            double elapsed = (this->now() - m_turnStartTime).seconds();
+            if (!m_leftMarker && !m_rightMarker && elapsed >= m_turnDuration) {
+                p_stateMachine->transitionTo(State::RESUME_TRACKING, "JUNCTION_CLEARED");
+                publishControllerState();
+            }
+            break;
         }
-        publishVelocity(linearVel, angularVel);
-    } 
-    else if (currentState == State::JUNCTION_DETECTED) {
-        // Slow to 60% nominal approaching junction, keep steering active
-        publishVelocity(linearVel * 0.60, angularVel);
-    } 
-    else if (currentState == State::EXECUTE_TURN) {
-        // During turn execution: cap at 40% nominal for sharp cornering stability.
-        // The 60 kg robot cannot track a 1m-radius arc at full speed.
-        publishVelocity(linearVel * 0.40, angularVel);
-        
-        // Transition once marker is cleared and turn duration has elapsed
-        double elapsed = (this->now() - m_turnStartTime).seconds();
-        if (!m_leftMarker && !m_rightMarker && elapsed >= m_turnDuration) {
-            p_stateMachine->transitionTo(State::RESUME_TRACKING, "JUNCTION_CLEARED");
+
+        case State::RESUME_TRACKING:
+            // Resume full nominal tracking
+            publishVelocity(linearVel, angularVel);
+            p_stateMachine->transitionTo(State::FOLLOW_LINE, "RESUMED");
             publishControllerState();
-        }
-    } 
-    else if (currentState == State::RESUME_TRACKING) {
-        // Resume full nominal tracking
-        publishVelocity(linearVel, angularVel);
-        p_stateMachine->transitionTo(State::FOLLOW_LINE, "RESUMED");
-        publishControllerState();
-    } 
-    else if (currentState == State::ERROR) {
-        publishVelocity(0.0, 0.0);
+            break;
+
+        case State::ERROR:
+            publishVelocity(0.0, 0.0);
+            break;
+
+        default:
+            break;
     }
 
     // Throttled logging (1.0 second throttle)

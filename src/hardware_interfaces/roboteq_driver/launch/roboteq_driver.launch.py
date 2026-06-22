@@ -8,16 +8,17 @@ def generate_launch_description():
     # Directories
     driver_dir = get_package_share_directory('roboteq_driver')
 
-    # Files
-    params_file = os.path.join(driver_dir, 'config', 'params.yaml')
-
     # 1. Standalone Roboteq CAN Driver Node
     roboteq_driver_node = Node(
         package='roboteq_driver',
         executable='roboteq_driver_node',
         name='roboteq_driver_node',
         output='screen',
-        parameters=[params_file]
+        parameters=[{
+            'can_interface': os.environ.get('CAN_INTERFACE', 'can0'),
+            'cmd_topic': os.environ.get('CMD_TOPIC', '/cmd_rpm'),
+            'feedback_topic': os.environ.get('FEEDBACK_TOPIC', '/drive/feedback')
+        }]
     )
 
     return LaunchDescription([

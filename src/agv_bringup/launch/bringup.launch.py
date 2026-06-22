@@ -16,7 +16,6 @@ def generate_launch_description():
     desc_dir = get_package_share_directory('robot_description')
 
     # Files
-    params_file = os.path.join(driver_dir, 'config', 'params.yaml')
     controllers_file = os.path.join(driver_dir, 'config', 'controllers.yaml')
     urdf_file = os.path.join(desc_dir, 'urdf', 'robot.urdf.xacro')
 
@@ -35,11 +34,18 @@ def generate_launch_description():
         parameters=[robot_description]
     ))
 
-    # 2. ros2_control Node (Hardware Interface Manager - Always runs, loads different plugins via URDF)
+    # 2. ros2_control Node (Hardware Interface Manager)
     nodes.append(Node(
         package='controller_manager',
         executable='ros2_control_node',
-        parameters=[robot_description, controllers_file],
+        parameters=[
+            robot_description,
+            controllers_file,
+            {
+                'diff_drive_controller.wheel_separation': float(os.environ.get('WHEEL_BASE', '0.512')),
+                'diff_drive_controller.wheel_radius': float(os.environ.get('WHEEL_RADIUS', '0.08'))
+            }
+        ],
         output='screen'
     ))
 
