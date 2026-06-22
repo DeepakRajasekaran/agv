@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import "./App.css";
 import CADSketcher from "./components/CADSketcher";
 import CADToolbar from "./components/CADToolbar";
 import GridCanvas from "./components/GridCanvas";
@@ -64,6 +63,17 @@ function App() {
         }
       })
       .catch(err => console.error("Error loading active map:", err));
+  }, []);
+
+  // ── Navigation Event Listener ───────────────────────────────────────────
+  useEffect(() => {
+    const handleNavigate = (e) => {
+      if (e.detail) {
+        setActiveView(e.detail);
+      }
+    };
+    window.addEventListener("navigate", handleNavigate);
+    return () => window.removeEventListener("navigate", handleNavigate);
   }, []);
 
   // ── Polling: Robot Pose, Plan, Diagnostics ──────────────────────────────
@@ -205,10 +215,11 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: 'var(--color-surface)' }}>
+    <div className="bg-surface dark:bg-surface text-on-surface h-screen overflow-hidden flex flex-col font-body-md select-none">
       {/* ── Global Header ──────────────────────────────────────────── */}
       <GlobalHeader
         activeMapName="ASSEMBLY LINE 1"
+        activeView={activeView}
         onEstop={handleEstop}
         editMode={editMode}
         onToggleEdit={(mode) => {
@@ -227,11 +238,7 @@ function App() {
       />
 
       {/* ── Main Content Area ──────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        flex: 1,
-        paddingTop: 'var(--header-height)',
-      }}>
+      <div className="flex flex-1 pt-16">
         {/* ── Left Sidebar ─────────────────────────────────────────── */}
         <LeftSidebar
           activeView={activeView}
@@ -244,49 +251,17 @@ function App() {
         />
 
         {/* ── Center Canvas (Map Studio) ───────────────────────────── */}
-        <main style={{
-          flex: 1,
-          marginLeft: 'var(--sidebar-left-width)',
-          marginRight: 'var(--sidebar-right-width)',
-          height: 'calc(100vh - var(--header-height))',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
+        <main className="flex-1 ml-0 md:ml-64 mr-0 md:mr-80 h-[calc(100vh-64px)] relative bg-[#0F172A] overflow-hidden flex flex-col">
           {/* Canvas Label Overlay */}
-          <div style={{
-            position: 'absolute',
-            top: 'var(--space-md)',
-            left: 'var(--space-md)',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-outline-variant)',
-            borderRadius: 'var(--radius-default)',
-            padding: 'var(--space-sm) var(--space-md)',
-            padding: 'var(--space-sm) var(--space-md)',
-            gap: 8,
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-on-surface-variant)" strokeWidth="2">
-              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" />
-            </svg>
-            <span className="font-label-caps" style={{ color: 'var(--color-on-surface)' }}>
+          <div className="absolute top-md left-md z-10 flex items-center bg-surface border border-outline-variant rounded p-sm shadow-md opacity-90">
+            <span className="material-symbols-outlined text-[20px] text-on-surface-variant mr-2">map</span>
+            <span className="font-headline-sm text-headline-sm font-label-caps text-label-caps text-on-surface">
               MAP STUDIO : {editMode ? 'EDIT MODE' : 'LIVE VIEW'}
             </span>
           </div>
 
-          {/* Edit Mode Toggle */}
-          <div style={{
-            position: 'absolute',
-            top: 'var(--space-md)',
-            right: 'var(--space-md)',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
+          {/* Edit Mode Toggle / Toolbar */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
             {editMode ? (
               <>
                 <CADToolbar
@@ -297,13 +272,6 @@ function App() {
                   undo={undo}
                   handleClearSketch={handleClearSketch}
                 />
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleLoadMap}
-                  style={{ fontSize: 11 }}
-                >
-                  SAVE REVISION
-                </button>
               </>
             ) : null}
           </div>
@@ -524,49 +492,24 @@ function App() {
           </div>
 
           {/* Simulation Control Floating Panel */}
-          <div style={{
-            position: 'absolute',
-            bottom: 'var(--space-md)',
-            right: 'var(--space-md)',
-            zIndex: 30,
-            background: 'var(--color-panel-bg)',
-            border: '1px solid var(--color-panel-border)',
-            borderRadius: 'var(--radius-default)',
-            padding: 'var(--space-md)',
-            width: 220,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 'var(--space-sm)',
-            }}>
-              <span className="font-label-caps" style={{
-                color: 'var(--color-on-surface)',
-                borderTop: '2px solid var(--color-text-muted)',
-                paddingTop: 4,
-                fontSize: 10,
-              }}>
-                SIMULATION CONTROL
-              </span>
-              <span style={{ color: 'var(--color-on-surface-variant)', fontSize: 14 }}>⠿</span>
+          <div className="absolute bottom-6 right-6 z-30 bg-[#1E293B] border border-[#334155] rounded shadow-lg p-4 w-64 cursor-move">
+            <div className="flex items-center justify-between mb-2 cursor-grab">
+              <span className="font-label-caps text-[12px] font-bold text-[#dae2fd] tracking-[0.05em] border-t-2 border-[#94A3B8] pt-1">SIMULATION CONTROL</span>
+              <span className="material-symbols-outlined text-[16px] text-[#d1c6ab]">drag_indicator</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              <button
-                className="btn-ghost"
+            <div className="flex flex-col gap-2">
+              <button 
                 onClick={() => handleInjectFault('tape_loss')}
-                style={{ justifyContent: 'flex-start', fontSize: 11 }}
+                className="bg-transparent border border-[#4d4632] text-[#dae2fd] font-label-caps text-[12px] font-bold tracking-[0.05em] py-2 px-4 rounded hover:bg-[#222a3d] hover:border-[#facc15] transition-all text-left flex items-center"
               >
-                <span className="indicator-dot indicator-dot-error" />
+                <span className="w-2 h-2 bg-[#EF4444] rounded-full mr-2"></span>
                 INJECT TAPE LOSS
               </button>
-              <button
-                className="btn-ghost"
+              <button 
                 onClick={() => handleInjectFault('obstacle')}
-                style={{ justifyContent: 'flex-start', fontSize: 11 }}
+                className="bg-transparent border border-[#4d4632] text-[#dae2fd] font-label-caps text-[12px] font-bold tracking-[0.05em] py-2 px-4 rounded hover:bg-[#222a3d] hover:border-[#facc15] transition-all text-left flex items-center"
               >
-                <span className="indicator-dot indicator-dot-error" />
+                <span className="w-2 h-2 bg-[#EF4444] rounded-full mr-2"></span>
                 INJECT OBSTACLE
               </button>
             </div>

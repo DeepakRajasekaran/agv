@@ -1,120 +1,80 @@
 import React from 'react';
 
-const GlobalHeader = ({ activeMapName, onEstop, onMapSelect, maps = [], editMode, onToggleEdit, simStatus, onOpenSimModal }) => {
+const GlobalHeader = ({ activeMapName, onEstop, onMapSelect, maps = [], activeView, editMode, onToggleEdit, simStatus, onOpenSimModal }) => {
   return (
-    <header style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: 'var(--header-height)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '0 var(--space-lg)',
-      background: 'var(--color-surface)',
-      borderBottom: '2px solid var(--color-outline-variant)',
-      zIndex: 50,
-    }}>
-      {/* Left: Branding */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-        <span 
-          className="font-headline-md" 
-          onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'mission_control' }))}
-          style={{ color: 'var(--color-primary)', letterSpacing: '0.05em', fontWeight: 600, cursor: 'pointer' }}
-        >
-          AGV-OS
-        </span>
+    <header className="fixed top-0 left-0 w-full h-16 flex justify-between items-center px-lg z-50 bg-surface dark:bg-surface border-b-2 border-outline-variant dark:border-outline-variant">
+      {/* Left Area: Branding & Context */}
+      {activeView === 'mission_control' ? (
+        <div className="flex items-center gap-md">
+          <span className="text-headline-md font-headline-md text-primary dark:text-primary tracking-tighter cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'mission_control' }))}>AGV-OS</span>
+          <div className="h-8 border-l border-outline-variant mx-2"></div>
+          <div className="flex items-center bg-surface-container-high border border-outline-variant rounded px-md py-xs cursor-pointer hover:border-primary transition-colors">
+            <span className="font-data-mono text-data-mono text-on-surface-variant mr-2">MAP:</span>
+            <span className="font-label-caps text-label-caps text-on-surface uppercase">
+              {activeMapName || "NO MAP SELECTED"}
+            </span>
+            <span className="material-symbols-outlined ml-2 text-[16px] text-on-surface-variant" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_drop_down</span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-lg">
+          <div className="text-headline-md font-headline-md text-primary dark:text-primary tracking-tighter cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'mission_control' }))}>AGV-OS</div>
+          <div className="h-8 w-px bg-outline-variant mx-sm"></div>
+          <div className="font-headline-sm text-on-surface">MAP STUDIO</div>
+        </div>
+      )}
 
-        <div className="divider-v" style={{ height: 24, background: 'var(--color-outline-variant)', width: 2 }} />
-
-        <span className="font-label-caps" style={{ color: 'var(--color-on-surface-variant)', letterSpacing: '0.1em' }}>
-          MAP STUDIO
-        </span>
-      </div>
-
-      {/* Right: Actions + Icons + E-Stop */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+      {/* Right Area: Actions */}
+      <div className="flex items-center gap-md">
         
-        {/* Save Revision Button */}
-        <button 
-          className="btn btn-secondary" 
-          onClick={() => console.log('Save Revision')}
-          style={{ fontSize: 'var(--fs-label-caps)', display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-          SAVE REVISION
-        </button>
-
-        {/* Start / Restart Simulation Button (Replacing Deploy to Fleet) */}
-        {simStatus === 'running' ? (
+        {/* Mission Control specific actions */}
+        {activeView === 'mission_control' && (
           <button 
-            className="btn" 
-            onClick={() => onOpenSimModal(true)}
-            style={{ 
-              fontSize: 'var(--fs-label-caps)', 
-              background: 'var(--color-primary)', 
-              color: 'var(--color-surface)',
-              border: 'none',
-              display: 'flex', alignItems: 'center', gap: 8
-            }}
+            className="bg-transparent border-2 border-[#94A3B8] text-[#F8FAFC] font-label-caps text-label-caps px-md py-sm rounded hover:bg-surface-container-high transition-colors flex items-center"
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'fleet' }))}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-3.23 3.63" />
-            </svg>
-            RESTART SIM
-          </button>
-        ) : (
-          <button 
-            className="btn" 
-            onClick={() => onOpenSimModal(false)}
-            style={{ 
-              fontSize: 'var(--fs-label-caps)', 
-              background: 'var(--color-primary)', 
-              color: 'var(--color-surface)',
-              border: 'none',
-              display: 'flex', alignItems: 'center', gap: 8
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            START SIM
+            <span className="w-2 h-2 rounded-full bg-secondary mr-2"></span>
+            FLEET STATUS
           </button>
         )}
 
-        <div className="divider-v" style={{ height: 32 }} />
+        {/* Map Studio specific actions */}
+        {activeView === 'map_studio' && (
+          <>
+            <button 
+              className="flex items-center gap-sm px-4 py-2 border-2 border-outline text-on-surface font-label-caps text-label-caps rounded hover:bg-surface-container-high transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>save</span>
+              SAVE REVISION
+            </button>
+            
+            <button 
+              onClick={onOpenSimModal}
+              className={`flex items-center gap-sm px-4 py-2 font-label-caps text-label-caps font-bold rounded transition-colors ${
+                simStatus === 'running' ? 'bg-[#EF4444] text-[#F8FAFC]' : 'bg-primary-container text-on-primary-container hover:bg-primary-fixed'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {simStatus === 'running' ? 'restart_alt' : 'rocket_launch'}
+              </span>
+              {simStatus === 'running' ? 'RESTART SIMULATION' : 'START SIMULATION'}
+            </button>
+          </>
+        )}
 
-        {/* E-STOP */}
-        <button
-          className="btn btn-emergency"
-          onClick={onEstop}
-          style={{ padding: '8px 24px', fontSize: 14, background: 'transparent', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}
-        >
-          ⚠ E-STOP
+        <button aria-label="notifications" className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded transition-colors ml-2">
+          <span className="material-symbols-outlined">notifications</span>
+        </button>
+        <button aria-label="settings" className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high rounded transition-colors">
+          <span className="material-symbols-outlined">settings</span>
         </button>
 
-        <div className="divider-v" style={{ height: 32 }} />
+        <div className="h-8 border-l border-outline-variant mx-2"></div>
 
-        {/* Notification Bell */}
-        <button className="btn-icon" title="Notifications">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-on-surface-variant)" strokeWidth="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
+        <button onClick={onEstop} className="bg-[#EF4444] text-[#F8FAFC] font-headline-sm text-headline-sm font-label-caps text-label-caps px-xl py-sm rounded font-bold pulse-estop shadow-lg hover:bg-red-600 transition-colors border-2 border-red-700 active:scale-95 flex items-center gap-xs">
+          <span className="material-symbols-outlined">warning</span> E-STOP
         </button>
-
-        {/* Settings */}
-        <button className="btn-icon" title="Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-on-surface-variant)" strokeWidth="2">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-          </svg>
-        </button>
+        
       </div>
     </header>
   );

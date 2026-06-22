@@ -1,15 +1,62 @@
-@import './design-system.css';
+/* Material Symbols */
+.material-symbols-outlined { 
+  font-family: 'Material Symbols Outlined'; 
+  font-weight: normal; 
+  font-style: normal; 
+  font-size: 24px; 
+  line-height: 1; 
+  letter-spacing: normal; 
+  text-transform: none; 
+  display: inline-block; 
+  white-space: nowrap; 
+  word-wrap: normal; 
+  direction: ltr; 
+  -webkit-font-smoothing: antialiased; 
+}
 
-body, html {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  font-family: var(--font-body);
-  font-size: var(--fs-body-md);
-  line-height: var(--lh-body-md);
-  background-color: var(--color-surface);
-  color: var(--color-on-surface);
+/* Grid Background Pattern */
+.bg-grid-pattern, .grid-bg {
+    background-image: 
+        linear-gradient(to right, #334155 1px, transparent 1px),
+        linear-gradient(to bottom, #334155 1px, transparent 1px);
+    background-size: 40px 40px;
 }
-* {
-  box-sizing: border-box;
+
+.grid-bg-major {
+    background-image: 
+        linear-gradient(to right, #4d4632 2px, transparent 2px),
+        linear-gradient(to bottom, #4d4632 2px, transparent 2px);
+    background-size: 200px 200px;
 }
+
+/* Pulse Animation for AGV */
+@keyframes radarPulse {
+    0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+    70% { box-shadow: 0 0 0 20px rgba(250, 204, 21, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+.pulse-agv {
+    animation: radarPulse 2s infinite;
+}
+
+/* E-Stop Pulse */
+@keyframes estopPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { transform: scale(1.02); box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.2); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+.pulse-estop {
+    animation: estopPulse 2s infinite ease-in-out;
+}
+
+/* High Contrast Focus */
+*:focus-visible {
+    outline: 2px solid #FACC15;
+    outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #4d4632; }

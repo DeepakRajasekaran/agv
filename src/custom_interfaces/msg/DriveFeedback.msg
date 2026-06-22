@@ -1,0 +1,9 @@
+# DriveFeedback.msg
+int32 counts_left
+int32 counts_right
+int32 hall_left
+int32 hall_right
+float32 speed_left
+float32 speed_right
+float32 feedback_left
+float32 feedback_right

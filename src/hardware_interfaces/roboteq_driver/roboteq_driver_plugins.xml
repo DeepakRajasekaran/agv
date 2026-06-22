@@ -1,0 +1,9 @@
+<library path="roboteq_hardware_interface">
+  <class name="roboteq_driver/HardwareInterface"
+         type="roboteq_driver::HardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control SystemInterface plugin acting as an abstraction bridge over ROS topics to the Roboteq CAN node.
+    </description>
+  </class>
+</library>

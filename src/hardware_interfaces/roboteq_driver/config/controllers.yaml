@@ -1,0 +1,44 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+
+    wheel_separation: 0.512
+    wheel_radius: 0.08
+
+    use_stamped_vel: false
+
+    # Odometry publishing
+    odom_frame_id: odom
+    base_frame_id: base_link
+    publish_rate: 100.0  # Hz
+    open_loop: false
+    enable_odom_tf: true
+
+    # Velocity and acceleration limits
+    linear:
+      x:
+        has_velocity_limits: true
+        max_velocity: 3.0
+        min_velocity: -3.0
+        has_acceleration_limits: true
+        max_acceleration: 5.0
+        min_acceleration: -5.0
+    angular:
+      z:
+        has_velocity_limits: true
+        max_velocity: 4.0
+        min_velocity: -4.0
+        has_acceleration_limits: true
+        max_acceleration: 8.0
+        min_acceleration: -8.0

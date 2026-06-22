@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot name="turtlebot">
+  <!-- Minimal robot base link -->
+  <link name="base_link"/>
+
+  <!-- Left wheel joint -->
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <link name="left_wheel"/>
+
+  <!-- Right wheel joint -->
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <link name="right_wheel"/>
+
+  <!-- ros2_control integration -->
+  <ros2_control name="RoboteqSystem" type="system">
+    <hardware>
+      <plugin>kinematics/RoboteqHardwareInterface</plugin>
+      <param name="can_interface">${CAN_INTERFACE}</param>
+      <param name="wheel_radius">${WHEEL_RADIUS}</param>
+      <param name="wheel_base">${WHEEL_BASE}</param>
+      <param name="gear_ratio">${GEAR_RATIO}</param>
+      <param name="ticks_per_rev">${TICKS_PER_REV}</param>
+      <param name="run_mode">${RUN_MODE}</param>
+      <param name="left_joint_name">left_wheel_joint</param>
+      <param name="right_joint_name">right_wheel_joint</param>
+    </hardware>
+    <joint name="left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+</robot>

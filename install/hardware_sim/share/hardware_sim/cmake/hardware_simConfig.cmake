@@ -1,1 +1,0 @@
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/ament_cmake_core/hardware_simConfig.cmake

@@ -1,1 +1,0 @@
-/home/lucifer/anscer_workspace/LineFollower/build/nav_server/ament_cmake_environment_hooks/local_setup.bash

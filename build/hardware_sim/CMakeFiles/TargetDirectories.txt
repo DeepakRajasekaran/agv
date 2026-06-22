@@ -1,9 +1,0 @@
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/uninstall.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/hardware_sim_uninstall.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/test.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/edit_cache.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/rebuild_cache.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/list_install_components.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/install.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/install/local.dir
-/home/lucifer/anscer_workspace/LineFollower/build/hardware_sim/CMakeFiles/install/strip.dir

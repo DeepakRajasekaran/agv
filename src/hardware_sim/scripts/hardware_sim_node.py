@@ -18,6 +18,10 @@ from std_msgs.msg import Float32, Bool, String
 from geometry_msgs.msg import Twist, Pose2D
 from nav_msgs.msg import Path
 import sys
+import socket
+import struct
+import threading
+from custom_interfaces.msg import DriveFeedback, DriveDiagnostics, WheelRpm
 
 # Add the script's directory to sys.path to find relative imports
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -48,9 +52,20 @@ class HardwareSimNode(Node):
         self.data.qpos[5] = 0.0  # qy
         self.data.qpos[6] = 0.0  # qz
         
-        # Robot physical parameters
-        self.wheel_base = 0.512  # L
-        self.wheel_radius = 0.08 # R
+        # Robot physical parameters and configs loaded dynamically
+        self.declare_parameter('wheel_base', float(os.environ.get('WHEEL_BASE', '0.512')))
+        self.declare_parameter('wheel_radius', float(os.environ.get('WHEEL_RAD', '0.08')))
+        self.declare_parameter('gear_ratio', float(os.environ.get('GEAR_RATIO', '1.0')))
+        self.declare_parameter('ticks_per_rev', float(os.environ.get('TICKS_PER_REV', '2048.0')))
+        self.declare_parameter('use_can', False)
+        self.declare_parameter('can_interface', 'vcan0')
+
+        self.wheel_base = self.get_parameter('wheel_base').get_parameter_value().double_value
+        self.wheel_radius = self.get_parameter('wheel_radius').get_parameter_value().double_value
+        self.gear_ratio = self.get_parameter('gear_ratio').get_parameter_value().double_value
+        self.ticks_per_rev = self.get_parameter('ticks_per_rev').get_parameter_value().double_value
+        self.use_can = self.get_parameter('use_can').get_parameter_value().bool_value
+        self.can_interface = self.get_parameter('can_interface').get_parameter_value().string_value
         
         # ROS 2 Publishers
         self.pub_track_pos = self.create_publisher(Float32, '/sensor/track_position', 10)
@@ -62,12 +77,29 @@ class HardwareSimNode(Node):
         self.pub_tag_id = self.create_publisher(String, '/sensor/tag_id', 10)
         self.pub_tag_cmd = self.create_publisher(String, '/sensor/tag_command', 10)
         self.pub_pose = self.create_publisher(Pose2D, '/robot_pose', 10)
+
+        # ROS 2 Telemetry & Command
+        self.pub_feedback_sim = self.create_publisher(DriveFeedback, '/drive/feedback_sim', 10)
+        self.pub_diagnostics_sim = self.create_publisher(DriveDiagnostics, '/drive/diagnostics_sim', 10)
+        self.sub_cmd_rpm_sim = self.create_subscription(WheelRpm, '/cmd_rpm_sim', self.cmd_rpm_callback, 10)
         
         # ROS 2 Subscribers
-        self.sub_cmd_vel = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
+        self.declare_parameter('subscribe_cmd_vel', False)
+        self.subscribe_cmd_vel = self.get_parameter('subscribe_cmd_vel').get_parameter_value().bool_value
+        if self.subscribe_cmd_vel:
+            self.sub_cmd_vel = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
+        else:
+            self.sub_cmd_vel = None
         self.sub_select_track = self.create_subscription(String, '/sensor/select_track', self.select_track_callback, 10)
         self.sub_fault = self.create_subscription(String, '/sim/inject_fault', self.fault_callback, 10)
         self.sub_plan = self.create_subscription(Path, '/plan', self.plan_callback, 10)
+        
+        # SocketCAN initialization
+        self.can_sock = None
+        self.can_thread = None
+        self.can_running = False
+        if self.use_can:
+            self.init_can()
         
         # Fault injection state
         self.sensor_dropout_active = False
@@ -105,6 +137,68 @@ class HardwareSimNode(Node):
         self.data.actuator('right_wheel_motor').ctrl[0] = -v_r
         
         self.get_logger().debug(f"[CMD_VEL] v={v:.3f}, omega={omega:.3f} | ctrl_l={-v_l:.3f}, ctrl_r={-v_r:.3f}")
+
+    def init_can(self):
+        try:
+            self.can_sock = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+            self.can_sock.bind((self.can_interface,))
+            self.can_sock.settimeout(0.05)
+            self.can_running = True
+            self.can_thread = threading.Thread(target=self.can_recv_loop, daemon=True)
+            self.can_thread.start()
+            self.get_logger().info(f"Simulator connected to CAN interface: {self.can_interface}")
+        except Exception as e:
+            self.get_logger().error(f"Failed to bind to CAN interface '{self.can_interface}': {e}")
+            self.use_can = False
+
+    def can_recv_loop(self):
+        CAN_FRAME_FORMAT = "=IB3x8s"
+        while self.can_running:
+            try:
+                cf, _ = self.can_sock.recvfrom(16)
+                if len(cf) < 16:
+                    continue
+                can_id, dlc, data_bytes = struct.unpack(CAN_FRAME_FORMAT, cf)
+                can_id &= socket.CAN_EFF_MASK
+                self.parse_can_frame(can_id, data_bytes[:dlc])
+            except socket.timeout:
+                continue
+            except Exception as e:
+                if not self.can_running:
+                    break
+                time.sleep(0.01)
+
+    def parse_can_frame(self, can_id, data):
+        if can_id == 0x201:
+            if len(data) >= 8:
+                left_rpm, right_rpm = struct.unpack("<ii", data[:8])
+                self.apply_rpm_commands(left_rpm, right_rpm)
+        elif can_id == 0x202:
+            if len(data) >= 4:
+                mode, estop, reset, dout = struct.unpack("<BBBB", data[:4])
+                if estop == 1:
+                    self.apply_rpm_commands(0, 0)
+
+    def send_can_frame(self, can_id, payload):
+        CAN_FRAME_FORMAT = "=IB3x8s"
+        try:
+            payload = payload.ljust(8, b'\x00')
+            frame = struct.pack(CAN_FRAME_FORMAT, can_id, len(payload), payload)
+            self.can_sock.send(frame)
+        except Exception as e:
+            self.get_logger().error(f"Failed to send CAN frame {hex(can_id)}: {e}")
+
+    def apply_rpm_commands(self, left_rpm, right_rpm):
+        # RPM to rad/s (joint speed command)
+        v_l = (left_rpm / self.gear_ratio) * (2.0 * math.pi / 60.0)
+        v_r = (right_rpm / self.gear_ratio) * (2.0 * math.pi / 60.0)
+        
+        self.data.actuator('left_wheel_motor').ctrl[0] = -v_l
+        self.data.actuator('right_wheel_motor').ctrl[0] = -v_r
+
+    def cmd_rpm_callback(self, msg: WheelRpm):
+        if not self.use_can:
+            self.apply_rpm_commands(msg.left, msg.right)
 
     def plan_callback(self, msg: Path):
         self.current_plan = msg
@@ -373,10 +467,77 @@ class HardwareSimNode(Node):
             if not tag_detected:
                 self.active_tag_id = None
                 
+            # 5. Calculate and publish simulated telemetry
+            # Get joint positions/velocities from MuJoCo
+            qpos_l = self.data.joint('left_wheel_joint').qpos[0]
+            qpos_r = self.data.joint('right_wheel_joint').qpos[0]
+            qvel_l = self.data.joint('left_wheel_joint').qvel[0]
+            qvel_r = self.data.joint('right_wheel_joint').qvel[0]
+
+            # Compute ticks and RPM speed (negated due to coordinate orientation)
+            ticks_left = int(-qpos_l * self.gear_ratio * self.ticks_per_rev / (2.0 * math.pi))
+            ticks_right = int(-qpos_r * self.gear_ratio * self.ticks_per_rev / (2.0 * math.pi))
+            rpm_left = -qvel_l * self.gear_ratio * 60.0 / (2.0 * math.pi)
+            rpm_right = -qvel_r * self.gear_ratio * 60.0 / (2.0 * math.pi)
+
+            # Get motor currents from actuator forces
+            torque_l = abs(self.data.actuator('left_wheel_motor').force[0])
+            torque_r = abs(self.data.actuator('right_wheel_motor').force[0])
+            current_l = torque_l * 0.2
+            current_r = torque_r * 0.2
+
+            # Publish ROS feedback message
+            feedback_msg = DriveFeedback()
+            feedback_msg.counts_left = ticks_left
+            feedback_msg.counts_right = ticks_right
+            feedback_msg.hall_left = ticks_left
+            feedback_msg.hall_right = ticks_right
+            feedback_msg.speed_left = float(rpm_left)
+            feedback_msg.speed_right = float(rpm_right)
+            feedback_msg.feedback_left = float(rpm_left)
+            feedback_msg.feedback_right = float(rpm_right)
+            self.pub_feedback_sim.publish(feedback_msg)
+
+            # Publish ROS diagnostics message
+            diagnostics_msg = DriveDiagnostics()
+            diagnostics_msg.voltage = 24.3 - (current_l + current_r) * 0.05
+            diagnostics_msg.current_left = float(current_l)
+            diagnostics_msg.current_right = float(current_r)
+            diagnostics_msg.drive_fault = 0
+            diagnostics_msg.motor_fault_left = 0
+            diagnostics_msg.motor_fault_right = 0
+            diagnostics_msg.digital_input = 0
+            diagnostics_msg.digital_output = 0
+            diagnostics_msg.temp_controller = 36.5
+            diagnostics_msg.temp_motor_left = 31.0
+            diagnostics_msg.temp_motor_right = 31.5
+            self.pub_diagnostics_sim.publish(diagnostics_msg)
+
+            # Transmit CAN frames if enabled
+            if self.use_can:
+                loop_idx = self.step_count % 10
+                if loop_idx == 0 or loop_idx == 5:
+                    payload = struct.pack("<ii", int(rpm_left), int(rpm_right))
+                    self.send_can_frame(0x181, payload)
+                elif loop_idx == 1 or loop_idx == 6:
+                    payload = struct.pack("<ii", ticks_left, ticks_right)
+                    self.send_can_frame(0x182, payload)
+                elif loop_idx == 2:
+                    volt_raw = int(diagnostics_msg.voltage * 10.0)
+                    curr1_raw = int(diagnostics_msg.current_left * 10.0)
+                    curr2_raw = int(diagnostics_msg.current_right * 10.0)
+                    payload = struct.pack("<HhhBB", volt_raw, curr1_raw, curr2_raw, int(diagnostics_msg.drive_fault), int(diagnostics_msg.temp_controller))
+                    self.send_can_frame(0x183, payload)
+
             try:
                 time.sleep(0.01) # Sleep for 10ms (100Hz frequency)
             except Exception:
                 break
+
+        # Cleanup CAN socket
+        self.can_running = False
+        if self.can_sock:
+            self.can_sock.close()
 
         if not self.headless and self.viewer:
             self.viewer.close()

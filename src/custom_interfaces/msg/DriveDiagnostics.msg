@@ -1,0 +1,12 @@
+# DriveDiagnostics.msg
+float32 voltage
+float32 current_left
+float32 current_right
+int32 drive_fault
+int32 motor_fault_left
+int32 motor_fault_right
+int32 digital_input
+int32 digital_output
+float32 temp_controller
+float32 temp_motor_left
+float32 temp_motor_right

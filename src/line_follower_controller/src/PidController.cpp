@@ -112,7 +112,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         "/nav_vel", 10, std::bind(&PidController::navVelCallback, this, std::placeholders::_1));
 
     // ROS 2 Publishers
-    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
     m_pubSelectTrack = this->create_publisher<std_msgs::msg::String>("/sensor/select_track", 10);
     m_pubControllerState = this->create_publisher<std_msgs::msg::String>("/controller_state", 10);
 
@@ -231,7 +231,12 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     // Compute PID steering
     double angularVel = computeSteering(error, dt);
 
-    double linearVel = base_speed;
+    double abs_error = std::abs(error);
+    double error_scale = 1.0 - (0.7 * (std::min(abs_error, 0.090) / 0.090));
+    double abs_steer = std::abs(angularVel);
+    double steer_scale = 1.0 - (0.7 * (std::min(abs_steer, 1.5) / 1.5));
+    double speed_scale = std::min(error_scale, steer_scale);
+    double linearVel = base_speed * speed_scale;
 
     // Inverse kinematics to calculate wheel velocities (RPMs)
     double v_l = linearVel - (angularVel * m_wheelBase / 2.0);
@@ -499,9 +504,11 @@ void PidController::publishVelocity(double linearVel, double angularVel)
         angularVel = 0.0;
     }
 
-    geometry_msgs::msg::Twist twistMsg;
-    twistMsg.linear.x = linearVel;
-    twistMsg.angular.z = angularVel;
+    geometry_msgs::msg::TwistStamped twistMsg;
+    twistMsg.header.stamp = this->now();
+    twistMsg.header.frame_id = "base_link";
+    twistMsg.twist.linear.x = linearVel;
+    twistMsg.twist.angular.z = angularVel;
     m_pubCmdVel->publish(twistMsg);
 }
 

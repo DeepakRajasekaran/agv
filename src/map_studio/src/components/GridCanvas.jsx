@@ -269,32 +269,36 @@ const GridCanvas = ({ children, style = {}, initialScale = 1, draggable = true, 
       )}
 
       {/* Floating Zoom Controls */}
-      <div style={{
-        position: 'absolute',
-        bottom: 'var(--space-md)',
-        right: 'var(--space-md)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        zIndex: 20
-      }}>
-        <button className="btn-icon" onClick={() => setScaleSafe(Math.min(200, scale * 1.2))} title="Zoom In" style={{ background: 'var(--color-surface-container)', border: '1px solid var(--color-outline-variant)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <div className="absolute bottom-6 right-6 bg-surface-container border-2 border-outline-variant rounded-lg flex flex-col z-10 shadow-lg">
+        <button 
+          onClick={() => setScaleSafe(Math.min(200, scale * 1.2))} 
+          title="Zoom In" 
+          className="p-2 hover:bg-surface-container-high text-on-surface border-b-2 border-outline-variant transition-colors flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined">add</span>
         </button>
-        <button className="btn-icon" onClick={() => setScaleSafe(Math.max(0.05, scale / 1.2))} title="Zoom Out" style={{ background: 'var(--color-surface-container)', border: '1px solid var(--color-outline-variant)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        </button>
-        <button className="btn-icon" onClick={() => {
-          setScaleSafe(initialScale);
-          if (size.w > 0 && size.h > 0) {
-            const canvasW = size.w - RULER;
-            const canvasH = size.h - RULER;
-            const centeredPos = { x: canvasW / 2, y: canvasH / 2 };
-            if (onStagePosChange) onStagePosChange(centeredPos);
-            else setInternalStagePos(centeredPos);
-          }
-        }} title="Reset View" style={{ background: 'var(--color-surface-container)', border: '1px solid var(--color-outline-variant)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <div 
+          onClick={() => {
+            setScaleSafe(initialScale);
+            if (size.w > 0 && size.h > 0) {
+              const canvasW = size.w - RULER;
+              const canvasH = size.h - RULER;
+              const centeredPos = { x: canvasW / 2, y: canvasH / 2 };
+              if (onStagePosChange) onStagePosChange(centeredPos);
+              else setInternalStagePos(centeredPos);
+            }
+          }}
+          title="Reset View"
+          className="p-2 font-data-mono text-center text-xs text-primary border-b-2 border-outline-variant cursor-pointer hover:bg-surface-container-high transition-colors"
+        >
+          {Math.round(scale * 100)}%
+        </div>
+        <button 
+          onClick={() => setScaleSafe(Math.max(0.05, scale / 1.2))} 
+          title="Zoom Out" 
+          className="p-2 hover:bg-surface-container-high text-on-surface transition-colors flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined">remove</span>
         </button>
       </div>
     </div>

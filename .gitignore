@@ -1,0 +1,22 @@
+# ROS 2 build directories
+build/
+install/
+log/
+
+# Log files
+*.log
+MUJOCO_LOG.TXT
+
+# Python
+__pycache__/
+*.pyc
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+
+build/
+install/
+log/
+

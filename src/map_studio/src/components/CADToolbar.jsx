@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   SelectionPlus, Hammer, LineSegment, Ruler,
-  ArrowUUpLeft, Trash, GpsFix, Equals, ArrowUp, ArrowRight, Rows, VectorTwo, Anchor, ChartPieSlice, Angle, ArrowsLeftRight
+  ArrowUUpLeft, Trash, GpsFix, Equals, ArrowUp, ArrowRight, Rows, VectorTwo, Anchor, ChartPieSlice, ArrowsLeftRight
 } from '@phosphor-icons/react';
 
 const CADToolbar = ({
@@ -17,64 +17,100 @@ const CADToolbar = ({
   children
 }) => {
   return (
-    <div style={{ display: 'flex', gap: 5, background: '#222', padding: '2px 8px', borderRadius: 6, alignItems: 'center' }}>
-      <button onClick={() => setActiveTool('select')} title="Select"
-        style={{ background: activeTool === 'select' ? '#1a3a5c' : 'transparent', color: 'white', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <SelectionPlus size={16} weight="bold" />
+    <div className="bg-surface-container border-2 border-outline-variant rounded-lg p-1 flex items-center gap-1 shadow-lg">
+      <button 
+        onClick={() => setActiveTool('select')} 
+        title="Select"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${activeTool === 'select' ? 'bg-surface-container-highest text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'}`}
+      >
+        <SelectionPlus size={20} weight="bold" />
       </button>
 
-      <div style={{ width: 1, height: 16, background: '#333', margin: '0 4px' }} />
+      <div className="w-px h-6 bg-outline-variant mx-1"></div>
       
-      <button onClick={onConstructionClick ? onConstructionClick : () => setIsConstructionMode(!isConstructionMode)} title="Toggle Construction Mode"
-        style={{ background: isConstructionMode ? '#5c4d1a' : 'transparent', color: isConstructionMode ? '#ff9800' : '#888', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-         <Hammer size={16} weight="bold" />
+      <button 
+        onClick={onConstructionClick ? onConstructionClick : () => setIsConstructionMode(!isConstructionMode)} 
+        title="Toggle Construction Mode"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${isConstructionMode ? 'bg-[#5c4d1a] text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'}`}
+      >
+         <Hammer size={20} weight="bold" />
       </button>
-      <button onClick={() => setIsBidirectional(!isBidirectional)} title="Toggle Bidirectional Path"
-        style={{ background: isBidirectional ? '#5c1a5c' : 'transparent', color: isBidirectional ? '#e040fb' : '#888', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-         <ArrowsLeftRight size={16} weight="bold" />
-      </button>
-      <button onClick={() => setActiveTool('line')} title="Line"
-        style={{ background: activeTool === 'line' ? '#1a3a5c' : 'transparent', color: 'white', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <LineSegment size={16} weight="bold" />
-      </button>
-      <button onClick={() => setActiveTool('sector')} title="Curve/Spline"
-        style={{ background: activeTool === 'sector' ? '#1a3a5c' : 'transparent', color: 'white', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <ChartPieSlice size={16} weight="bold" />
-      </button>
-      <button onClick={() => setActiveTool('dimension')} title="Dimension"
-        style={{ background: activeTool === 'dimension' ? '#1a3a5c' : 'transparent', color: 'white', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <Ruler size={16} weight="bold" />
-      </button>
-      
-      <div style={{ width: 1, height: 16, background: '#444', margin: '0 2px' }} />
 
-      <button onClick={undo} title="Undo (Ctrl+Z)"
-        style={{ background: 'transparent', color: '#aaa', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <ArrowUUpLeft size={16} weight="bold" />
+      <button 
+        onClick={() => setIsBidirectional(!isBidirectional)} 
+        title="Toggle Bidirectional Path"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${isBidirectional ? 'bg-secondary-container text-on-secondary-container' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-secondary'}`}
+      >
+         <ArrowsLeftRight size={20} weight="bold" />
       </button>
-      <button onClick={handleClearSketch} title="Clear All Sketch"
-        style={{ background: 'transparent', color: '#ff5252', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-        <Trash size={16} weight="bold" />
+
+      <button 
+        onClick={() => setActiveTool('line')} 
+        title="Draw Path / Line"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${activeTool === 'line' ? 'bg-surface-container-highest text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'}`}
+      >
+        <LineSegment size={20} weight="bold" />
+      </button>
+
+      <button 
+        onClick={() => setActiveTool('sector')} 
+        title="Curve/Spline"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${activeTool === 'sector' ? 'bg-surface-container-highest text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'}`}
+      >
+        <ChartPieSlice size={20} weight="bold" />
+      </button>
+
+      <button 
+        onClick={() => setActiveTool('dimension')} 
+        title="Dimension"
+        className={`p-2 rounded transition-colors flex items-center justify-center ${activeTool === 'dimension' ? 'bg-surface-container-highest text-primary' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary'}`}
+      >
+        <Ruler size={20} weight="bold" />
       </button>
       
-      <div style={{ width: 1, height: 16, background: '#444', margin: '0 4px' }} />
+      <div className="w-px h-6 bg-outline-variant mx-1"></div>
 
-      <div style={{ display: 'flex', gap: 2 }}>
+      <button 
+        onClick={undo} 
+        title="Undo (Ctrl+Z)"
+        className="p-2 rounded text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors flex items-center justify-center"
+      >
+        <ArrowUUpLeft size={20} weight="bold" />
+      </button>
+      <button 
+        onClick={handleClearSketch} 
+        title="Clear All Sketch"
+        className="p-2 rounded text-error hover:bg-error-container hover:text-on-error-container transition-colors flex items-center justify-center"
+      >
+        <Trash size={20} weight="bold" />
+      </button>
+      
+      <div className="w-px h-6 bg-outline-variant mx-1"></div>
+
+      <div className="flex gap-1">
           {[
             ['coincide', GpsFix], ['equal', Equals], ['vertical', ArrowUp], 
             ['horizontal', ArrowRight], ['parallel', Rows], ['perpendicular', VectorTwo], ['anchor', Anchor]
           ].map(([t, Icon]) => (
-            <button key={t} onClick={() => setActiveTool(t)} title={t.charAt(0).toUpperCase() + t.slice(1)}
-              style={{ background: activeTool === t ? '#1a4a25' : 'transparent', color: '#00e5ff', border: 'none', padding: '4px', cursor: 'pointer', borderRadius: 4 }}>
-              <Icon size={16} weight={t === 'coincide' ? "fill" : "bold"} />
+            <button 
+              key={t} 
+              onClick={() => setActiveTool(t)} 
+              title={t.charAt(0).toUpperCase() + t.slice(1)}
+              className={`p-2 rounded transition-colors flex items-center justify-center ${activeTool === t ? 'bg-[#1a4a25] text-secondary' : 'text-secondary opacity-70 hover:bg-surface-container-high hover:opacity-100'}`}
+            >
+              <Icon size={18} weight={t === 'coincide' ? "fill" : "bold"} />
             </button>
          ))}
       </div>
 
-      <div style={{ width: 1, height: 16, background: '#333', margin: '0 4px' }} />
+      <div className="w-px h-6 bg-outline-variant mx-1"></div>
 
       {/* Render context-specific buttons (like Finalize) here */}
-      {children}
+      {children && (
+        <div className="ml-1 flex items-center">
+          {children}
+        </div>
+      )}
     </div>
   );
 };

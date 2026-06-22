@@ -13,7 +13,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
-#include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <memory>
@@ -47,7 +47,7 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_subNavVel;
 
     // ROS 2 Publishers
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_pubCmdVel;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr m_pubCmdVel;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_pubSelectTrack;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_pubControllerState;
 

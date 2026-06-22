@@ -1,2 +1,0 @@
-[console_scripts]
-navigator_node = navigation_server.navigator_node:main
