@@ -47,14 +47,18 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(
-  DIRECTORY include/
+install(DIRECTORY
+  include/
   DESTINATION include
 )
 
-install(
-  DIRECTORY launch config urdf
+install(DIRECTORY
+  launch
+  config
+  urdf
   DESTINATION share/${PROJECT_NAME}
 )
+
+ament_export_include_directories(include)
 
 ament_package()
