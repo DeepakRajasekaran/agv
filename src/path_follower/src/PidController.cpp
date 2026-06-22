@@ -15,6 +15,27 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#include "geometry_msgs/msg/twist_stamped.hpp"
+#include <cstdint>
+
+using namespace std::chrono_literals;
+
+namespace {
+    // FNV-1a constexpr hash for string switch/case statements
+    constexpr uint32_t const_hash(const char* str) {
+        uint32_t h = 2166136261u;
+        for (int i = 0; str[i] != '\0'; ++i) {
+            h ^= static_cast<uint32_t>(str[i]);
+            h *= 16777619u;
+        }
+        return h;
+    }
+
+    uint32_t runtime_hash(const std::string& str) {
+        return const_hash(str.c_str());
+    }
+}
+
 namespace path_follower {
 
 /**
@@ -376,14 +397,21 @@ void PidController::tagIdCallback(const std_msgs::msg::String::SharedPtr msg)
         // 1. Find tag coordinates
         double tag_x = 0.0, tag_y = 0.0;
         bool tag_found = false;
-        if (tagId == "TAG_LEFT") {
-            tag_x = -5.0; tag_y = 0.0; tag_found = true;
-        } else if (tagId == "TAG_TOP") {
-            tag_x = -2.0; tag_y = 2.0; tag_found = true;
-        } else if (tagId == "TAG_RIGHT") {
-            tag_x = 5.0; tag_y = 0.0; tag_found = true;
-        } else if (tagId == "TAG_BOT") {
-            tag_x = 2.0; tag_y = -2.0; tag_found = true;
+        switch (runtime_hash(tagId)) {
+            case const_hash("TAG_LEFT"):
+                tag_x = -5.0; tag_y = 0.0; tag_found = true;
+                break;
+            case const_hash("TAG_TOP"):
+                tag_x = -2.0; tag_y = 2.0; tag_found = true;
+                break;
+            case const_hash("TAG_RIGHT"):
+                tag_x = 5.0; tag_y = 0.0; tag_found = true;
+                break;
+            case const_hash("TAG_BOT"):
+                tag_x = 2.0; tag_y = -2.0; tag_found = true;
+                break;
+            default:
+                break;
         }
 
         if (m_currentPlan.poses.empty()) {
@@ -586,44 +614,59 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
     result.reason = "Success";
 
     for (const auto& param : parameters) {
-        if (param.get_name() == "pid.kp") {
-            m_kp = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter pid.kp updated to %.3f", m_kp);
-        } else if (param.get_name() == "pid.ki") {
-            m_ki = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter pid.ki updated to %.3f", m_ki);
-        } else if (param.get_name() == "pid.kd") {
-            m_kd = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter pid.kd updated to %.3f", m_kd);
-        } else if (param.get_name() == "pid.windup_limit") {
-            m_windupLimit = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter pid.windup_limit updated to %.3f", m_windupLimit);
-        } else if (param.get_name() == "pid.max_output") {
-            m_maxOutput = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter pid.max_output updated to %.3f", m_maxOutput);
-        } else if (param.get_name() == "robot.nominal_speed") {
-            m_nominalSpeed = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter robot.nominal_speed updated to %.3f", m_nominalSpeed);
-        } else if (param.get_name() == "robot.max_rpm") {
-            m_maxRpm = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter robot.max_rpm updated to %.3f", m_maxRpm);
-        } else if (param.get_name() == "robot.wheel_base") {
-            m_wheelBase = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter robot.wheel_base updated to %.3f", m_wheelBase);
-        } else if (param.get_name() == "robot.wheel_radius") {
-            m_wheelRadius = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter robot.wheel_radius updated to %.3f", m_wheelRadius);
-        } else if (param.get_name() == "safety.lost_threshold") {
-            m_lostThreshold = param.as_double();
-            p_faultMonitor->setLostThreshold(m_lostThreshold);
-            RCLCPP_INFO(this->get_logger(), "Parameter safety.lost_threshold updated to %.3f", m_lostThreshold);
-        } else if (param.get_name() == "safety.max_frozen_steps") {
-            m_maxFrozenSteps = static_cast<int>(param.as_int());
-            p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
-            RCLCPP_INFO(this->get_logger(), "Parameter safety.max_frozen_steps updated to %d", m_maxFrozenSteps);
-        } else if (param.get_name() == "safety.turn_duration") {
-            m_turnDuration = param.as_double();
-            RCLCPP_INFO(this->get_logger(), "Parameter safety.turn_duration updated to %.3f", m_turnDuration);
+        switch (runtime_hash(param.get_name())) {
+            case const_hash("pid.kp"):
+                m_kp = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter pid.kp updated to %.3f", m_kp);
+                break;
+            case const_hash("pid.ki"):
+                m_ki = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter pid.ki updated to %.3f", m_ki);
+                break;
+            case const_hash("pid.kd"):
+                m_kd = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter pid.kd updated to %.3f", m_kd);
+                break;
+            case const_hash("pid.windup_limit"):
+                m_windupLimit = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter pid.windup_limit updated to %.3f", m_windupLimit);
+                break;
+            case const_hash("pid.max_output"):
+                m_maxOutput = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter pid.max_output updated to %.3f", m_maxOutput);
+                break;
+            case const_hash("robot.nominal_speed"):
+                m_nominalSpeed = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter robot.nominal_speed updated to %.3f", m_nominalSpeed);
+                break;
+            case const_hash("robot.max_rpm"):
+                m_maxRpm = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter robot.max_rpm updated to %.3f", m_maxRpm);
+                break;
+            case const_hash("robot.wheel_base"):
+                m_wheelBase = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter robot.wheel_base updated to %.3f", m_wheelBase);
+                break;
+            case const_hash("robot.wheel_radius"):
+                m_wheelRadius = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter robot.wheel_radius updated to %.3f", m_wheelRadius);
+                break;
+            case const_hash("safety.lost_threshold"):
+                m_lostThreshold = param.as_double();
+                p_faultMonitor->setLostThreshold(m_lostThreshold);
+                RCLCPP_INFO(this->get_logger(), "Parameter safety.lost_threshold updated to %.3f", m_lostThreshold);
+                break;
+            case const_hash("safety.max_frozen_steps"):
+                m_maxFrozenSteps = static_cast<int>(param.as_int());
+                p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
+                RCLCPP_INFO(this->get_logger(), "Parameter safety.max_frozen_steps updated to %d", m_maxFrozenSteps);
+                break;
+            case const_hash("safety.turn_duration"):
+                m_turnDuration = param.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter safety.turn_duration updated to %.3f", m_turnDuration);
+                break;
+            default:
+                break;
         }
     }
     return result;
