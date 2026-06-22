@@ -216,9 +216,9 @@ hardware_interface::return_type HardwareInterface::read(
   m_leftWheelPosition += left_pos_delta;
   m_rightWheelPosition += right_pos_delta;
 
-  // Compute velocities (rad/s) from feedback motor RPM
-  m_leftWheelVelocity = (m_leftFeedbackRpm / m_gearRatio) * (2.0 * M_PI / 60.0);
-  m_rightWheelVelocity = (m_rightFeedbackRpm / m_gearRatio) * (2.0 * M_PI / 60.0);
+  // Compute velocities (rad/s) from feedback drive RPM (wheel RPM)
+  m_leftWheelVelocity = m_leftFeedbackRpm * (2.0 * M_PI / 60.0);
+  m_rightWheelVelocity = m_rightFeedbackRpm * (2.0 * M_PI / 60.0);
 
   // Postconditions
   assert(std::isfinite(m_leftWheelPosition));
@@ -249,9 +249,10 @@ hardware_interface::return_type HardwareInterface::write(
   assert(std::isfinite(m_leftWheelVelocityCommand));
   assert(std::isfinite(m_rightWheelVelocityCommand));
 
-  // Convert joint velocities command (rad/s) to target motor shaft RPM
-  double left_rpm = m_leftWheelVelocityCommand * m_gearRatio * 60.0 / (2.0 * M_PI);
-  double right_rpm = m_rightWheelVelocityCommand * m_gearRatio * 60.0 / (2.0 * M_PI);
+  // Convert joint velocities command (rad/s) to target drive RPM (wheel RPM)
+  // The standalone driver node applies the gear reduction to get motor RPM.
+  double left_rpm = m_leftWheelVelocityCommand * 60.0 / (2.0 * M_PI);
+  double right_rpm = m_rightWheelVelocityCommand * 60.0 / (2.0 * M_PI);
 
   // Publish speed command to the standalone driver node over ROS
   auto cmd_msg = custom_interfaces::msg::WheelRpm();

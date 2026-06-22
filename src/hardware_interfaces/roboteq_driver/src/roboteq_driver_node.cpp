@@ -34,11 +34,13 @@ public:
     this->declare_parameter<std::string>("feedback_topic", "/drive/feedback");
     this->declare_parameter<std::string>("diagnostics_topic", "/drive/diagonistics");
     this->declare_parameter<std::string>("cmd_topic", "/cmd_rpm");
+    this->declare_parameter<double>("gear_ratio", 1.0);
 
     std::string can_interface = this->get_parameter("can_interface").as_string();
     std::string feedback_topic = this->get_parameter("feedback_topic").as_string();
     std::string diagnostics_topic = this->get_parameter("diagnostics_topic").as_string();
     std::string cmd_topic = this->get_parameter("cmd_topic").as_string();
+    m_gearRatio = this->get_parameter("gear_ratio").as_double();
 
     // Initialize Driver
     m_driver = std::make_unique<roboteq_driver::RoboteqCanDriver>(can_interface);
@@ -48,7 +50,7 @@ public:
       throw std::runtime_error("CAN interface binding failed");
     }
     m_driver->start();
-    RCLCPP_INFO(this->get_logger(), "Roboteq CAN Driver started on %s", can_interface.c_str());
+    RCLCPP_INFO(this->get_logger(), "Roboteq CAN Driver started on %s | Gear Ratio: %.2f", can_interface.c_str(), m_gearRatio);
 
     // Publishers
     m_pubFeedback = this->create_publisher<custom_interfaces::msg::DriveFeedback>(feedback_topic, 10);
@@ -86,7 +88,11 @@ private:
       RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Cannot send command, CAN disconnected!");
       return;
     }
-    m_driver->sendSpeedCommand(static_cast<int32_t>(msg->left), static_cast<int32_t>(msg->right));
+    // drive_rpm is sent from the controllers. Motor needs motor_rpm.
+    // motor_rpm = drive_rpm * gear_ratio
+    int32_t left_motor_rpm = static_cast<int32_t>(msg->left * m_gearRatio);
+    int32_t right_motor_rpm = static_cast<int32_t>(msg->right * m_gearRatio);
+    m_driver->sendSpeedCommand(left_motor_rpm, right_motor_rpm);
   }
 
   void timerCallback()
@@ -99,12 +105,12 @@ private:
 
     roboteq_driver::TelemetryData t = m_driver->getTelemetry();
 
-    // Publish Feedback
+    // Publish Feedback (convert motor_rpm back to drive_rpm for controllers)
     auto fb_msg = custom_interfaces::msg::DriveFeedback();
     fb_msg.counts_left = t.left_encoder;
     fb_msg.counts_right = t.right_encoder;
-    fb_msg.feedback_left = static_cast<float>(t.left_rpm);
-    fb_msg.feedback_right = static_cast<float>(t.right_rpm);
+    fb_msg.feedback_left = static_cast<float>(t.left_rpm) / static_cast<float>(m_gearRatio);
+    fb_msg.feedback_right = static_cast<float>(t.right_rpm) / static_cast<float>(m_gearRatio);
     m_pubFeedback->publish(fb_msg);
 
     // Publish Diagnostics
@@ -166,6 +172,7 @@ private:
   int m_logCounter;
   uint8_t m_estopActive;
   uint8_t m_digitalOut;
+  double m_gearRatio;
 };
 
 int main(int argc, char ** argv)

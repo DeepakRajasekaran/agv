@@ -17,7 +17,8 @@ def generate_launch_description():
         parameters=[{
             'can_interface': os.environ.get('CAN_INTERFACE', 'can0'),
             'cmd_topic': os.environ.get('CMD_TOPIC', '/cmd_rpm'),
-            'feedback_topic': os.environ.get('FEEDBACK_TOPIC', '/drive/feedback')
+            'feedback_topic': os.environ.get('FEEDBACK_TOPIC', '/drive/feedback'),
+            'gear_ratio': float(os.environ.get('GEAR_RATIO', '1.0'))
         }]
     )
 
