@@ -20,3 +20,4 @@ build/
 install/
 log/
 
+/test/
