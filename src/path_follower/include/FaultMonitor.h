@@ -13,7 +13,7 @@
 #include <string>
 #include <chrono>
 
-namespace line_follower {
+namespace path_follower {
 
 class FaultMonitor {
 public:
@@ -54,6 +54,6 @@ private:
     bool m_lineLostTimerActive;
 };
 
-} // namespace line_follower
+} // namespace path_follower
 
 #endif // FAULT_MONITOR_H

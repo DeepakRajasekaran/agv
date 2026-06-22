@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>line_follower_controller</name>
+  <name>path_follower</name>
   <version>1.0.0</version>
   <description>ANSCER compliant ROS 2 Line Follower Controller Package</description>
   <maintainer email="deepak.rajasekaran@anscer.com">Deepak Rajasekaran</maintainer>

@@ -47,9 +47,9 @@ def run_test(kp, kd):
     print(f"==========================================")
     
     # 1. Start play.launch.py in background, logging to launch_output.log
-    launch_log = open("/home/lucifer/anscer_workspace/LineFollower/launch_output.log", "w")
+    launch_log = open("/home/lucifer/anscer_workspace/agv/launch_output.log", "w")
     launch_proc = subprocess.Popen(
-        ["ros2", "launch", "line_follower_controller", "play.launch.py", "headless:=true"],
+        ["ros2", "launch", "path_follower", "play.launch.py", "headless:=true"],
         stdout=launch_log,
         stderr=launch_log
     )
@@ -63,9 +63,9 @@ def run_test(kp, kd):
     # 2. Set parameters
     try:
         # Set KP
-        subprocess.run(["ros2", "param", "set", "/line_follower_controller_node", "pid.kp", str(kp)], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["ros2", "param", "set", "/path_follower_node", "pid.kp", str(kp)], check=True, stdout=subprocess.DEVNULL)
         # Set KD
-        subprocess.run(["ros2", "param", "set", "/line_follower_controller_node", "pid.kd", str(kd)], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["ros2", "param", "set", "/path_follower_node", "pid.kd", str(kd)], check=True, stdout=subprocess.DEVNULL)
         print("Parameters set successfully.")
     except Exception as e:
         print(f"Failed to set parameters: {e}")
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # Always clean any stale processes first
     subprocess.run(["pkill", "-f", "ros2"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["pkill", "-f", "hardware_sim_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(["pkill", "-f", "line_follower_controller_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["pkill", "-f", "path_follower_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["pkill", "-f", "nav_server_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.0)
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
             # First, clean any stale processes
             subprocess.run(["pkill", "-f", "ros2"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["pkill", "-f", "hardware_sim_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.run(["pkill", "-f", "line_follower_controller_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["pkill", "-f", "path_follower_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["pkill", "-f", "nav_server_node"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(1.0)
             

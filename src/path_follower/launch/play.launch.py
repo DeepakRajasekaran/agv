@@ -7,7 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    controller_share = get_package_share_directory('line_follower_controller')
+    controller_share = get_package_share_directory('path_follower')
     params_file = os.path.join(controller_share, 'config', 'params.yaml')
 
     headless_arg = DeclareLaunchArgument(
@@ -48,9 +48,9 @@ def generate_launch_description():
         kinematics_launch,
         # Run Controller
         Node(
-            package='line_follower_controller',
-            executable='line_follower_controller_node',
-            name='line_follower_controller_node',
+            package='path_follower',
+            executable='path_follower_node',
+            name='path_follower_node',
             parameters=[params_file],
             output='screen'
         ),

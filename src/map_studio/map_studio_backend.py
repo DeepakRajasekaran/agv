@@ -106,7 +106,7 @@ class MapStudioNode(Node):
         self.goal_handle = None
 
         # ── Parameter Client ───────────────────────────────────────────────
-        self._param_client = self.create_client(SetParameters, '/line_follower_controller/set_parameters')
+        self._param_client = self.create_client(SetParameters, '/path_follower/set_parameters')
 
         # ── E-Stop flag ────────────────────────────────────────────────────
         self.estop_active = False
@@ -215,7 +215,7 @@ class MapStudioNode(Node):
     def tune_controller(self, params_dict):
         """Send parameters to the PID controller dynamically."""
         if not self._param_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().error("Parameter service /line_follower_controller/set_parameters not available!")
+            self.get_logger().error("Parameter service /path_follower/set_parameters not available!")
             return False
 
         req = SetParameters.Request()
@@ -408,7 +408,7 @@ class MapStudioHTTPHandler(BaseHTTPRequestHandler):
                 headless_str = "true" if headless else "false"
                 import subprocess
                 add_fault_log(f"SIMULATION STARTING (headless={headless_str})...")
-                subprocess.Popen(["ros2", "launch", "line_follower_controller", "play.launch.py", f"headless:={headless_str}"])
+                subprocess.Popen(["ros2", "launch", "path_follower", "play.launch.py", f"headless:={headless_str}"])
                 self._json_response({"success": True, "message": "Simulation started"})
             except Exception as e:
                 self._error_response(str(e))
@@ -423,7 +423,7 @@ class MapStudioHTTPHandler(BaseHTTPRequestHandler):
                 subprocess.run(["pkill", "-f", "play.launch.py"])
                 add_fault_log(f"SIMULATION RESTARTING (headless={headless_str})...")
                 # Start a new one detached
-                subprocess.Popen(["ros2", "launch", "line_follower_controller", "play.launch.py", f"headless:={headless_str}"])
+                subprocess.Popen(["ros2", "launch", "path_follower", "play.launch.py", f"headless:={headless_str}"])
                 self._json_response({"success": True, "message": "Simulation restarted"})
             except Exception as e:
                 self._error_response(str(e))

@@ -22,4 +22,4 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /home/$USERNAME/.bashrc
 
 USER $USERNAME
-WORKDIR /home/$USERNAME/anscer_workspace/LineFollower
+WORKDIR /home/$USERNAME/anscer_workspace/agv

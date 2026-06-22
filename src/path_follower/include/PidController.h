@@ -23,7 +23,7 @@
 #include "NavigationStateMachine.h"
 #include "FaultMonitor.h"
 
-namespace line_follower {
+namespace path_follower {
 
 class PidController : public rclcpp::Node {
 public:
@@ -128,6 +128,6 @@ private:
     int m_logCounter;
 };
 
-} // namespace line_follower
+} // namespace path_follower
 
 #endif // PID_CONTROLLER_H

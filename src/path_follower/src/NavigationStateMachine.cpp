@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace line_follower {
+namespace path_follower {
 
 /**
  * @brief  Helper function to convert a State enum to a human-readable string.
@@ -103,4 +103,4 @@ void NavigationStateMachine::reset()
     assert(m_currentState == State::IDLE);
 }
 
-} // namespace line_follower
+} // namespace path_follower

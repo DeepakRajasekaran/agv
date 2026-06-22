@@ -22,7 +22,7 @@ This is the bridge that keeps the C++ control logic ignorant of whether it is in
 
 #### B. The Navigation & Control Stack (C++)
 
-* **Line Follower Controller (`line_follower_controller_node`):**
+* **Line Follower Controller (`path_follower_node`):**
 * A ROS 2 Lifecycle node operating at a strict 50Hz.
 * Subscribes to `agv_msgs/MagneticTrackData`.
 * **PID Logic:** Converts the cross-track error into a rotational velocity command (`angular.z`). If the error exceeds the fault boundary ($\pm$250mm), the state machine instantly transitions to `FAULT_LINE_LOST` and commands zero velocity (`linear.x = 0`).

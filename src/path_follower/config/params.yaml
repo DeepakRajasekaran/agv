@@ -1,4 +1,4 @@
-/line_follower_controller_node:
+/path_follower_node:
   ros__parameters:
     pid:
       kp: 5.0

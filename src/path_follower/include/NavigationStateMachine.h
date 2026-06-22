@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace line_follower {
+namespace path_follower {
 
 enum class State {
     IDLE,
@@ -45,6 +45,6 @@ private:
     State m_currentState;
 };
 
-} // namespace line_follower
+} // namespace path_follower
 
 #endif // NAVIGATION_STATE_MACHINE_H

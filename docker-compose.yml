@@ -23,7 +23,7 @@ services:
 
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw,Z
-      - /home/lucifer/anscer_workspace/LineFollower:/home/lucifer/anscer_workspace/LineFollower:rw,Z
+      - /home/lucifer/anscer_workspace/agv:/home/lucifer/anscer_workspace/agv:rw,Z
 
     stdin_open: true
     tty: true

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(line_follower_controller)
+project(path_follower)
 
 # Enable C++17 as standard for ROS 2
 add_compile_options(-std=c++17)
@@ -27,13 +27,13 @@ include_directories(
   include
 )
 
-add_executable(line_follower_controller_node
+add_executable(path_follower_node
   src/PidController.cpp
   src/NavigationStateMachine.cpp
   src/FaultMonitor.cpp
 )
 
-ament_target_dependencies(line_follower_controller_node
+ament_target_dependencies(path_follower_node
   rclcpp
   std_msgs
   geometry_msgs
@@ -42,7 +42,7 @@ ament_target_dependencies(line_follower_controller_node
 )
 
 # Install executable
-install(TARGETS line_follower_controller_node
+install(TARGETS path_follower_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

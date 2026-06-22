@@ -15,7 +15,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace line_follower {
+namespace path_follower {
 
 /**
  * @brief  Constructor of the PidController ROS 2 class.
@@ -24,7 +24,7 @@ namespace line_follower {
  * @param  options   Node options.
  */
 PidController::PidController(const rclcpp::NodeOptions& options)
-    : Node("line_follower_controller_node", options),
+    : Node("path_follower_node", options),
       m_kp(1.5),
       m_ki(0.02),
       m_kd(0.12),
@@ -627,7 +627,7 @@ void PidController::navVelCallback(const geometry_msgs::msg::Twist::SharedPtr ms
     m_navVelReceived = true;
 }
 
-} // namespace line_follower
+} // namespace path_follower
 
 /**
  * @brief  Main entry point starting the ROS 2 node.
@@ -635,7 +635,7 @@ void PidController::navVelCallback(const geometry_msgs::msg::Twist::SharedPtr ms
 int main(int argc, char* argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<line_follower::PidController>();
+    auto node = std::make_shared<path_follower::PidController>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

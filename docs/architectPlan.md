@@ -26,7 +26,7 @@ Implementation of differential drive kinematics bridging high-level ROS commands
 * **Capabilities:** Forward, Reverse, In-place rotation, Curved motion.
 
 ### Task 3 & 4 – Magnetic Line Following & PID Controller
-* **The `/line_follower_logic_node`:** A deterministic PID node.
+* **The `/agv_logic_node`:** A deterministic PID node.
   * **Input:** `Error = Tape Center Position - Robot Position` (Cross-track error).
   * **Math:** $Output = K_p(error) + K_i\int(error)dt + K_d\frac{d(error)}{dt}$
   * **Output:** Steering Correction (Angular-Z velocity).

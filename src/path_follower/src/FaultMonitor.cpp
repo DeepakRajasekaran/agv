@@ -12,7 +12,7 @@
 #include <sstream>
 #include <iomanip>
 
-namespace line_follower {
+namespace path_follower {
 
 /**
  * @brief  Constructor initializing the safety parameters and state variables.
@@ -193,4 +193,4 @@ void FaultMonitor::setMaxFrozenSteps(int maxFrozenSteps)
     m_maxFrozenSteps = maxFrozenSteps;
 }
 
-} // namespace line_follower
+} // namespace path_follower
