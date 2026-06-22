@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="turtlebot">
+  <xacro:arg name="mode" default="HARDWARE"/>
+  <xacro:arg name="sim_tool" default="MUJOCO"/>
+
   <!-- Load hardware parameters from the global YAML -->
   <xacro:property name="params_file" value="$(find roboteq_driver)/config/params.yaml"/>
   <xacro:property name="hw_params" value="${xacro.load_yaml(params_file)['hardware_interface']}"/>
@@ -26,15 +29,27 @@
   <!-- ros2_control integration -->
   <ros2_control name="RoboteqSystem" type="system">
     <hardware>
-      <plugin>roboteq_driver/HardwareInterface</plugin>
+      <xacro:if value="${'$(arg mode)' == 'HARDWARE'}">
+        <plugin>roboteq_driver/HardwareInterface</plugin>
+        <param name="feedback_topic">${hw_params['feedback_topic']}</param>
+        <param name="cmd_topic">${hw_params['cmd_topic']}</param>
+      </xacro:if>
+
+      <xacro:if value="${'$(arg mode)' == 'SIM'}">
+        <xacro:if value="${'$(arg sim_tool)' == 'MUJOCO'}">
+          <plugin>mujoco_ros2_control::MujocoRos2ControlPlugin</plugin>
+        </xacro:if>
+        <xacro:if value="${'$(arg sim_tool)' == 'GZ'}">
+          <plugin>ign_ros2_control/IGNROS2ControlPlugin</plugin>
+        </xacro:if>
+      </xacro:if>
+
       <param name="wheel_radius">${hw_params['wheel_radius']}</param>
       <param name="wheel_base">${hw_params['wheel_base']}</param>
       <param name="gear_ratio">${hw_params['gear_ratio']}</param>
       <param name="ticks_per_rev">${hw_params['ticks_per_rev']}</param>
       <param name="left_joint_name">${hw_params['left_joint_name']}</param>
       <param name="right_joint_name">${hw_params['right_joint_name']}</param>
-      <param name="feedback_topic">${hw_params['feedback_topic']}</param>
-      <param name="cmd_topic">${hw_params['cmd_topic']}</param>
     </hardware>
     <joint name="${hw_params['left_joint_name']}">
       <command_interface name="velocity"/>
