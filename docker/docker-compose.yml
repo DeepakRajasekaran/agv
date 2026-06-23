@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   roboteq_driver:
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
+    image: roboteq_driver_hardware:latest
     container_name: roboteq_driver_hardware
     # network_mode: host is required to access native SocketCAN interfaces (e.g., can0) from within the container
     network_mode: host
