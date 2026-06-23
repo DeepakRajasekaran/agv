@@ -81,7 +81,10 @@ case $CHOICE in
             --platform linux/arm64 \
             -t roboteq_driver_hardware:latest \
             -f docker/Dockerfile \
-            -o type=tar,dest=roboteq_driver_hardware.tar .
+            --load .
+            
+        echo "Exporting image using docker save..."
+        docker save roboteq_driver_hardware:latest -o roboteq_driver_hardware.tar
             
         # 3. Transfer image to target
         echo -e "\nStep 3: Transferring image tarball to Jetson..."
