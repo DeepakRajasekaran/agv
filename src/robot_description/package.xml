@@ -4,7 +4,7 @@
   <name>robot_description</name>
   <version>0.0.0</version>
   <description>The robot_description package containing URDF files</description>
-  <maintainer email="lucifer@todo.todo">lucifer</maintainer>
+  <maintainer email="manasa.murarisetty@todo.todo">Manasa Murarisetty</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

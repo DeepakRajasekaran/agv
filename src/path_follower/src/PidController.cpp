@@ -376,7 +376,7 @@ void PidController::rightTrackPosCallback(const std_msgs::msg::Float32::SharedPt
     assert(msg != nullptr);
     m_rightTrackPos = static_cast<double>(msg->data);
 }
-
+ 
 /**
  * @brief  Callback processing RFID tag reads.
  * @param  msg  Shared pointer to String.
