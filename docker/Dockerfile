@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     iproute2 \
     ros-humble-hardware-interface \
     ros-humble-pluginlib \
+    ros-humble-teleop-twist-keyboard \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws
