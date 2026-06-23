@@ -15,8 +15,3 @@
       lost_threshold: 0.25
       max_frozen_steps: 50
       turn_duration: 3.0
-
-/nav_server_node:
-  ros__parameters:
-    nominal_speed: 1.5
-
