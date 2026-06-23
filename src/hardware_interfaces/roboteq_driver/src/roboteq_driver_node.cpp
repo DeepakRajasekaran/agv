@@ -61,11 +61,11 @@ public:
       cmd_topic, 10, std::bind(&RoboteqDriverNode::cmdRpmCallback, this, std::placeholders::_1));
 
     // Services
-    m_srvEstop = this->create_service<std::srvs::srv::Trigger>(
+    m_srvEstop = this->create_service<std_srvs::srv::Trigger>(
       "~/trigger_estop", std::bind(&RoboteqDriverNode::triggerEstopCallback, this, std::placeholders::_1, std::placeholders::_2));
-    m_srvClearEstop = this->create_service<std::srvs::srv::Trigger>(
+    m_srvClearEstop = this->create_service<std_srvs::srv::Trigger>(
       "~/clear_estop", std::bind(&RoboteqDriverNode::clearEstopCallback, this, std::placeholders::_1, std::placeholders::_2));
-    m_srvResetFaults = this->create_service<std::srvs::srv::Trigger>(
+    m_srvResetFaults = this->create_service<std_srvs::srv::Trigger>(
       "~/reset_faults", std::bind(&RoboteqDriverNode::resetFaultsCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Timer for publishing telemetry

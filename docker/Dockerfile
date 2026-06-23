@@ -1,5 +1,5 @@
 # Stage 1: Build the workspace
-FROM ros:humble-ros-base AS builder
+FROM ros:jazzy-ros-base AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -9,10 +9,10 @@ RUN apt-get update && apt-get install -y \
     python3-colcon-common-extensions \
     python3-rosdep \
     can-utils \
-    ros-humble-hardware-interface \
-    ros-humble-pluginlib \
-    ros-humble-rclcpp \
-    ros-humble-rclcpp-lifecycle \
+    ros-jazzy-hardware-interface \
+    ros-jazzy-pluginlib \
+    ros-jazzy-rclcpp \
+    ros-jazzy-rclcpp-lifecycle \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws
@@ -21,18 +21,18 @@ WORKDIR /ros2_ws
 COPY src/ /ros2_ws/src/
 
 # Build the workspace without symlinks for a standalone install
-RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build"
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 
 # Stage 2: Runtime Image
-FROM ros:humble-ros-base
+FROM ros:jazzy-ros-base
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y \
     can-utils \
     iproute2 \
-    ros-humble-hardware-interface \
-    ros-humble-pluginlib \
-    ros-humble-teleop-twist-keyboard \
+    ros-jazzy-hardware-interface \
+    ros-jazzy-pluginlib \
+    ros-jazzy-teleop-twist-keyboard \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws

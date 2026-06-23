@@ -2,7 +2,7 @@
 set -e
 
 # Source ROS 2 environment
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 
 # Source workspace if it has been built
 if [ -f /ros2_ws/install/setup.bash ]; then

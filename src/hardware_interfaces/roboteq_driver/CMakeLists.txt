@@ -11,6 +11,7 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(custom_interfaces REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # 1. Hardware Interface Library
 add_library(roboteq_hardware_interface SHARED
@@ -33,6 +34,7 @@ target_include_directories(roboteq_driver_node PRIVATE include)
 ament_target_dependencies(roboteq_driver_node
   rclcpp
   custom_interfaces
+  std_srvs
 )
 
 # Export the library so others can find it via pluginlib
