@@ -30,13 +30,14 @@ case $CHOICE in
         echo "Container 'agv' is now running in Host Mode!"
         ;;
     2)
-        ensure_container_running
         echo "Which workspace do you want to build?"
         echo "  a) deepak_ws only"
         echo "  b) manasa_ws only"
         echo "  c) Both"
         echo -n "Enter choice [a-c]: "
         read -r WS_CHOICE
+        
+        ensure_container_running
         
         if [ "$WS_CHOICE" == "a" ]; then
             docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
