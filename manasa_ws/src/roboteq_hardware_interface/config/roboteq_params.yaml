@@ -1,0 +1,8 @@
+roboteq_interface:
+  ros__parameters:
+    can_interface: "can0"
+    node_id: 1
+    cmd_rpm_topic: "/cmd_rpm"
+    drive_feedback_topic: "/drive_feedback"
+    drive_diagnostics_topic: "/drive_diagnostics"
+    publish_rate_hz: 20.0

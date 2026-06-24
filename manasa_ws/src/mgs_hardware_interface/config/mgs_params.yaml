@@ -1,0 +1,21 @@
+mgs_interface:
+  ros__parameters:
+    can_interface: "can0"
+    node_id: 5
+    publish_rate_hz: 50.0
+    default_track: "left"
+    sensor_height_mm: 20.0
+
+    track_detect_topic: "/mgs/track_detect"
+    left_track_topic: "/mgs/left_track"
+    right_track_topic: "/mgs/right_track"
+    selected_track_topic: "/mgs/selected_track"
+    left_marker_topic: "/mgs/left_marker"
+    right_marker_topic: "/mgs/right_marker"
+    tape_cross_topic: "/mgs/tape_cross"
+    status_topic: "/mgs/status"
+    raw_sensor_topic: "/mgs/raw_sensor"
+    dominant_track_topic: "/mgs/dominant_track"
+    follow_left_topic: "/mgs/follow_left"
+    follow_right_topic: "/mgs/follow_right"
+    switch_track_service: "/mgs/switch_track"

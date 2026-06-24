@@ -1,0 +1,87 @@
+# * controllers.yaml
+#* ─────────────────
+# * Loaded by controller_manager (ros2_control_node) at startup.
+# *
+# * There are THREE controllers here:
+# *
+# *   1. controller_manager     – the manager itself (update rate)
+# *   2. joint_state_broadcaster – reads StateInterfaces and publishes
+# *                               /joint_states (needed by robot_state_publisher
+# *                               for TF and by RViz)
+# *   3. diff_drive_controller  – the official ros2_controllers package controller.
+# *                               Subscribes /cmd_vel, writes velocity commands to
+# *                               CommandInterfaces, reads StateInterfaces, publishes
+# *                               /odom and the odom->base_link TF.
+# *
+# * NOTE: wheel_separation and wheel_radius here must match the URDF <param> values
+# * and your physical robot. The diff_drive_controller uses them for odom math.
+# */
+
+controller_manager:
+  ros__parameters:
+    update_rate: 50   # Hz — control loop frequency (read+write called at this rate)
+    
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+# ── joint_state_broadcaster ───────────────────────────────────────────────────
+# Reads all exported StateInterfaces and publishes them as sensor_msgs/JointState
+# on /joint_states. This feeds robot_state_publisher so it can compute TF for
+# non-drive joints (caster, sensors, etc.).
+joint_state_broadcaster:
+  ros__parameters:
+    type: joint_state_broadcaster/JointStateBroadcaster
+    joints:
+      - left_wheel_joint
+      - right_wheel_joint
+    interfaces:
+      - position
+      - velocity
+
+
+# ── diff_drive_controller ──────────────────────────────────────────────────────
+# From the ros2_controllers package (already installed in jazzy).
+# This is the full kinematic controller — you do NOT need your old Python node.
+#
+# What it does every cycle:
+#   1. Reads /cmd_vel (Twist) from teleop / nav stack
+#   2. Applies inverse kinematics → desired wheel angular velocities (rad/s)
+#   3. Writes those to the CommandInterfaces (left/right_wheel_joint/velocity)
+#      → our write() picks these up and publishes /cmd_rpm
+#   4. Reads StateInterfaces (wheel positions & velocities)
+#      → our read() fills these from /drive_rpm
+#   5. Applies forward kinematics + dead-reckoning → publishes /odom + TF
+diff_drive_controller:
+  ros__parameters:
+    type: diff_drive_controller/DiffDriveController
+    # Must match URDF joint names exactly
+    left_wheel_names:  
+      - left_wheel_joint
+    right_wheel_names: 
+      - right_wheel_joint
+
+    # ── TUNE THESE to match your robot (same as URDF params) ─────────────
+    wheel_separation: 0.512    # metres — distance between wheel centres
+    wheel_radius:     0.08   # metres — wheel radius
+
+    # Odometry
+    publish_rate:       50.0       # Hz — how often to publish /odom
+    odom_frame_id:      "odom"
+    base_frame_id:      "base_link"
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+
+    # odom integration
+    open_loop: false          # false = use encoder feedback (StateInterfaces)
+    position_feedback: true
+    # TF
+    enable_odom_tf: true      # publishes odom → base_link TF
+
+    # Safety: zero commands if /cmd_vel is silent for this long (seconds)
+    cmd_vel_timeout: 0.5
+
+    # false = use geometry_msgs/Twist, true = use geometry_msgs/TwistStamped
+    use_stamped_vel: false

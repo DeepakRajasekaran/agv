@@ -1,0 +1,15 @@
+std_msgs/Header header
+float32 internal_volts
+float32 battery_volts
+float32 supply_5v
+float32 temp_heatsink_ch1
+float32 temp_heatsink_ch2
+float32 temp_mcu
+uint8 fault_flags
+uint8 status_flags
+uint16 motor_status_ch1
+uint16 motor_status_ch2
+uint8 hall_sensor_ch1
+uint8 hall_sensor_ch2
+string fault_flags_decoded
+string status_flags_decoded

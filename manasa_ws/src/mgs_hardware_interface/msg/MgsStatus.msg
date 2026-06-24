@@ -1,0 +1,15 @@
+std_msgs/Header header
+float64 left_track
+float64 right_track
+float64 selected_track
+bool track_detect
+bool left_marker
+bool right_marker
+bool tape_cross
+bool sensor_failure
+uint16 status
+int8 dominant_track
+int32[10] raw_sensor
+int32[10] zero_adj_sensor
+int32[10] user_ints
+bool[10] user_bools

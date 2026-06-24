@@ -1,0 +1,17 @@
+<!-- pluginlib registration
+     base_class_type must exactly match the base class used in PLUGINLIB_EXPORT_CLASS -->
+<library path="diff_drive_hardware">
+  <class
+    name="diff_drive_hardware/DiffDriveHardware"
+    type="diff_drive_hardware::DiffDriveHardware"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Differential-drive hardware interface plugin. Bridges the ros2_control
+      controller_manager to RPM-based motor driver topics:
+        reads  /drive_rpm (Float32MultiArray [left_rpm, right_rpm])
+        writes /cmd_rpm   (Float32MultiArray [left_rpm, right_rpm])
+      Kinematic parameters (wheel_radius, wheel_separation, gear_ratio) come
+      from the URDF hardware block.
+    </description>
+  </class>
+</library>

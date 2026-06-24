@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<!--
+  robot.urdf
+  ──────────
+  Minimal robot description with a ros2_control block.
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  TUNE THESE VALUES TO MATCH YOUR PHYSICAL ROBOT                  │
+  │  wheel_radius      – half of wheel_dia from your old params YAML │
+  │  wheel_separation  – same as wheel_base from old params YAML     │
+  │  gear_ratio        – motor revolutions per 1 wheel revolution     │
+  │  max_motor_rpm     – hard clamp on output RPM (0 = no clamp)     │
+  └──────────────────────────────────────────────────────────────────┘
+-->
+<robot name="my_robot">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       TF / URDF links & joints (needed by robot_state_publisher)
+       ═══════════════════════════════════════════════════════════════ -->
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.60 0.60 0.10"/>
+      </geometry>
+      <origin xyz="0 0 0.06" rpy="0 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.60 0.60 0.10"/>
+      </geometry>
+      <origin xyz="0 0 0.06" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="8.0"/>
+      <inertia ixx="0.05" ixy="0.0" ixz="0.0"
+               iyy="0.05" iyz="0.0" izz="0.05"/>
+    </inertial>
+  </link>
+
+  <!-- ── Left wheel ─────────────────────────────────────────────── -->
+  <joint name="left_wheel_joint" type="continuous">
+    <!--  y offset = wheel_separation / 2  -->
+    <origin xyz="0.0 0.256 0.0" rpy="-1.5707963 0 0"/>
+    <parent link="base_link"/>
+    <child  link="left_wheel_link"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="left_wheel_link">
+    <visual>
+      <geometry>
+        <!--  radius = wheel_radius, length = wheel width  -->
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="dark_grey">
+        <color rgba="0.2 0.2 0.2 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- ── Right wheel ────────────────────────────────────────────── -->
+  <joint name="right_wheel_joint" type="continuous">
+    <!--  y offset = -wheel_separation / 2  -->
+    <origin xyz="0.0 -0.256 0.0" rpy="1.5707963 0 0"/>
+    <parent link="base_link"/>
+    <child  link="right_wheel_link"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name="right_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- ── Optional caster (passive, keeps robot level for odom math) -->
+  <joint name="caster_joint" type="fixed">
+    <origin xyz="-0.18 0.0 -0.08" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child  link="caster_link"/>
+  </joint>
+  <link name="caster_link">
+    <visual>
+      <geometry><sphere radius="0.03"/></geometry>
+      <material name="grey"><color rgba="0.5 0.5 0.5 1.0"/></material>
+    </visual>
+    <collision><geometry><sphere radius="0.03"/></geometry></collision>
+    <inertial>
+      <mass value="0.2"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0"
+               iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- ── MGS1600 Magnetic Sensor ────────────────────────────────── -->
+  <joint name="mgs_sensor_joint" type="fixed">
+    <origin xyz="0.30 0.0 -0.06" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="mgs_sensor_link"/>
+  </joint>
+  <link name="mgs_sensor_link">
+    <visual>
+      <geometry><box size="0.165 0.025 0.030"/></geometry>
+      <material name="blue"><color rgba="0.0 0.3 0.8 1.0"/></material>
+    </visual>
+    <collision>
+      <geometry><box size="0.165 0.025 0.030"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.15"/>
+      <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       ros2_control block
+       ═══════════════════════════════════════════════════════════════
+       This is what controller_manager reads.
+
+       • <plugin>   → the pluginlib class name from plugin.xml
+       • <param>    → passed to our on_init() via info_.hardware_parameters
+       • joint names MUST match the URDF joints above AND controllers.yaml
+       ═══════════════════════════════════════════════════════════════ -->
+  <ros2_control name="DiffDriveHardware" type="system">
+    <hardware>
+      <!-- Our custom plugin (package/ClassName matching plugin XML) -->
+      <plugin>diff_drive_hardware/DiffDriveHardware</plugin>
+
+      <!-- ── TUNE THESE to match your robot ────────────────────── -->
+      <param name="wheel_radius">0.08</param>       <!-- metres, = wheel_dia / 2 -->
+      <param name="wheel_separation">0.512</param>    <!-- metres, = wheel_base    -->
+      <param name="gear_ratio">10.0</param>          <!-- motor rev / wheel rev   -->
+      <param name="max_motor_rpm">3000.0</param>      <!-- 0 = no clamp            -->
+    </hardware>
+
+    <joint name="left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface   name="position"/>
+      <state_interface   name="velocity"/>
+    </joint>
+
+    <joint name="right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface   name="position"/>
+      <state_interface   name="velocity"/>
+    </joint>
+  </ros2_control>
+
+</robot>

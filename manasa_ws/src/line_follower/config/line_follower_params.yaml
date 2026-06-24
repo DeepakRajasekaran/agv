@@ -1,0 +1,17 @@
+line_follower_node:
+  ros__parameters:
+    teleop_input_topic: "/cmd_vel"
+    corrected_output_topic: "/line_cmd_vel"
+    sensor_track_topic: "/mgs/selected_track"
+    
+    pid:
+      p: 0.005
+      i: 0.0001
+      d: 0.001
+      i_clamp_max: 0.3
+      i_clamp_min: -0.3
+      
+    max_angular_correction: 0.5
+    error_deadband_mm: 2.0
+    control_rate_hz: 50.0
+    pid_enabled: true
