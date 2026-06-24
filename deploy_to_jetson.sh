@@ -74,6 +74,10 @@ case $CHOICE in
         echo -e "\nStep 2: Triggering Docker build natively on the Jetson..."
         ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml build"
         
+        # 3. Cleanup source code
+        echo -e "\nStep 3: Cleaning up source code from Jetson host (leaving only the container)..."
+        ssh -t "$JETSON_USER@$JETSON_IP" "rm -rf $JETSON_DIR/deepak_ws $JETSON_DIR/manasa_ws"
+        
         echo -e "\n${GREEN}Build completed successfully on Jetson!${NC}"
         echo "To run the container on Jetson, execute:"
         echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml up -d'"

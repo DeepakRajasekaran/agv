@@ -52,5 +52,5 @@ COPY --from=builder /agv/deepak_ws/install /agv/deepak_ws/install
 COPY --from=builder /agv/manasa_ws/install /agv/manasa_ws/install
 
 ENTRYPOINT ["/entrypoint.sh"]
-# Run the launch file automatically
-CMD ["ros2", "launch", "agv_bringup", "bringup.launch.py"]
+# Idle by default so user can launch specific nodes manually
+CMD ["sleep", "infinity"]
