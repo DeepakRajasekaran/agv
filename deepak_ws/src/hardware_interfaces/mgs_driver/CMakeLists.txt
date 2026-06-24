@@ -10,7 +10,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 
-add_executable(mgs_driver_node src/mgs_driver_node.cpp)
+add_executable(mgs_driver_node src/MgsDriverNode.cpp)
 target_include_directories(mgs_driver_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
