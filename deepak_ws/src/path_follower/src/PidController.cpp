@@ -117,7 +117,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // ROS 2 Subscribers
     m_subTrackPos = this->create_subscription<std_msgs::msg::Float32>(
-        "/sensor/track_position", 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
+        "/sensor/track_position_test", 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
     m_subTrackDetect = this->create_subscription<std_msgs::msg::Bool>(
         "/sensor/track_detect", 10, std::bind(&PidController::trackDetectCallback, this, std::placeholders::_1));
     m_subLeftMarker = this->create_subscription<std_msgs::msg::Bool>(
@@ -132,7 +132,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         "/sensor/tape_cross", 10, std::bind(&PidController::tapeCrossCallback, this, std::placeholders::_1));
 
     // ROS 2 Publishers
-    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
+    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::TwistStamped>("/diff_drive_controller/cmd_vel", 10);
     m_pubControllerState = this->create_publisher<std_msgs::msg::String>("/controller_state", 10);
 
     // ROS 2 Services
@@ -229,7 +229,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double abs_steer = std::abs(angularVel);
     double steer_scale = 1.0 - (0.7 * (std::min(abs_steer, 1.5) / 1.5));
     double speed_scale = std::min(error_scale, steer_scale);
-    double linearVel = m_nominalSpeed * speed_scale;
+    double linearVel = m_nominalSpeed * speed_scale * 0.30; // Clamped to 30% for testing
 
     // Inverse kinematics for fault monitor saturation checking
     double v_l = linearVel - (angularVel * m_wheelBase / 2.0);
