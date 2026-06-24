@@ -11,6 +11,12 @@ export MODE=SIM
 export SIM_TOOL=MUJOCO
 
 # ==========================================
+# Build Settings
+# ==========================================
+# BUILD_MODE options: host, deployment
+export BUILD_MODE=host
+
+# ==========================================
 # Kinematic Properties
 # ==========================================
 export KINEMATIC_MODEL=DIFF_DRIVE

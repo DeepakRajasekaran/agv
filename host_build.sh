@@ -12,7 +12,8 @@ echo "4) Exit"
 echo -n "Enter choice [1-4]: "
 read -r CHOICE
 
-export BUILD_MODE=host
+# Source the AGV environment variables to get BUILD_MODE
+source ./agv_env.bash
 
 case $CHOICE in
     1)
