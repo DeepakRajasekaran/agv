@@ -117,10 +117,11 @@ case $CHOICE in
         echo -e "\nStep 4: Loading image into Jetson's Docker daemon..."
         ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar"
         
-        # 5. Sync Docker Compose config to run it easily
-        echo -e "\nStep 5: Syncing Docker Compose configuration to Jetson..."
+        # 5. Sync configuration files to Jetson
+        echo -e "\nStep 5: Syncing configuration files to Jetson..."
         ssh "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/docker"
         scp docker/docker-compose.yml "$JETSON_USER@$JETSON_IP:$JETSON_DIR/docker/docker-compose.yml"
+        scp agv_env.bash "$JETSON_USER@$JETSON_IP:$JETSON_DIR/agv_env.bash"
         
         echo -e "\n${GREEN}Cross-build and transfer completed successfully!${NC}"
         echo "To run the container on Jetson, execute:"

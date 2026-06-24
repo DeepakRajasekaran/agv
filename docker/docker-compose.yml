@@ -10,18 +10,5 @@ services:
     # network_mode: host is required to access native SocketCAN interfaces (e.g., can0) from within the container
     network_mode: host
     privileged: true
-    environment:
-      - MODE=${MODE}
-      - SIM_TOOL=${SIM_TOOL}
-      - BUILD_MODE=${BUILD_MODE}
-      - KINEMATIC_MODEL=${KINEMATIC_MODEL}
-      - WHEEL_BASE=${WHEEL_BASE}
-      - WHEEL_RADIUS=${WHEEL_RADIUS}
-      - GEAR_RATIO=${GEAR_RATIO}
-      - MAX_RPM=${MAX_RPM}
-      - TICKS_PER_REV=${TICKS_PER_REV}
-      - CAN_INTERFACE=${CAN_INTERFACE}
-      - FEEDBACK_TOPIC=${FEEDBACK_TOPIC}
-      - CMD_TOPIC=${CMD_TOPIC}
-      - LEFT_JOINT_NAME=${LEFT_JOINT_NAME}
-      - RIGHT_JOINT_NAME=${RIGHT_JOINT_NAME}
+    volumes:
+      - ../agv_env.bash:/agv_env.bash:ro

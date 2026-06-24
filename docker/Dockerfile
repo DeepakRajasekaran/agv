@@ -24,7 +24,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /agv
 
 # Add ROS setup to bashrc for interactive exec sessions
-RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
+RUN echo "if [ -f /agv_env.bash ]; then source /agv_env.bash; fi" >> ~/.bashrc && \
+    echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /agv/deepak_ws/install/setup.bash ]; then source /agv/deepak_ws/install/setup.bash; fi" >> ~/.bashrc && \
     echo "if [ -f /agv/manasa_ws/install/setup.bash ]; then source /agv/manasa_ws/install/setup.bash; fi" >> ~/.bashrc
 
