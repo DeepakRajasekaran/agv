@@ -57,14 +57,23 @@ def generate_launch_description():
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, ctrl_yaml],
-        remappings=[
-            ('/diff_drive_controller/cmd_vel_unstamped', '/cmd_vel'),
-        ],
         output='screen',
     )
     
-    # Removed twist_stamper_node
-    
+    # ── twist_stamper ─────────────────────────────────────────────────────────
+    # The Jazzy diff_drive_controller enforces TwistStamped; teleop publishes
+    # plain Twist. This node bridges the two by adding a header stamp.
+    twist_stamper_node = Node(
+        package='twist_stamper',
+        executable='twist_stamper',
+        output='screen',
+        parameters=[{'use_sim_time': False, 'frame_id': 'base_link'}],
+        remappings=[
+            ('/cmd_vel_in',  '/cmd_vel'),
+            ('/cmd_vel_out', '/diff_drive_controller/cmd_vel'),
+        ],
+    )
+
 
     # ── 3. Spawn joint_state_broadcaster ─────────────────────────────────────
     # "spawner" is a helper that calls the controller_manager service to load
@@ -103,6 +112,7 @@ def generate_launch_description():
     return LaunchDescription([
         robot_state_publisher_node,
         controller_manager_node,
+        twist_stamper_node,
         joint_state_broadcaster_spawner,
         delay_diff_drive_after_jsb,
     ])
