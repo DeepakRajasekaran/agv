@@ -40,10 +40,10 @@ WORKDIR /agv/deepak_ws
 COPY deepak_ws/src/ ./src/
 RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 
-# Build manasa_ws overlaying deepak_ws
+# Build manasa_ws independently
 WORKDIR /agv/manasa_ws
 COPY manasa_ws/src/ ./src/
-RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && source /agv/deepak_ws/install/setup.bash && colcon build"
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 
 # Stage 4: Deployment Image
 FROM base AS deployment
