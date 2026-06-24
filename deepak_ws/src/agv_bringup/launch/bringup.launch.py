@@ -75,9 +75,13 @@ def generate_launch_description():
 
     # 4. Twist to TwistStamped Relay Node
     nodes.append(Node(
-        package='agv_bringup',
-        executable='twist_stamper.py',
-        output='screen'
+        package='twist_stamper',
+        executable='twist_stamper',
+        output='screen',
+        remappings=[
+            ('cmd_vel_in', '/cmd_vel'),
+            ('cmd_vel_out', '/diff_drive_controller/cmd_vel')
+        ]
     ))
 
     # 5. MGS1600 Driver Node (Always runs)

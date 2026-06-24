@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-hardware-interface \
     ros-jazzy-pluginlib \
     ros-jazzy-teleop-twist-keyboard \
+    ros-jazzy-turtlebot3-teleop \
     ros-jazzy-rclcpp \
     ros-jazzy-rclcpp-lifecycle \
     ros-jazzy-ros2-control \
