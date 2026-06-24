@@ -21,7 +21,12 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robot-state-publisher \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /ros2_ws
+WORKDIR /agv
+
+# Add ROS setup to bashrc for interactive exec sessions
+RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
+    echo "if [ -f /agv/deepak_ws/install/setup.bash ]; then source /agv/deepak_ws/install/setup.bash; fi" >> ~/.bashrc && \
+    echo "if [ -f /agv/manasa_ws/install/setup.bash ]; then source /agv/manasa_ws/install/setup.bash; fi" >> ~/.bashrc
 
 # Setup entrypoint to source ROS 2 automatically
 COPY docker/entrypoint.sh /entrypoint.sh
