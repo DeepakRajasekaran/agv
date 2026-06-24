@@ -55,11 +55,11 @@ case $CHOICE in
             
         # 2. Build on target
         echo -e "\nStep 2: Triggering Docker build natively on the Jetson..."
-        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && docker compose -f docker/docker-compose.yml build"
+        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && export BUILD_MODE=deployment && docker compose -f docker/docker-compose.yml build"
         
         echo -e "\n${GREEN}Build completed successfully on Jetson!${NC}"
         echo "To run the container on Jetson, execute:"
-        echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && docker compose -f docker/docker-compose.yml up -d'"
+        echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && export BUILD_MODE=deployment && docker compose -f docker/docker-compose.yml up -d'"
         ;;
         
     2)
@@ -81,6 +81,7 @@ case $CHOICE in
             --platform linux/arm64 \
             -t roboteq_driver_hardware:latest \
             -f docker/Dockerfile \
+            --target deployment \
             --load .
             
         echo "Exporting image using docker save..."
@@ -101,7 +102,7 @@ case $CHOICE in
         
         echo -e "\n${GREEN}Cross-build and transfer completed successfully!${NC}"
         echo "To run the container on Jetson, execute:"
-        echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && docker compose -f docker/docker-compose.yml up -d'"
+        echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && export BUILD_MODE=deployment && docker compose -f docker/docker-compose.yml up -d'"
         
         # Clean up local tar file
         rm -f roboteq_driver_hardware.tar
