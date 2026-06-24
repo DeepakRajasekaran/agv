@@ -5,6 +5,7 @@ FROM ros:jazzy-ros-base AS base
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
+    ninja-build \
     git \
     python3-colcon-common-extensions \
     python3-rosdep \
@@ -44,12 +45,14 @@ FROM base AS builder
 # Build deepak_ws
 WORKDIR /agv/deepak_ws
 COPY deepak_ws/src/ ./src/
-RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
+RUN --mount=type=cache,target=/agv/deepak_ws/build \
+    /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"
 
 # Build manasa_ws independently
 WORKDIR /agv/manasa_ws
 COPY manasa_ws/src/ ./src/
-RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
+RUN --mount=type=cache,target=/agv/manasa_ws/build \
+    /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"
 
 # Stage 4: Deployment Image
 FROM base AS deployment
