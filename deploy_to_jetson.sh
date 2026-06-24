@@ -97,21 +97,21 @@ case $CHOICE in
         source ./agv_env.bash
         docker buildx build \
             --platform linux/arm64 \
-            -t roboteq_driver_hardware:latest \
+            -t agv:latest \
             -f docker/Dockerfile \
             --target $BUILD_MODE \
             --load .
             
         echo "Exporting image using docker save..."
-        docker save roboteq_driver_hardware:latest -o roboteq_driver_hardware.tar
+        docker save agv:latest -o agv.tar
             
         # 3. Transfer image to target
         echo -e "\nStep 3: Transferring image tarball to Jetson..."
-        scp roboteq_driver_hardware.tar "$JETSON_USER@$JETSON_IP:/home/$JETSON_USER/"
+        scp agv.tar "$JETSON_USER@$JETSON_IP:/home/$JETSON_USER/"
         
         # 4. Load image on target
         echo -e "\nStep 4: Loading image into Jetson's Docker daemon..."
-        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/roboteq_driver_hardware.tar && rm /home/$JETSON_USER/roboteq_driver_hardware.tar"
+        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar"
         
         # 5. Sync Docker Compose config to run it easily
         echo -e "\nStep 5: Syncing Docker Compose configuration to Jetson..."
@@ -123,7 +123,7 @@ case $CHOICE in
         echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml up -d'"
         
         # Clean up local tar file
-        rm -f roboteq_driver_hardware.tar
+        rm -f agv.tar
         ;;
         
     3|*)
