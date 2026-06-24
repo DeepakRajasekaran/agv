@@ -142,6 +142,11 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         "/autotune",
         std::bind(&PidController::autotuneCallback, this, std::placeholders::_1, std::placeholders::_2)
     );
+    
+    m_srvSaveTuning = this->create_service<std_srvs::srv::Trigger>(
+        "~/save_tuning",
+        std::bind(&PidController::saveTuningCallback, this, std::placeholders::_1, std::placeholders::_2)
+    );
 
     // Safety timeout check timer (50Hz = 20ms)
     m_safetyTimer = this->create_wall_timer(
@@ -605,6 +610,33 @@ void PidController::autotuneCallback(const std::shared_ptr<std_srvs::srv::Trigge
         
     response->success = true;
     response->message = "Autotune complete! PID parameters dynamically updated.";
+}
+
+/**
+ * @brief  Service callback to permanently save tuning parameters to the host file.
+ */
+void PidController::saveTuningCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                                       std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+    (void)request;
+
+    RCLCPP_INFO(this->get_logger(), "[SAVE_TUNING] Saving current parameters to config file...");
+
+    // Execute ros2 param dump to write directly to the volume-mounted source code file
+    std::string config_path = "/agv/deepak_ws/src/path_follower/config/params.yaml";
+    std::string command = "ros2 param dump /path_follower_node > " + config_path;
+
+    int ret = std::system(command.c_str());
+
+    if (ret == 0) {
+        RCLCPP_INFO(this->get_logger(), "[SAVE_TUNING] Success! Parameters securely written to %s", config_path.c_str());
+        response->success = true;
+        response->message = "Tuning parameters successfully saved to host disk.";
+    } else {
+        RCLCPP_ERROR(this->get_logger(), "[SAVE_TUNING] Failed to dump parameters! System call returned %d", ret);
+        response->success = false;
+        response->message = "Failed to execute ros2 param dump. Check container permissions or path.";
+    }
 }
 
 rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const std::vector<rclcpp::Parameter>& parameters)

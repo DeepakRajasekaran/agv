@@ -66,6 +66,10 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvAutotune;
     void autotuneCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                           std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+                          
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvSaveTuning;
+    void saveTuningCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                            std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
