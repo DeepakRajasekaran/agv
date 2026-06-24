@@ -76,7 +76,7 @@ case $CHOICE in
         
         # 3. Cleanup source code
         echo -e "\nStep 3: Cleaning up source code from Jetson host (leaving only the container)..."
-        ssh -t "$JETSON_USER@$JETSON_IP" "rm -rf $JETSON_DIR/deepak_ws $JETSON_DIR/manasa_ws"
+        ssh -t "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/deepak_ws/config && mv $JETSON_DIR/deepak_ws/config $JETSON_DIR/config_tmp && rm -rf $JETSON_DIR/deepak_ws $JETSON_DIR/manasa_ws && mkdir -p $JETSON_DIR/deepak_ws && mv $JETSON_DIR/config_tmp $JETSON_DIR/deepak_ws/config"
         
         echo -e "\n${GREEN}Build completed successfully on Jetson!${NC}"
         echo "To run the container on Jetson, execute:"
@@ -119,9 +119,10 @@ case $CHOICE in
         
         # 5. Sync configuration files to Jetson
         echo -e "\nStep 5: Syncing configuration files to Jetson..."
-        ssh "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/docker"
+        ssh "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/docker $JETSON_DIR/deepak_ws/config"
         scp docker/docker-compose.yml "$JETSON_USER@$JETSON_IP:$JETSON_DIR/docker/docker-compose.yml"
         scp agv_env.bash "$JETSON_USER@$JETSON_IP:$JETSON_DIR/agv_env.bash"
+        scp -r deepak_ws/config/* "$JETSON_USER@$JETSON_IP:$JETSON_DIR/deepak_ws/config/" 2>/dev/null || true
         
         echo -e "\n${GREEN}Cross-build and transfer completed successfully!${NC}"
         echo "To run the container on Jetson, execute:"
