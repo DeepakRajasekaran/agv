@@ -46,6 +46,11 @@ install(TARGETS path_follower_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Install python scripts
+install(PROGRAMS scripts/tune_line_follower.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 # Install config and launch directories
 install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
