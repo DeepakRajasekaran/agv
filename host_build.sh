@@ -42,7 +42,7 @@ case $CHOICE in
         if [ "$WS_CHOICE" == "a" ]; then
             docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
         elif [ "$WS_CHOICE" == "b" ]; then
-            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && source /agv/deepak_ws/install/setup.bash && cd /agv/manasa_ws && colcon build"
+            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && if [ -f /agv/deepak_ws/install/setup.bash ]; then source /agv/deepak_ws/install/setup.bash; fi && cd /agv/manasa_ws && colcon build"
         else
             docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && source install/setup.bash && cd /agv/manasa_ws && colcon build"
         fi
