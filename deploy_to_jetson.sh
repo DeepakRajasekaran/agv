@@ -6,7 +6,7 @@ set -e
 
 JETSON_IP="192.168.1.83"
 JETSON_USER="nvidia"
-JETSON_DIR="/home/nvidia/anscer_workspace/agv"
+JETSON_DIR="/home/nvidia/agv"
 
 # Colors for output
 GREEN='\033[0;32m'
