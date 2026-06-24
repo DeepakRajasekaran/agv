@@ -2,11 +2,23 @@ import os
 import xacro
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription, TimerAction, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
+    # Define launch arguments
+    launch_path_follower_arg = DeclareLaunchArgument(
+        'launch_path_follower',
+        default_value='true',
+        description='Launch the path_follower node'
+    )
+    
+    launch_path_follower = LaunchConfiguration('launch_path_follower')
+
     # Read Environment Variables
     mode = os.environ.get('MODE', 'HARDWARE').upper()
     sim_tool = os.environ.get('SIM_TOOL', 'MUJOCO').upper()
@@ -19,12 +31,11 @@ def generate_launch_description():
     controllers_file = os.path.join(driver_dir, 'config', 'controllers.yaml')
     urdf_file = os.path.join(desc_dir, 'urdf', 'robot.urdf.xacro')
 
-    # Process Xacro (it will read optenv directly during xacro processing, 
-    # but we can also pass the mode manually as an argument for safety if we wanted to)
+    # Process Xacro
     doc = xacro.process_file(urdf_file, mappings={'mode': mode, 'sim_tool': sim_tool})
     robot_description = {'robot_description': doc.toxml()}
 
-    nodes = []
+    nodes = [launch_path_follower_arg]
 
     # 1. Robot State Publisher (Always runs)
     nodes.append(Node(
@@ -62,14 +73,38 @@ def generate_launch_description():
         arguments=["diff_drive_controller", "--controller-manager", "/controller_manager", "-p", controllers_file],
     ))
 
-    # 4. Twist to TwistStamped Relay Node (because Jazzy diff_drive_controller dropped Twist support)
+    # 4. Twist to TwistStamped Relay Node
     nodes.append(Node(
         package='agv_bringup',
         executable='twist_stamper.py',
         output='screen'
     ))
 
-    # 4. Mode-specific launches
+    # 5. MGS1600 Driver Node (Always runs)
+    nodes.append(Node(
+        package='mgs_driver',
+        executable='mgs_driver_node',
+        output='screen',
+        parameters=[
+            {'can_interface': 'can0'},
+            {'node_id': 5}
+        ]
+    ))
+
+    # 6. Path Follower Node (Conditional)
+    path_follower_params = []
+    if os.path.exists('/agv_config/follower_params.yaml'):
+        path_follower_params.append('/agv_config/follower_params.yaml')
+
+    nodes.append(Node(
+        package='path_follower',
+        executable='path_follower_node',
+        output='screen',
+        parameters=path_follower_params,
+        condition=IfCondition(launch_path_follower)
+    ))
+
+    # 7. Mode-specific launches
     if mode == 'HARDWARE':
         # Include roboteq_driver
         nodes.append(IncludeLaunchDescription(
@@ -78,10 +113,8 @@ def generate_launch_description():
     elif mode == 'SIM':
         if sim_tool == 'MUJOCO':
             nodes.append(LogInfo(msg="Launching Mujoco Simulator..."))
-            # E.g., nodes.append(IncludeLaunchDescription(...mujoco_launch...))
         elif sim_tool == 'GZ':
             nodes.append(LogInfo(msg="Launching Gazebo Simulator..."))
-            # E.g., nodes.append(IncludeLaunchDescription(...gz_launch...))
         else:
             nodes.append(LogInfo(msg=f"Unknown SIM_TOOL: {sim_tool}"))
 

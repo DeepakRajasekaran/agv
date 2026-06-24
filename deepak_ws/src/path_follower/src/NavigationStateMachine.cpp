@@ -27,7 +27,6 @@ std::string stateToString(State state)
         case State::INITIALIZE:        return "INITIALIZE";
         case State::FOLLOW_LINE:       return "FOLLOW_LINE";
         case State::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
-        case State::READ_TAG:          return "READ_TAG";
         case State::EXECUTE_TURN:      return "EXECUTE_TURN";
         case State::RESUME_TRACKING:   return "RESUME_TRACKING";
         case State::STOP:              return "STOP";

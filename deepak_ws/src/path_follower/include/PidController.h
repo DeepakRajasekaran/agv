@@ -1,9 +1,10 @@
 /*
  * Name:        PidController.h
  * Author:      Deepak Rajasekaran
- * Date:        2026-06-12
- * Version:     1.0
- * Description: Declares the PidController class for ROS 2.
+ * Date:        2026-06-24
+ * Version:     2.0
+ * Description: Declares the PidController class for ROS 2 magnetic line following
+ *              with lookahead steering and mapless junction handling.
  */
 
 #ifndef PID_CONTROLLER_H
@@ -14,10 +15,10 @@
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
-#include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <memory>
 #include <string>
+#include <vector>
 #include <chrono>
 
 #include "NavigationStateMachine.h"
@@ -42,34 +43,42 @@ private:
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subRightMarker;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subLeftTrackPos;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subRightTrackPos;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr m_subTagId;
-    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr m_subPlan;
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_subNavVel;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subTapeCross;
 
     // ROS 2 Publishers
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr m_pubCmdVel;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_pubSelectTrack;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_pubControllerState;
 
-    // Callbacks
+    // Subscriber Callbacks
     void trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void leftMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void leftTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void rightTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
-    void tagIdCallback(const std_msgs::msg::String::SharedPtr msg);
-    void planCallback(const nav_msgs::msg::Path::SharedPtr msg);
-    void navVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+    void tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
-    // ROS 2 Services
+    // ROS 2 Services (Controller)
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvAutotune;
     void autotuneCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                           std::shared_ptr<std_srvs::srv::Trigger::Response> response);
-                          
+
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvSaveTuning;
     void saveTuningCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                             std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvStart;
+    void startCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                       std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvStop;
+    void stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+                      std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+    // ROS 2 Service Clients (MGS Driver)
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliFollowLeft;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliFollowRight;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliClearFollow;
 
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
@@ -82,47 +91,51 @@ private:
     void publishVelocity(double linearVel, double angularVel);
     void handleFault(const std::string& faultType);
     void publishControllerState();
+    void executeJunctionTurn();
 
-    // Tunable Parameters
+    // Tunable Parameters (PID)
     double m_kp;
     double m_ki;
     double m_kd;
     double m_windupLimit;
     double m_maxOutput;
-    
+
+    // Robot Parameters
     double m_nominalSpeed;
     double m_maxRpm;
     double m_wheelBase;
     double m_wheelRadius;
-    
+    double m_sensorOffsetX;
+
+    // Safety Parameters
     double m_lostThreshold;
     int m_maxFrozenSteps;
     double m_turnDuration;
 
+    // Junction Parameters
+    double m_junctionDivergenceThreshold;
+    std::vector<std::string> m_turnSequence;
+    size_t m_turnIndex;
+    bool m_loopSequence;
+
     // Control Loop State
     double m_integralError;
     double m_prevError;
-    std::chrono::steady_clock::time_point m_lastLoopTime;
     std::chrono::steady_clock::time_point m_lastSensorUpdateTime;
     rclcpp::Time m_turnStartTime;
-    
+
     bool m_trackDetect;
     bool m_leftMarker;
     bool m_rightMarker;
+    bool m_tapeCross;
     double m_leftTrackPos;
     double m_rightTrackPos;
-    std::string m_tagId;
-    nav_msgs::msg::Path m_currentPlan;
-    size_t m_currentWaypointIndex;
-    
+
     // Subclass pointer instances
     std::unique_ptr<NavigationStateMachine> p_stateMachine;
     std::unique_ptr<FaultMonitor> p_faultMonitor;
-    
+
     bool m_firstMessageReceived;
-    double m_navLinearVel;
-    double m_navAngularVel;
-    bool m_navVelReceived;
 
     // Dynamic Parameter Update callback
     OnSetParametersCallbackHandle::SharedPtr m_callbackHandle;

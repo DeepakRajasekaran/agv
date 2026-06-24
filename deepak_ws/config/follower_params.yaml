@@ -1,0 +1,9 @@
+path_follower_node:
+  ros__parameters:
+    pid:
+      kp: 1.5
+      ki: 0.02
+      kd: 0.12
+    junction:
+      turn_sequence: ["LEFT", "STRAIGHT", "RIGHT"]
+      loop_sequence: true

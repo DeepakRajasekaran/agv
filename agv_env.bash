@@ -6,7 +6,7 @@
 # ==========================================
 
 # MODE options: HARDWARE, SIM
-export MODE=SIM
+export MODE=HARDWARE
 # SIM_TOOL options: MUJOCO, GZ
 export SIM_TOOL=MUJOCO
 
@@ -14,7 +14,7 @@ export SIM_TOOL=MUJOCO
 # Build Settings
 # ==========================================
 # BUILD_MODE options: host, deployment
-export BUILD_MODE=host
+export BUILD_MODE=deployment
 
 # ==========================================
 # Kinematic Properties
@@ -22,9 +22,9 @@ export BUILD_MODE=host
 export KINEMATIC_MODEL=DIFF_DRIVE
 export WHEEL_BASE=0.512
 export WHEEL_RADIUS=0.08
-export GEAR_RATIO=1.0
+export GEAR_RATIO=10.0
 export MAX_RPM=3000
-export TICKS_PER_REV=1024
+export TICKS_PER_REV=10000
 
 # ==========================================
 # Hardware & Interface Settings

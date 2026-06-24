@@ -18,7 +18,6 @@ enum class State {
     INITIALIZE,
     FOLLOW_LINE,
     JUNCTION_DETECTED,
-    READ_TAG,
     EXECUTE_TURN,
     RESUME_TRACKING,
     STOP,
