@@ -29,6 +29,23 @@ else
     exit 1
 fi
 
+# Check for upstream Git changes
+echo -n "Checking for updates from GitHub... "
+git fetch origin > /dev/null 2>&1 || true
+LOCAL=$(git rev-parse HEAD 2>/dev/null || echo "")
+REMOTE=$(git rev-parse origin/main 2>/dev/null || echo "")
+
+if [ -n "$LOCAL" ] && [ -n "$REMOTE" ]; then
+    if [ "$LOCAL" != "$REMOTE" ]; then
+        echo -e "${YELLOW}Changes detected! Pulling latest code...${NC}"
+        git pull origin main
+    else
+        echo -e "${GREEN}Up to date.${NC}"
+    fi
+else
+    echo -e "${YELLOW}Could not verify Git status. Skipping pull.${NC}"
+fi
+
 echo ""
 echo "Select Deployment Method:"
 echo "1) Sync source and build natively on Jetson (Recommended, fast, simple)"
