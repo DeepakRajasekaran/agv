@@ -15,6 +15,13 @@ read -r CHOICE
 # Source the AGV environment variables to get BUILD_MODE
 source ./agv_env.bash
 
+ensure_container_running() {
+    if ! docker ps --format '{{.Names}}' | grep -Eq "^agv$"; then
+        echo -e "\n\033[1;33mContainer 'agv' is not running. Building and starting it automatically...\033[0m"
+        docker compose -f docker/docker-compose.yml -f docker/docker-compose.host.yml up -d --build
+    fi
+}
+
 case $CHOICE in
     1)
         echo "Starting Host Dev Container..."
@@ -23,6 +30,7 @@ case $CHOICE in
         echo "Container 'agv' is now running in Host Mode!"
         ;;
     2)
+        ensure_container_running
         echo "Which workspace do you want to build?"
         echo "  a) deepak_ws only"
         echo "  b) manasa_ws only"
@@ -40,6 +48,7 @@ case $CHOICE in
         echo "Build complete!"
         ;;
     3)
+        ensure_container_running
         echo "Connecting to container shell..."
         docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && [ -f /agv/deepak_ws/install/setup.bash ] && source /agv/deepak_ws/install/setup.bash && [ -f /agv/manasa_ws/install/setup.bash ] && source /agv/manasa_ws/install/setup.bash; exec bash"
         ;;
