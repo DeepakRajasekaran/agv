@@ -4,6 +4,7 @@
 # ==========================================
 # Deployment Settings
 # ==========================================
+
 # MODE options: HARDWARE, SIM
 export MODE=SIM
 # SIM_TOOL options: MUJOCO, GZ
@@ -16,6 +17,7 @@ export KINEMATIC_MODEL=DIFF_DRIVE
 export WHEEL_BASE=0.512
 export WHEEL_RADIUS=0.08
 export GEAR_RATIO=1.0
+export MAX_RPM=3000
 export TICKS_PER_REV=1024
 
 # ==========================================

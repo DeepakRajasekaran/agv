@@ -59,7 +59,14 @@ def generate_launch_description():
     nodes.append(Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["diff_drive_controller", "--controller-manager", "/controller_manager"],
+        arguments=["diff_drive_controller", "--controller-manager", "/controller_manager", "-p", controllers_file],
+    ))
+
+    # 4. Twist to TwistStamped Relay Node (because Jazzy diff_drive_controller dropped Twist support)
+    nodes.append(Node(
+        package='agv_bringup',
+        executable='twist_stamper.py',
+        output='screen'
     ))
 
     # 4. Mode-specific launches

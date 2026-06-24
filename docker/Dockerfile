@@ -13,14 +13,19 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-pluginlib \
     ros-jazzy-rclcpp \
     ros-jazzy-rclcpp-lifecycle \
+    ros-jazzy-ros2-control \
+    ros-jazzy-ros2-controllers \
+    ros-jazzy-xacro \
+    ros-jazzy-robot-state-publisher \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws
 
-# Copy ONLY the source code (do not mount at runtime)
-COPY src/ /ros2_ws/src/
+# Copy the source code from both workspaces
+COPY deepak_ws/src/ /ros2_ws/src/
+COPY manasa_ws/src/ /ros2_ws/src/
 
-# Build the workspace without symlinks for a standalone install
+# Build the entire workspace without symlinks for a standalone install
 RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 
 # Stage 2: Runtime Image
@@ -33,6 +38,10 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-hardware-interface \
     ros-jazzy-pluginlib \
     ros-jazzy-teleop-twist-keyboard \
+    ros-jazzy-ros2-control \
+    ros-jazzy-ros2-controllers \
+    ros-jazzy-xacro \
+    ros-jazzy-robot-state-publisher \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws
@@ -45,4 +54,4 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["ros2", "launch", "roboteq_driver", "roboteq_driver.launch.py"]
+CMD ["ros2", "launch", "agv_bringup", "bringup.launch.py"]

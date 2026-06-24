@@ -12,7 +12,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y sudo python3-pip python3-colcon-common-extensions ros-jazzy-nav2-msgs libpqxx-dev \
+    && apt-get install -y sudo python3-pip python3-colcon-common-extensions ros-jazzy-nav2-msgs libpqxx-dev ros-jazzy-hardware-interface ros-jazzy-pluginlib can-utils iproute2 \
     && pip3 install mujoco numpy --break-system-packages \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \

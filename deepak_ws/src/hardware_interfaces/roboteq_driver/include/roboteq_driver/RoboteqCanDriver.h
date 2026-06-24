@@ -1,9 +1,9 @@
 /*
  * Name:        RoboteqCanDriver.h
  * Author:      Deepak Rajasekaran
- * Date:        2026-06-22
- * Version:     1.0
- * Description: Abstraction layer for Roboteq Motor Controller using Raw CAN / Custom Protocol.
+ * Date:        2026-06-23
+ * Version:     2.0
+ * Description: Abstraction layer for Roboteq Motor Controller using CANOpen SDO Polling.
  */
 
 #ifndef ROBOTEQ_CAN_DRIVER_H
@@ -13,7 +13,6 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <condition_variable>
 
 namespace roboteq_driver
 {
@@ -27,14 +26,16 @@ struct TelemetryData
   float battery_voltage = 0.0f;
   float current_left = 0.0f;
   float current_right = 0.0f;
-  uint8_t fault_flags = 0;
-  uint8_t controller_temp = 0;
+  uint32_t status_flags = 0;
+  uint32_t fault_flags = 0;
+  int32_t closed_loop_error_left = 0;
+  int32_t closed_loop_error_right = 0;
 };
 
 class RoboteqCanDriver
 {
 public:
-  RoboteqCanDriver(const std::string& can_interface);
+  RoboteqCanDriver(const std::string& can_interface, int node_id = 1);
   ~RoboteqCanDriver();
 
   // Lifecycle
@@ -47,31 +48,35 @@ public:
   TelemetryData getTelemetry();
   bool isConnected() const;
 
-  // Setters & Commands
   void sendSpeedCommand(int32_t left_rpm, int32_t right_rpm);
-  void sendSystemCommand(uint8_t estop, uint8_t reset_faults, uint8_t digital_out);
+  void resetEncoders();
+  void triggerEstop();
+  void clearEstop();
+  void triggerQuickstop();
 
 private:
   void rxThread();
-  void queryThread();
+  void sdoLoop();
 
-  void sendQuery(uint8_t query_type);
+  void sendFrame(uint32_t can_id, const uint8_t* payload, uint8_t len);
+  void sendSdoRead(uint16_t index, uint8_t subindex);
+  void sendSdoWrite(uint16_t index, uint8_t subindex, int32_t value, uint8_t size = 4);
   void parseFrame(uint32_t can_id, const uint8_t* data, uint8_t dlc);
 
   std::string m_canInterface;
+  int m_nodeId;
   int m_socket;
   std::atomic<bool> m_running;
 
   std::thread m_rxThread;
-  std::thread m_queryThread;
+  std::thread m_sdoThread;
 
   std::mutex m_dataMutex;
   TelemetryData m_telemetry;
 
-  std::mutex m_queryMutex;
-  std::condition_variable m_queryCv;
-  uint8_t m_activeQuery;
-  bool m_queryMatched;
+  std::mutex m_cmdMutex;
+  int32_t m_targetSpeedLeft;
+  int32_t m_targetSpeedRight;
 
   // Connection watchdog
   std::atomic<double> m_lastUpdateTime;
