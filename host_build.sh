@@ -23,9 +23,20 @@ case $CHOICE in
         echo "Container 'agv' is now running in Host Mode!"
         ;;
     2)
-        echo "Building workspaces..."
-        # We run colcon build inside the running container for each workspace individually
-        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && source install/setup.bash && cd /agv/manasa_ws && colcon build"
+        echo "Which workspace do you want to build?"
+        echo "  a) deepak_ws only"
+        echo "  b) manasa_ws only"
+        echo "  c) Both"
+        echo -n "Enter choice [a-c]: "
+        read -r WS_CHOICE
+        
+        if [ "$WS_CHOICE" == "a" ]; then
+            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
+        elif [ "$WS_CHOICE" == "b" ]; then
+            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && source /agv/deepak_ws/install/setup.bash && cd /agv/manasa_ws && colcon build"
+        else
+            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && source install/setup.bash && cd /agv/manasa_ws && colcon build"
+        fi
         echo "Build complete!"
         ;;
     3)
