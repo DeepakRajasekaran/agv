@@ -24,13 +24,13 @@ case $CHOICE in
         ;;
     2)
         echo "Building workspaces..."
-        # We run colcon build inside the running container, artifacts are synced to host via volume mounts
-        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
+        # We run colcon build inside the running container for each workspace individually
+        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && source install/setup.bash && cd /agv/manasa_ws && colcon build"
         echo "Build complete!"
         ;;
     3)
         echo "Connecting to container shell..."
-        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && [ -f install/setup.bash ] && source install/setup.bash; exec bash"
+        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && [ -f /agv/deepak_ws/install/setup.bash ] && source /agv/deepak_ws/install/setup.bash && [ -f /agv/manasa_ws/install/setup.bash ] && source /agv/manasa_ws/install/setup.bash; exec bash"
         ;;
     4|*)
         echo "Exiting."

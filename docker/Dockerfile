@@ -35,17 +35,21 @@ CMD ["sleep", "infinity"]
 
 # Stage 3: Builder Image (For deployment compilation)
 FROM base AS builder
-# Copy the source code from both workspaces
-COPY deepak_ws/src/ /ros2_ws/src/
-COPY manasa_ws/src/ /ros2_ws/src/
-
-# Build the entire workspace without symlinks for a standalone install
+# Build deepak_ws
+WORKDIR /agv/deepak_ws
+COPY deepak_ws/src/ ./src/
 RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
+
+# Build manasa_ws overlaying deepak_ws
+WORKDIR /agv/manasa_ws
+COPY manasa_ws/src/ ./src/
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && source /agv/deepak_ws/install/setup.bash && colcon build"
 
 # Stage 4: Deployment Image
 FROM base AS deployment
-# Copy ONLY the compiled install folder from the builder stage
-COPY --from=builder /ros2_ws/install /ros2_ws/install
+# Copy ONLY the compiled install folders from the builder stage
+COPY --from=builder /agv/deepak_ws/install /agv/deepak_ws/install
+COPY --from=builder /agv/manasa_ws/install /agv/manasa_ws/install
 
 ENTRYPOINT ["/entrypoint.sh"]
 # Run the launch file automatically

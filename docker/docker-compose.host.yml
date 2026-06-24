@@ -1,8 +1,5 @@
 services:
   agv:
     volumes:
-      - ../deepak_ws/src:/ros2_ws/src/deepak_ws
-      - ../manasa_ws/src:/ros2_ws/src/manasa_ws
-      - ../build:/ros2_ws/build
-      - ../install:/ros2_ws/install
-      - ../log:/ros2_ws/log
+      - ../deepak_ws:/agv/deepak_ws
+      - ../manasa_ws:/agv/manasa_ws
