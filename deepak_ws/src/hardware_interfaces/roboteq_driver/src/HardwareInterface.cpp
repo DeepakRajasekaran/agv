@@ -194,31 +194,13 @@ hardware_interface::return_type HardwareInterface::read(
   assert(std::isfinite(m_leftWheelPosition));
   assert(std::isfinite(m_rightWheelPosition));
 
-  // Initialize ticks on the first cycle
-  if (!m_firstTickRead)
-  {
-    m_lastLeftTicks = m_leftEncoderCounts;
-    m_lastRightTicks = m_rightEncoderCounts;
-    m_firstTickRead = true;
-  }
-
-  // Calculate encoder tick difference, handling integer wrapping correctly
-  int32_t delta_left_ticks = m_leftEncoderCounts - m_lastLeftTicks;
-  int32_t delta_right_ticks = m_rightEncoderCounts - m_lastRightTicks;
-
-  m_lastLeftTicks = m_leftEncoderCounts;
-  m_lastRightTicks = m_rightEncoderCounts;
-
-  // Convert delta ticks to wheel position (radians)
-  double left_pos_delta = (static_cast<double>(delta_left_ticks) / (m_ticksPerRev * m_gearRatio)) * 2.0 * M_PI;
-  double right_pos_delta = (static_cast<double>(delta_right_ticks) / (m_ticksPerRev * m_gearRatio)) * 2.0 * M_PI;
-
-  m_leftWheelPosition += left_pos_delta;
-  m_rightWheelPosition += right_pos_delta;
-
   // Compute velocities (rad/s) from feedback drive RPM (wheel RPM)
   m_leftWheelVelocity = m_leftFeedbackRpm * (2.0 * M_PI / 60.0);
   m_rightWheelVelocity = m_rightFeedbackRpm * (2.0 * M_PI / 60.0);
+
+  // Integrate velocities to calculate smooth positions (fixing jitter from SDO polling)
+  m_leftWheelPosition += m_leftWheelVelocity * delta_seconds;
+  m_rightWheelPosition += m_rightWheelVelocity * delta_seconds;
 
   // Postconditions
   assert(std::isfinite(m_leftWheelPosition));
