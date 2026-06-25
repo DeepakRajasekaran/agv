@@ -1,5 +1,5 @@
 # Stage 1: The target sysroot (ARM64)
-FROM --platform=linux/arm64 ros:jazzy-ros-base AS target_sysroot
+FROM --platform=${TARGETPLATFORM:-linux/arm64} ros:jazzy-ros-base AS target_sysroot
 
 # Install dependencies needed for deployment on the target sysroot
 # QEMU can handle apt-get fine, it's only C++ compilation that is slow/crashes
@@ -84,6 +84,7 @@ RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
             export AMENT_PREFIX_PATH=/agv/deepak_ws/install:\$AMENT_PREFIX_PATH && \
             colcon build \
                 --merge-install \
+                --event-handlers console_direct+ \
                 --cmake-args \
                 -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
                 -DCMAKE_SYSROOT=/sysroot \
