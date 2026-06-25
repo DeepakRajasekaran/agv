@@ -3,7 +3,6 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Bool
 from custom_interfaces.msg import ControllerState
 
 from std_srvs.srv import Trigger
@@ -18,15 +17,10 @@ class NavSimulator(Node):
         self.current_state = ControllerState.IDLE
         self.junction_count = 0
         self.active_turn_cmd = 0.0
-        self.last_left_marker = False
-        
         self.pub_cmd_vel = self.create_publisher(Twist, '/nav/cmd_vel', 10)
         
         self.sub_state = self.create_subscription(
             ControllerState, '/controller_state', self.state_callback, 10)
-            
-        self.sub_left_marker = self.create_subscription(
-            Bool, '/sensor/left_marker', self.marker_callback, 10)
             
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.get_logger().info('Nav Simulator started. First command defaults to STRAIGHT.')
@@ -38,30 +32,20 @@ class NavSimulator(Node):
         prev_state = self.current_state
         self.current_state = msg.state
         
+        # Detect transition into JUNCTION_DETECTED
+        if prev_state != ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.JUNCTION_DETECTED:
+            self.junction_count += 1
+            if self.junction_count % 2 != 0:
+                self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Commanding LEFT turn')
+                self.active_turn_cmd = 0.5
+            else:
+                self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Commanding RIGHT turn')
+                self.active_turn_cmd = -0.5
+                
         # Reset turn command when we successfully transition back to normal line following
         if prev_state in [ControllerState.EXECUTE_TURN, ControllerState.JUNCTION_DETECTED] and self.current_state == ControllerState.FOLLOW_LINE:
             self.get_logger().info('Resumed standard tracking. Resetting command to STRAIGHT.')
             self.active_turn_cmd = 0.0
-            
-    def marker_callback(self, msg: Bool):
-        # Detect rising edge of left marker
-        if msg.data and not self.last_left_marker:
-            self.get_logger().info('Left marker detected!')
-            
-            # Check if this marker signifies a junction
-            if self.current_state == ControllerState.JUNCTION_DETECTED:
-                self.junction_count += 1
-                if self.junction_count % 2 != 0:
-                    self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Commanding LEFT')
-                    self.active_turn_cmd = 0.5
-                else:
-                    self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Commanding RIGHT')
-                    self.active_turn_cmd = -0.5
-            else:
-                self.get_logger().info('State is not JUNCTION_DETECTED. Following the natural turn.')
-                self.active_turn_cmd = 0.0
-                
-        self.last_left_marker = msg.data
 
     def timer_callback(self):
         # Auto-start if IDLE
