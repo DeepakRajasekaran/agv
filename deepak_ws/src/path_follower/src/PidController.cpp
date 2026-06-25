@@ -56,11 +56,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_maxFrozenSteps(50),
       m_turnDuration(3.0),
       m_clampStraight(1.0),
-      m_clampJunction(0.15),
-      m_clampTurn(0.10),
-      m_clampHighError(0.10),
-      m_highErrorThreshold(0.05),
-      m_junctionDivergenceThreshold(0.02),
+      m_clampJunction(0.5),
+      m_clampTurn(0.3),
+      m_junctionDivergenceThreshold(0.035),
       m_integralError(0.0),
       m_prevError(0.0),
       m_cmdLinearX(0.0),
@@ -94,15 +92,11 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_clampStraight = 1.0;
     m_clampJunction = 0.5;
     m_clampTurn = 0.3;
-    m_clampHighError = 0.2;
-    m_highErrorThreshold = 0.1;
     m_junctionDivergenceThreshold = 0.035;
 
     this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
     this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
     this->declare_parameter<double>("velocity_clamps.turn", m_clampTurn);
-    this->declare_parameter<double>("velocity_clamps.high_error", m_clampHighError);
-    this->declare_parameter<double>("velocity_clamps.high_error_threshold", m_highErrorThreshold);
 
     this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
 
@@ -123,9 +117,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
     this->get_parameter("velocity_clamps.turn", m_clampTurn);
-    this->get_parameter("velocity_clamps.high_error", m_clampHighError);
-    this->get_parameter("velocity_clamps.high_error_threshold", m_highErrorThreshold);
-
     this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
 
     // Initial time points
@@ -316,9 +307,6 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     switch (currentState) {
         case ControllerState::FOLLOW_LINE: {
             linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
-            if (std::abs(computed_error) > m_highErrorThreshold) {
-                linearVel = std::clamp(linearVel, -m_clampHighError, m_clampHighError);
-            }
 
             divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
             if (divergence > m_junctionDivergenceThreshold || m_tapeCross) {
@@ -561,8 +549,6 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
             case const_hash("velocity_clamps.turn"): m_clampTurn = param.as_double(); break;
-            case const_hash("velocity_clamps.high_error"): m_clampHighError = param.as_double(); break;
-            case const_hash("velocity_clamps.high_error_threshold"): m_highErrorThreshold = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
             default: break;
         }

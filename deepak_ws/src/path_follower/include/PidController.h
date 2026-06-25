@@ -111,8 +111,6 @@ private:
     double m_clampStraight;
     double m_clampJunction;
     double m_clampTurn;
-    double m_clampHighError;
-    double m_highErrorThreshold;
     double m_junctionDivergenceThreshold;
 
     // Control Loop State

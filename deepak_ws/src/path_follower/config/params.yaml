@@ -16,4 +16,4 @@
       max_frozen_steps: 50
       turn_duration: 3.0
     junction:
-      divergence_threshold: 0.02
+      divergence_threshold: 0.035
