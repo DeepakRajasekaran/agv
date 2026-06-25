@@ -114,6 +114,7 @@ private:
     double m_lostThreshold;
     int m_maxFrozenSteps;
     double m_turnDuration;
+    int m_lineLostGraceSteps;
 
     // Velocity & Junction Clamps
     double m_clampStraight;

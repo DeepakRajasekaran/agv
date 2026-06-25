@@ -16,21 +16,21 @@ namespace path_follower {
 
 /**
  * @brief  Constructor initializing the safety parameters and state variables.
- * @param  lostThreshold  Maximum lateral deviation allowed before line loss detection (meters).
+ * @param  lineLostGraceSteps  Number of consecutive cycles with no track detected before triggering line loss.
  * @param  maxFrozenSteps Number of consecutive cycles with identical values triggering sensor dropout.
  */
-FaultMonitor::FaultMonitor(double lostThreshold, int maxFrozenSteps)
-    : m_lostThreshold(lostThreshold),
+FaultMonitor::FaultMonitor(int lineLostGraceSteps, int maxFrozenSteps)
+    : m_lineLostGraceSteps(lineLostGraceSteps),
       m_maxFrozenSteps(maxFrozenSteps),
       m_hasFault(false),
       m_faultType("NONE"),
       m_estopActive(false),
       m_lastTrackPos(0.0),
       m_frozenStepsCount(0),
-      m_lineLostTimerActive(false)
+      m_lineLostCount(0)
 {
     // Assert parameters are positive and valid
-    assert(lostThreshold > 0.0);
+    assert(lineLostGraceSteps >= 0);
     assert(maxFrozenSteps > 0);
 }
 
@@ -72,9 +72,14 @@ void FaultMonitor::update(double trackPos, bool trackDetect, double leftRpm, dou
         m_faultType = "SENSOR_DROPOUT";
     }
 
-    // 2. Check Line Lost (deviation exceeding threshold or track lost -> stop immediately)
-    bool outOfBounds = std::abs(trackPos) > m_lostThreshold;
-    if (outOfBounds || !trackDetect) {
+    // 2. Check Line Lost (track lost -> stop after grace period)
+    if (!trackDetect) {
+        m_lineLostCount++;
+    } else {
+        m_lineLostCount = 0;
+    }
+
+    if (m_lineLostCount > m_lineLostGraceSteps) {
         m_hasFault = true;
         m_faultType = "LINE_LOST";
     }
@@ -135,7 +140,7 @@ void FaultMonitor::reset()
     m_faultType = "NONE";
     m_estopActive = false;
     m_frozenStepsCount = 0;
-    m_lineLostTimerActive = false;
+    m_lineLostCount = 0;
     
     // Postcondition
     assert(!m_hasFault);
@@ -181,10 +186,10 @@ std::string FaultMonitor::getFaultLog(const std::string& currentState) const
     return ss.str();
 }
 
-void FaultMonitor::setLostThreshold(double lostThreshold)
+void FaultMonitor::setLineLostGraceSteps(int steps)
 {
-    assert(lostThreshold > 0.0);
-    m_lostThreshold = lostThreshold;
+    assert(steps >= 0);
+    m_lineLostGraceSteps = steps;
 }
 
 void FaultMonitor::setMaxFrozenSteps(int maxFrozenSteps)

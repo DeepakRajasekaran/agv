@@ -42,6 +42,10 @@ private:
   // --- ROS Parameters ---
   std::string m_canInterface;
   int m_nodeId;
+  int m_tapeDetectBufferSize{20}; // Number of frames to hold tape_detect true
+
+  // --- Buffers ---
+  int m_tapeDetectBuffer{0};
 
   // --- SocketCAN ---
   int m_canSocket{-1};

@@ -17,7 +17,7 @@ namespace path_follower {
 
 class FaultMonitor {
 public:
-    FaultMonitor(double lostThreshold, int maxFrozenSteps);
+    FaultMonitor(int lineLostGraceSteps, int maxFrozenSteps);
     ~FaultMonitor() = default;
 
     // Disable copy/move constructors for safety
@@ -28,7 +28,7 @@ public:
     void checkTimeout(const std::chrono::steady_clock::time_point& lastUpdateTime);
     void injectEStop(bool active);
     void reset();
-    void setLostThreshold(double lostThreshold);
+    void setLineLostGraceSteps(int lineLostGraceSteps);
     void setMaxFrozenSteps(int maxFrozenSteps);
 
     bool hasFault() const;
@@ -37,7 +37,7 @@ public:
 
 private:
     // Constants & Configuration
-    double m_lostThreshold;
+    int m_lineLostGraceSteps;
     int m_maxFrozenSteps;
 
     // Safety State Variables
@@ -50,8 +50,7 @@ private:
     int m_frozenStepsCount;
 
     // Line loss tracking
-    std::chrono::steady_clock::time_point m_lineLostStartTime;
-    bool m_lineLostTimerActive;
+    int m_lineLostCount;
 };
 
 } // namespace path_follower

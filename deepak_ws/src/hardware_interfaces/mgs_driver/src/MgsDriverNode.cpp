@@ -26,9 +26,11 @@ MgsDriverNode::MgsDriverNode(const rclcpp::NodeOptions & options)
 {
   this->declare_parameter<std::string>("can_interface", "can0");
   this->declare_parameter<int>("node_id", 5);
+  this->declare_parameter<int>("tape_detect_buffer_size", 20);
 
   m_canInterface = this->get_parameter("can_interface").as_string();
   m_nodeId = this->get_parameter("node_id").as_int();
+  m_tapeDetectBufferSize = this->get_parameter("tape_detect_buffer_size").as_int();
 
   assert(!m_canInterface.empty());
   assert(m_nodeId > 0 && m_nodeId <= 127);
@@ -331,7 +333,15 @@ void MgsDriverNode::processTpdo1(const struct can_frame & frame)
   }
 
   bool tape_cross = (flags & 0x0001) != 0;
-  bool tape_detect = (flags & 0x0002) != 0;
+  
+  bool raw_tape_detect = (flags & 0x0002) != 0;
+  if (raw_tape_detect) {
+    m_tapeDetectBuffer = m_tapeDetectBufferSize;
+  } else if (m_tapeDetectBuffer > 0) {
+    m_tapeDetectBuffer--;
+  }
+  bool tape_detect = (m_tapeDetectBuffer > 0);
+  
   bool left_marker = (flags & 0x0004) != 0;
   bool right_marker = (flags & 0x0008) != 0;
   bool sensor_failure = (flags & 0x0040) != 0;

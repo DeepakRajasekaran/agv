@@ -3,9 +3,10 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Bool
 from std_srvs.srv import Trigger
 from custom_interfaces.msg import ControllerState
+from custom_interfaces.srv import SelectTrack
 
 class JunctionManager(Node):
     def __init__(self):
@@ -19,7 +20,15 @@ class JunctionManager(Node):
         self.right_track_pos = 0.0
         self.last_known_straight_pos = 0.0
         
+        self.left_marker = False
+        self.right_marker = False
+        
         self.has_made_decision = False
+        self.current_track_selection = -1
+        
+        # Divergence limit in meters (default 0.15m)
+        self.declare_parameter('divergence_limit', 0.150)
+        self.divergence_limit = self.get_parameter('divergence_limit').get_parameter_value().double_value
         
         # Subscribers
         self.sub_state = self.create_subscription(
@@ -37,10 +46,22 @@ class JunctionManager(Node):
         self.sub_right = self.create_subscription(
             Float32, '/sensor/right_track_position', self.right_track_callback, 10)
             
+        self.sub_left_marker = self.create_subscription(
+            Bool, '/sensor/left_marker', self.left_marker_callback, 10)
+            
+        self.sub_right_marker = self.create_subscription(
+            Bool, '/sensor/right_marker', self.right_marker_callback, 10)
+            
         # Service Clients to MGS1600
         self.cli_fork_left = self.create_client(Trigger, '/sensor/follow_left')
         self.cli_fork_right = self.create_client(Trigger, '/sensor/follow_right')
         self.cli_fork_clear = self.create_client(Trigger, '/sensor/clear_follow')
+        
+        # Service Client to PidController
+        self.cli_select_track = self.create_client(SelectTrack, '/path_follower_node/select_track')
+        
+        # Fast timer to process divergence limits and markers
+        self.timer = self.create_timer(0.05, self.process_track_logic)
         
         self.get_logger().info('Junction Manager Middleware Initialized.')
         
@@ -57,6 +78,7 @@ class JunctionManager(Node):
         if self.current_state == ControllerState.RESUME_TRACKING and prev_state != ControllerState.RESUME_TRACKING:
             self.has_made_decision = False
             self.call_service(self.cli_fork_clear, 'clear_follow')
+            self.set_controller_track(0)
             
     def cmd_vel_callback(self, msg: Twist):
         self.nav_angular_z = msg.angular.z
@@ -71,6 +93,40 @@ class JunctionManager(Node):
         
     def right_track_callback(self, msg: Float32):
         self.right_track_pos = msg.data
+        
+    def left_marker_callback(self, msg: Bool):
+        self.left_marker = msg.data
+
+    def right_marker_callback(self, msg: Bool):
+        self.right_marker = msg.data
+
+    def process_track_logic(self):
+        # We only apply marker-based preemptive tracking if we are not actively in a detected junction state yet
+        if self.current_state == ControllerState.JUNCTION_DETECTED:
+            return
+
+        divergence = abs(self.left_track_pos - self.right_track_pos)
+        
+        if divergence < self.divergence_limit:
+            if self.right_marker:
+                self.update_tracking(2, self.cli_fork_right, 'follow_right')
+            elif self.left_marker:
+                self.update_tracking(1, self.cli_fork_left, 'follow_left')
+            else:
+                self.update_tracking(0, self.cli_fork_clear, 'clear_follow')
+                
+    def update_tracking(self, track_id, client, srv_name):
+        if self.current_track_selection != track_id:
+            self.current_track_selection = track_id
+            self.set_controller_track(track_id)
+            self.call_service(client, srv_name)
+
+    def set_controller_track(self, track_id):
+        if not self.cli_select_track.wait_for_service(timeout_sec=0.1):
+            return
+        req = SelectTrack.Request()
+        req.track_id = track_id
+        self.cli_select_track.call_async(req)
 
     def handle_junction(self):
         self.get_logger().info('Junction Detected! Making tracking decision...')
@@ -78,12 +134,12 @@ class JunctionManager(Node):
         # 1. Nav server wants to turn LEFT
         if self.nav_angular_z > 0.1:
             self.get_logger().info('Nav server commanded LEFT.')
-            self.call_service(self.cli_fork_left, 'follow_left')
+            self.update_tracking(1, self.cli_fork_left, 'follow_left')
             
         # 2. Nav server wants to turn RIGHT
         elif self.nav_angular_z < -0.1:
             self.get_logger().info('Nav server commanded RIGHT.')
-            self.call_service(self.cli_fork_right, 'follow_right')
+            self.update_tracking(2, self.cli_fork_right, 'follow_right')
             
         # 3. Nav server wants to go STRAIGHT (or ambiguous 0.0)
         else:
@@ -97,10 +153,10 @@ class JunctionManager(Node):
             
             if left_diff < right_diff:
                 self.get_logger().info(f'Left track ({left_diff:.3f}) is closer to straight than Right ({right_diff:.3f}). Selecting LEFT.')
-                self.call_service(self.cli_fork_left, 'follow_left')
+                self.update_tracking(1, self.cli_fork_left, 'follow_left')
             else:
                 self.get_logger().info(f'Right track ({right_diff:.3f}) is closer to straight than Left ({left_diff:.3f}). Selecting RIGHT.')
-                self.call_service(self.cli_fork_right, 'follow_right')
+                self.update_tracking(2, self.cli_fork_right, 'follow_right')
 
     def call_service(self, client, srv_name):
         if not client.wait_for_service(timeout_sec=1.0):

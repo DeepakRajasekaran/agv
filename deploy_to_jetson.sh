@@ -106,7 +106,7 @@ case $CHOICE in
         echo "Step 1: Checking docker buildx builder..."
         if ! docker buildx inspect jetson_builder > /dev/null 2>&1; then
             echo "Creating a new buildx builder instance: jetson_builder..."
-            docker buildx create --name jetson_builder --use
+            docker buildx create --name jetson_builder --driver-opt network=host --use
         else
             docker buildx use jetson_builder
         fi

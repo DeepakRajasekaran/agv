@@ -55,6 +55,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_lostThreshold(0.25),
       m_maxFrozenSteps(500),
       m_turnDuration(3.0),
+      m_lineLostGraceSteps(10),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
       m_clampTurn(0.3),
@@ -87,6 +88,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("safety.lost_threshold", m_lostThreshold);
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<double>("safety.turn_duration", m_turnDuration);
+    this->declare_parameter<int>("safety.line_lost_grace_steps", m_lineLostGraceSteps);
     
     // Initialize defaults to prevent garbage memory values
     m_clampStraight = 1.0;
@@ -113,6 +115,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("safety.lost_threshold", m_lostThreshold);
     this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     this->get_parameter("safety.turn_duration", m_turnDuration);
+    this->get_parameter("safety.line_lost_grace_steps", m_lineLostGraceSteps);
     
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
@@ -124,7 +127,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Instantiate State Machine and Safety Monitor
     p_stateMachine = std::make_unique<NavigationStateMachine>();
-    p_faultMonitor = std::make_unique<FaultMonitor>(m_lostThreshold, m_maxFrozenSteps);
+    p_faultMonitor = std::make_unique<FaultMonitor>(m_lineLostGraceSteps, m_maxFrozenSteps);
     p_stateMachine->transitionTo(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
@@ -549,7 +552,10 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
             case const_hash("safety.lost_threshold"): 
                 m_lostThreshold = param.as_double(); 
-                p_faultMonitor->setLostThreshold(m_lostThreshold);
+                break;
+            case const_hash("safety.line_lost_grace_steps"): 
+                m_lineLostGraceSteps = static_cast<int>(param.as_int()); 
+                p_faultMonitor->setLineLostGraceSteps(m_lineLostGraceSteps);
                 break;
             case const_hash("safety.max_frozen_steps"): 
                 m_maxFrozenSteps = static_cast<int>(param.as_int()); 

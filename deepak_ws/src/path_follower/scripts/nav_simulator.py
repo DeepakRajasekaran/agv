@@ -28,6 +28,7 @@ class NavSimulator(Node):
         self.start_client = self.create_client(Trigger, '/path_follower_node/start')
         self.select_track_client = self.create_client(SelectTrack, '/path_follower_node/select_track')
         self.start_called = False
+        self.error_start_time = None
         
     def state_callback(self, msg: ControllerState):
         prev_state = self.current_state
@@ -62,6 +63,21 @@ class NavSimulator(Node):
                 req = Trigger.Request()
                 self.start_client.call_async(req)
                 self.start_called = True
+        
+        # Auto-recovery if ERROR
+        if self.current_state == ControllerState.ERROR:
+            if self.error_start_time is None:
+                self.error_start_time = self.get_clock().now()
+            else:
+                elapsed = (self.get_clock().now() - self.error_start_time).nanoseconds / 1e9
+                if elapsed > 2.0:
+                    self.get_logger().warn('Auto-recovering from ERROR state...')
+                    if self.start_client.wait_for_service(timeout_sec=0.1):
+                        req = Trigger.Request()
+                        self.start_client.call_async(req)
+                        self.error_start_time = None
+        else:
+            self.error_start_time = None
         
         msg = Twist()
         
