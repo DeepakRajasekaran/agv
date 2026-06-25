@@ -115,21 +115,30 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     p_faultMonitor = std::make_unique<FaultMonitor>(m_lostThreshold, m_maxFrozenSteps);
     p_stateMachine->transitionTo(State::INITIALIZE, "NODE_START");
 
+    // Parameterize input topics
+    std::string track_pos_topic = this->declare_parameter("topics.track_position", "/sensor/track_position");
+    std::string track_detect_topic = this->declare_parameter("topics.track_detect", "/sensor/track_detect");
+    std::string left_marker_topic = this->declare_parameter("topics.left_marker", "/sensor/left_marker");
+    std::string right_marker_topic = this->declare_parameter("topics.right_marker", "/sensor/right_marker");
+    std::string left_track_pos_topic = this->declare_parameter("topics.left_track_position", "/sensor/left_track_position");
+    std::string right_track_pos_topic = this->declare_parameter("topics.right_track_position", "/sensor/right_track_position");
+    std::string tape_cross_topic = this->declare_parameter("topics.tape_cross", "/sensor/tape_cross");
+
     // ROS 2 Subscribers
     m_subTrackPos = this->create_subscription<std_msgs::msg::Float32>(
-        "/sensor/track_position_test", 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
+        track_pos_topic, 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
     m_subTrackDetect = this->create_subscription<std_msgs::msg::Bool>(
-        "/sensor/track_detect", 10, std::bind(&PidController::trackDetectCallback, this, std::placeholders::_1));
+        track_detect_topic, 10, std::bind(&PidController::trackDetectCallback, this, std::placeholders::_1));
     m_subLeftMarker = this->create_subscription<std_msgs::msg::Bool>(
-        "/sensor/left_marker", 10, std::bind(&PidController::leftMarkerCallback, this, std::placeholders::_1));
+        left_marker_topic, 10, std::bind(&PidController::leftMarkerCallback, this, std::placeholders::_1));
     m_subRightMarker = this->create_subscription<std_msgs::msg::Bool>(
-        "/sensor/right_marker", 10, std::bind(&PidController::rightMarkerCallback, this, std::placeholders::_1));
+        right_marker_topic, 10, std::bind(&PidController::rightMarkerCallback, this, std::placeholders::_1));
     m_subLeftTrackPos = this->create_subscription<std_msgs::msg::Float32>(
-        "/sensor/left_track_position", 10, std::bind(&PidController::leftTrackPosCallback, this, std::placeholders::_1));
+        left_track_pos_topic, 10, std::bind(&PidController::leftTrackPosCallback, this, std::placeholders::_1));
     m_subRightTrackPos = this->create_subscription<std_msgs::msg::Float32>(
-        "/sensor/right_track_position", 10, std::bind(&PidController::rightTrackPosCallback, this, std::placeholders::_1));
+        right_track_pos_topic, 10, std::bind(&PidController::rightTrackPosCallback, this, std::placeholders::_1));
     m_subTapeCross = this->create_subscription<std_msgs::msg::Bool>(
-        "/sensor/tape_cross", 10, std::bind(&PidController::tapeCrossCallback, this, std::placeholders::_1));
+        tape_cross_topic, 10, std::bind(&PidController::tapeCrossCallback, this, std::placeholders::_1));
 
     // ROS 2 Publishers
     m_pubCmdVel = this->create_publisher<geometry_msgs::msg::TwistStamped>("/diff_drive_controller/cmd_vel", 10);
