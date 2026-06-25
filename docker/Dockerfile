@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-xacro \
     ros-jazzy-robot-state-publisher \
     ros-jazzy-twist-stamper \
+    ros-jazzy-twist-mux \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /agv
