@@ -8,8 +8,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     teleop_type_arg = DeclareLaunchArgument(
         'teleop_type',
-        default_value='keyboard',
-        description='Type of teleop: "keyboard" or "turtlebot3"'
+        default_value='tk',
+        description='Type of teleop: "tk" or "tb3"'
     )
 
     teleop_type = LaunchConfiguration('teleop_type')
@@ -23,7 +23,7 @@ def generate_launch_description():
         output='screen',
         remappings=[('/cmd_vel', '/teleop/cmd_vel')],
         condition=IfCondition(PythonExpression([
-            "'", LaunchConfiguration('teleop_type'), "' == 'keyboard'"
+            "'", LaunchConfiguration('teleop_type'), "' == 'tk'"
         ]))
     )
     
@@ -35,7 +35,7 @@ def generate_launch_description():
         remappings=[('/cmd_vel', '/teleop/cmd_vel')],
         additional_env={'TURTLEBOT3_MODEL': 'burger'},
         condition=IfCondition(PythonExpression([
-            "'", LaunchConfiguration('teleop_type'), "' == 'turtlebot3'"
+            "'", LaunchConfiguration('teleop_type'), "' == 'tb3'"
         ]))
     )
 
