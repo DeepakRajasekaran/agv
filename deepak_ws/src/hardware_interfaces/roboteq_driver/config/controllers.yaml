@@ -16,7 +16,7 @@ diff_drive_controller:
     wheel_separation: 0.512
     wheel_radius: 0.08
 
-    use_stamped_vel: false
+    use_stamped_vel: true
 
     # Odometry publishing
     odom_frame_id: odom
