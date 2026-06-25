@@ -273,7 +273,10 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
 
-    p_faultMonitor->update(computed_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
+    // Pass the raw sensor data (msg->data) to the fault monitor, NOT computed_error.
+    // This prevents false positive 'FROZEN_SENSOR' faults if the mathematically averaged 
+    // left/right boundaries happen to perfectly cancel out to exactly 0.0 for 0.5 seconds.
+    p_faultMonitor->update(msg->data, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
     if (p_faultMonitor->hasFault()) {
         handleFault(p_faultMonitor->getFaultType());
         return;
