@@ -13,4 +13,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 # For libraries and headers in the target directories
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# BOTH allows CMake to find locally-built ament/colcon packages (e.g. custom_interfaces)
+# in addition to sysroot packages
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
