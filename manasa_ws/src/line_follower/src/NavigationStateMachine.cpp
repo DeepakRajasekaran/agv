@@ -114,17 +114,12 @@ void NavigationStateMachine::tick()
       break;
 
     case NavState::FOLLOW_LINE:
-      // Fault: track lost
+      // Track-loss is handled by LineFollowerNode (it zeroes cmd_vel while
+      // track_detect == false and resumes automatically when it returns).
+      // Keep the PID ENABLED throughout so it self-recovers — no ERROR latch.
       if (!m_trackDetected) {
-        m_trackLostCount++;
-        if (m_trackLostCount >= TRACK_LOST_THRESHOLD) {
-          RCLCPP_WARN(this->get_logger(), "Track lost for %.1fs — entering ERROR",
-                      TRACK_LOST_THRESHOLD * 0.02);
-          enablePid(false);
-          setState(NavState::ERROR);
-        }
-      } else {
-        m_trackLostCount = 0;
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                             "Track not detected — robot holding, PID stays enabled");
       }
       // Junction: tape cross detected
       if (m_tapeCrossed) {
@@ -188,7 +183,7 @@ void NavigationStateMachine::srvStart(const std::shared_ptr<std_srvs::srv::Trigg
                                       std::shared_ptr<std_srvs::srv::Trigger::Response> res)
 {
   (void)req;
-  if (m_state == NavState::IDLE || m_state == NavState::STOP) {
+  if (m_state == NavState::IDLE || m_state == NavState::STOP || m_state == NavState::ERROR) {
     setState(NavState::INITIALIZE);
     res->success = true;
     res->message = "Starting navigation";
