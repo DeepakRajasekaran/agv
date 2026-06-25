@@ -66,35 +66,41 @@ COPY docker/aarch64_toolchain.cmake /agv/aarch64_toolchain.cmake
 
 RUN mkdir -p /agv/deepak_ws/install /agv/manasa_ws/install
 
-# We rely on the symlink for CMake to find everything natively at /opt/ros/jazzy
-ENV AMENT_PREFIX_PATH=/opt/ros/jazzy
-ENV CMAKE_PREFIX_PATH=/opt/ros/jazzy
-ENV PYTHONPATH=/opt/ros/jazzy/lib/python3.12/site-packages
-
 # Build deepak_ws natively using the cross-compiler
 WORKDIR /agv/deepak_ws
 COPY deepak_ws/sr[c]/ ./src/
+# Two-pass build: first build message interfaces, then everything else that depends on them
 RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
-        colcon build \
-            --merge-install \
-            --cmake-args \
-            -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
-            -DCMAKE_SYSROOT=/sysroot \
-            -DCMAKE_BUILD_TYPE=Release \
-            -G Ninja; \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && \
+            colcon build \
+                --merge-install \
+                --packages-select custom_interfaces robot_description \
+                --cmake-args \
+                -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
+                -DCMAKE_SYSROOT=/sysroot \
+                -DCMAKE_BUILD_TYPE=Release \
+                -G Ninja && \
+            source install/local_setup.bash && \
+            colcon build \
+                --merge-install \
+                --cmake-args \
+                -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
+                -DCMAKE_SYSROOT=/sysroot \
+                -DCMAKE_BUILD_TYPE=Release \
+                -G Ninja"; \
     fi
 
 # Build manasa_ws natively using the cross-compiler
 WORKDIR /agv/manasa_ws
 COPY manasa_ws/sr[c]/ ./src/
 RUN if [ "$BUILD_MANASA" = "true" ]; then \
-        colcon build \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build \
             --merge-install \
             --cmake-args \
             -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
             -DCMAKE_SYSROOT=/sysroot \
             -DCMAKE_BUILD_TYPE=Release \
-            -G Ninja; \
+            -G Ninja"; \
     fi
 
 # Stage 3: Deployment Image (ARM64)
