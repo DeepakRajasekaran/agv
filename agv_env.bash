@@ -14,7 +14,7 @@ export SIM_TOOL=MUJOCO
 # Build Settings
 # ==========================================
 # BUILD_MODE options: host, deployment
-export BUILD_MODE=host
+export BUILD_MODE=deployment
 
 # ==========================================
 # Kinematic Properties
@@ -39,7 +39,14 @@ export CMD_TOPIC=/cmd_rpm
 export LEFT_JOINT_NAME=left_wheel_joint
 export RIGHT_JOINT_NAME=right_wheel_joint
 
-echo "AGV Environment Variables Loaded!"
+# Configure ROS 2 Domain ID
+export ROS_DOMAIN_ID=42
+
+# Useful Aliases
+alias teleop="ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/teleop/cmd_vel"
+
+# Print Configuration
+echo "=== AGV Environment Configured ==="
 echo "  MODE: $MODE"
 echo "  SIM_TOOL: $SIM_TOOL"
 echo "  KINEMATICS: $KINEMATIC_MODEL (Base: ${WHEEL_BASE}m, Radius: ${WHEEL_RADIUS}m)"

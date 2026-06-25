@@ -5,6 +5,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from custom_interfaces.msg import ControllerState
 
+from std_srvs.srv import Trigger
+
 class NavSimulator(Node):
     def __init__(self):
         super().__init__('nav_simulator')
@@ -27,6 +29,9 @@ class NavSimulator(Node):
             
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.get_logger().info(f'Nav Simulator started with sequence: {self.turn_sequence}')
+        
+        self.start_client = self.create_client(Trigger, '/path_follower_node/start')
+        self.start_called = False
         
     def state_callback(self, msg: ControllerState):
         prev_state = self.current_state
@@ -51,6 +56,14 @@ class NavSimulator(Node):
                 self.get_logger().info('Turn sequence finished. Stopping navigation.')
 
     def timer_callback(self):
+        # Auto-start if IDLE
+        if self.current_state == ControllerState.IDLE and not self.start_called:
+            if self.start_client.wait_for_service(timeout_sec=0.1):
+                self.get_logger().info('Calling /path_follower_node/start...')
+                req = Trigger.Request()
+                self.start_client.call_async(req)
+                self.start_called = True
+        
         msg = Twist()
         
         # If tracking is active, provide velocity
