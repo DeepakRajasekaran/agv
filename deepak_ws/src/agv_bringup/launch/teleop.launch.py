@@ -1,7 +1,7 @@
 import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 
@@ -22,10 +22,9 @@ def generate_launch_description():
         executable='teleop_twist_keyboard',
         output='screen',
         remappings=[('/cmd_vel', '/teleop/cmd_vel')],
-        condition=IfCondition([
-            LaunchConfiguration('teleop_type'),
-            " == 'keyboard'"
-        ])
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('teleop_type'), "' == 'keyboard'"
+        ]))
     )
     
     # 2. turtlebot3_teleop (requires TURTLEBOT3_MODEL in env, we can spoof it or set it in launch env)
@@ -35,10 +34,9 @@ def generate_launch_description():
         output='screen',
         remappings=[('/cmd_vel', '/teleop/cmd_vel')],
         additional_env={'TURTLEBOT3_MODEL': 'burger'},
-        condition=IfCondition([
-            LaunchConfiguration('teleop_type'),
-            " == 'turtlebot3'"
-        ])
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('teleop_type'), "' == 'turtlebot3'"
+        ]))
     )
 
     # 3. Optional Stamper (If running teleop standalone without bringup)
