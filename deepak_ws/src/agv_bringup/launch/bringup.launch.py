@@ -82,7 +82,7 @@ def generate_launch_description():
         package='twist_mux',
         executable='twist_mux',
         output='screen',
-        parameters=[twist_mux_params, twist_mux_locks],
+        parameters=[twist_mux_params, twist_mux_locks, {'use_stamped': False}],
         remappings=[('cmd_vel_out', '/cmd_vel_out')]
     ))
 
