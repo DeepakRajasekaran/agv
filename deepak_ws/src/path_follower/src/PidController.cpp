@@ -251,8 +251,21 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         return;
     }
 
-    double error = static_cast<double>(msg->data);
-    double pidAngularVel = computeSteering(error, dt);
+    double computed_error = 0.0;
+    double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+    
+    if (divergence < m_junctionDivergenceThreshold) {
+        computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
+    } else {
+        if (currentState == ControllerState::EXECUTE_TURN) {
+            computed_error = static_cast<double>(msg->data);
+        } else {
+            computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
+        }
+    }
+
+    double pidAngularVel = computeSteering(computed_error, dt);
+
 
     // Inverse kinematics for fault monitor saturation checking
     double v_l = m_cmdLinearX - (pidAngularVel * m_wheelBase / 2.0);
@@ -260,7 +273,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
 
-    p_faultMonitor->update(error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
+    p_faultMonitor->update(computed_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
     if (p_faultMonitor->hasFault()) {
         handleFault(p_faultMonitor->getFaultType());
         return;
@@ -272,11 +285,11 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     switch (currentState) {
         case ControllerState::FOLLOW_LINE: {
             linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
-            if (std::abs(error) > m_highErrorThreshold) {
+            if (std::abs(computed_error) > m_highErrorThreshold) {
                 linearVel = std::clamp(linearVel, -m_clampHighError, m_clampHighError);
             }
 
-            double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+            divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
             if (divergence > m_junctionDivergenceThreshold || m_tapeCross) {
                 p_stateMachine->transitionTo(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
                 publishControllerState();
@@ -295,7 +308,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
                 publishControllerState();
             } else {
                 // If divergence drops and we never got a command, it might have been a false positive or we drove past it
-                double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+                divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
                 if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
                     p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "FALSE_JUNCTION_CLEARED");
                     publishControllerState();
@@ -316,7 +329,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
             linearVel = std::clamp(linearVel, -m_clampTurn, m_clampTurn);
             publishVelocity(linearVel, pidAngularVel);
             
-            double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+            divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
             // Once the sensor merges back to a single track, we can resume normal following
             if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
                 p_stateMachine->transitionTo(ControllerState::RESUME_TRACKING, "TRACKS_MERGED");
@@ -340,7 +353,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     if (m_logCounter++ % 10 == 0) {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
             "State: %s | Err: %.3f | Steer: %.3f", 
-            p_stateMachine->getCurrentStateString().c_str(), error, pidAngularVel);
+            p_stateMachine->getCurrentStateString().c_str(), computed_error, pidAngularVel);
     }
 }
 
