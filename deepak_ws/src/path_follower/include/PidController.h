@@ -13,8 +13,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/string.hpp>
-#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <custom_interfaces/msg/controller_state.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <memory>
 #include <string>
@@ -44,10 +44,11 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subLeftTrackPos;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subRightTrackPos;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subTapeCross;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_subCmdVel;
 
     // ROS 2 Publishers
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr m_pubCmdVel;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_pubControllerState;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_pubCmdVel;
+    rclcpp::Publisher<custom_interfaces::msg::ControllerState>::SharedPtr m_pubControllerState;
 
     // Subscriber Callbacks
     void trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
@@ -57,6 +58,7 @@ private:
     void leftTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void rightTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
 
     // ROS 2 Services (Controller)
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvAutotune;
@@ -75,11 +77,6 @@ private:
     void stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                       std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
-    // ROS 2 Service Clients (MGS Driver)
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliFollowLeft;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliFollowRight;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr m_cliClearFollow;
-
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
     void safetyCheckCallback();
@@ -91,7 +88,6 @@ private:
     void publishVelocity(double linearVel, double angularVel);
     void handleFault(const std::string& faultType);
     void publishControllerState();
-    void executeJunctionTurn();
 
     // Tunable Parameters (PID)
     double m_kp;
@@ -101,7 +97,6 @@ private:
     double m_maxOutput;
 
     // Robot Parameters
-    double m_nominalSpeed;
     double m_maxRpm;
     double m_wheelBase;
     double m_wheelRadius;
@@ -112,17 +107,20 @@ private:
     int m_maxFrozenSteps;
     double m_turnDuration;
 
-    // Junction Parameters
+    // Velocity & Junction Clamps
+    double m_clampStraight;
+    double m_clampJunction;
+    double m_clampTurn;
+    double m_clampHighError;
+    double m_highErrorThreshold;
     double m_junctionDivergenceThreshold;
-    std::vector<std::string> m_turnSequence;
-    size_t m_turnIndex;
-    bool m_loopSequence;
 
     // Control Loop State
     double m_integralError;
     double m_prevError;
+    double m_cmdLinearX;
+    double m_cmdAngularZ;
     std::chrono::steady_clock::time_point m_lastSensorUpdateTime;
-    rclcpp::Time m_turnStartTime;
 
     bool m_trackDetect;
     bool m_leftMarker;

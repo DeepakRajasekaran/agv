@@ -11,18 +11,12 @@
 
 #include <string>
 
+#include <cstdint>
+#include "custom_interfaces/msg/controller_state.hpp"
+
 namespace path_follower {
 
-enum class State {
-    IDLE,
-    INITIALIZE,
-    FOLLOW_LINE,
-    JUNCTION_DETECTED,
-    EXECUTE_TURN,
-    RESUME_TRACKING,
-    STOP,
-    ERROR
-};
+using State = uint8_t;
 
 std::string stateToString(State state);
 

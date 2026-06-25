@@ -26,6 +26,7 @@ def generate_launch_description():
     # Parse directories
     driver_dir = get_package_share_directory('roboteq_driver')
     desc_dir = get_package_share_directory('robot_description')
+    bringup_dir = get_package_share_directory('agv_bringup')
 
     # Files
     controllers_file = os.path.join(driver_dir, 'config', 'controllers.yaml')
@@ -73,13 +74,25 @@ def generate_launch_description():
         arguments=["diff_drive_controller", "--controller-manager", "/controller_manager", "-p", controllers_file],
     ))
 
-    # 4. Twist to TwistStamped Relay Node
+    # 4. Twist Mux Node
+    twist_mux_params = os.path.join(bringup_dir, 'config', 'twist_mux_topics.yaml')
+    twist_mux_locks = os.path.join(bringup_dir, 'config', 'twist_mux_locks.yaml')
+    
+    nodes.append(Node(
+        package='twist_mux',
+        executable='twist_mux',
+        output='screen',
+        parameters=[twist_mux_params, twist_mux_locks],
+        remappings=[('cmd_vel_out', '/cmd_vel_out')]
+    ))
+
+    # 4b. Twist to TwistStamped Relay Node
     nodes.append(Node(
         package='twist_stamper',
         executable='twist_stamper',
         output='screen',
         remappings=[
-            ('cmd_vel_in', '/cmd_vel'),
+            ('cmd_vel_in', '/cmd_vel_out'),
             ('cmd_vel_out', '/diff_drive_controller/cmd_vel')
         ]
     ))
@@ -105,6 +118,14 @@ def generate_launch_description():
         executable='path_follower_node',
         output='screen',
         parameters=path_follower_params,
+        condition=IfCondition(launch_path_follower)
+    ))
+
+    # 6b. Junction Manager Middleware
+    nodes.append(Node(
+        package='path_follower',
+        executable='junction_manager.py',
+        output='screen',
         condition=IfCondition(launch_path_follower)
     ))
 

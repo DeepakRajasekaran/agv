@@ -1,9 +1,10 @@
 /*
  * Name:        PidController.cpp
  * Author:      Deepak Rajasekaran
- * Date:        2026-06-24
- * Version:     2.0
+ * Date:        2026-06-25
+ * Version:     3.0
  * Description: Implements the PidController class for ROS 2 magnetic line following.
+ *              Decoupled architecture: reads /nav/cmd_vel, outputs /path_follower/cmd_vel.
  */
 
 #include "PidController.h"
@@ -15,7 +16,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include <cstdint>
 
 using namespace std::chrono_literals;
@@ -38,6 +39,8 @@ namespace {
 
 namespace path_follower {
 
+using custom_interfaces::msg::ControllerState;
+
 PidController::PidController(const rclcpp::NodeOptions& options)
     : Node("path_follower_node", options),
       m_kp(1.5),
@@ -45,7 +48,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_kd(0.12),
       m_windupLimit(0.5),
       m_maxOutput(1.5),
-      m_nominalSpeed(0.20),
       m_maxRpm(150.0),
       m_wheelBase(0.512),
       m_wheelRadius(0.08),
@@ -53,12 +55,16 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_lostThreshold(0.25),
       m_maxFrozenSteps(50),
       m_turnDuration(3.0),
+      m_clampStraight(1.0),
+      m_clampJunction(0.15),
+      m_clampTurn(0.10),
+      m_clampHighError(0.10),
+      m_highErrorThreshold(0.05),
       m_junctionDivergenceThreshold(0.02),
-      m_turnIndex(0),
-      m_loopSequence(true),
       m_integralError(0.0),
       m_prevError(0.0),
-      m_turnStartTime(this->now()),
+      m_cmdLinearX(0.0),
+      m_cmdAngularZ(0.0),
       m_trackDetect(false),
       m_leftMarker(false),
       m_rightMarker(false),
@@ -75,7 +81,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("pid.windup_limit", m_windupLimit);
     this->declare_parameter<double>("pid.max_output", m_maxOutput);
     
-    this->declare_parameter<double>("robot.nominal_speed", m_nominalSpeed);
     this->declare_parameter<double>("robot.max_rpm", m_maxRpm);
     this->declare_parameter<double>("robot.wheel_base", m_wheelBase);
     this->declare_parameter<double>("robot.wheel_radius", m_wheelRadius);
@@ -85,9 +90,13 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<double>("safety.turn_duration", m_turnDuration);
     
+    this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
+    this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
+    this->declare_parameter<double>("velocity_clamps.turn", m_clampTurn);
+    this->declare_parameter<double>("velocity_clamps.high_error", m_clampHighError);
+    this->declare_parameter<double>("velocity_clamps.high_error_threshold", m_highErrorThreshold);
+
     this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
-    this->declare_parameter<std::vector<std::string>>("junction.turn_sequence", {"STRAIGHT"});
-    this->declare_parameter<bool>("junction.loop_sequence", m_loopSequence);
 
     // Retrieve parameter values
     this->get_parameter("pid.kp", m_kp);
@@ -95,7 +104,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("pid.kd", m_kd);
     this->get_parameter("pid.windup_limit", m_windupLimit);
     this->get_parameter("pid.max_output", m_maxOutput);
-    this->get_parameter("robot.nominal_speed", m_nominalSpeed);
     this->get_parameter("robot.max_rpm", m_maxRpm);
     this->get_parameter("robot.wheel_base", m_wheelBase);
     this->get_parameter("robot.wheel_radius", m_wheelRadius);
@@ -103,9 +111,14 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("safety.lost_threshold", m_lostThreshold);
     this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     this->get_parameter("safety.turn_duration", m_turnDuration);
+    
+    this->get_parameter("velocity_clamps.straight", m_clampStraight);
+    this->get_parameter("velocity_clamps.junction", m_clampJunction);
+    this->get_parameter("velocity_clamps.turn", m_clampTurn);
+    this->get_parameter("velocity_clamps.high_error", m_clampHighError);
+    this->get_parameter("velocity_clamps.high_error_threshold", m_highErrorThreshold);
+
     this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
-    this->get_parameter("junction.turn_sequence", m_turnSequence);
-    this->get_parameter("junction.loop_sequence", m_loopSequence);
 
     // Initial time points
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
@@ -113,7 +126,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     // Instantiate State Machine and Safety Monitor
     p_stateMachine = std::make_unique<NavigationStateMachine>();
     p_faultMonitor = std::make_unique<FaultMonitor>(m_lostThreshold, m_maxFrozenSteps);
-    p_stateMachine->transitionTo(State::INITIALIZE, "NODE_START");
+    p_stateMachine->transitionTo(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
     std::string track_pos_topic = this->declare_parameter("topics.track_position", "/sensor/track_position");
@@ -125,6 +138,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     std::string tape_cross_topic = this->declare_parameter("topics.tape_cross", "/sensor/tape_cross");
 
     // ROS 2 Subscribers
+    m_subCmdVel = this->create_subscription<geometry_msgs::msg::Twist>(
+        "/nav/cmd_vel", 10, std::bind(&PidController::cmdVelCallback, this, std::placeholders::_1));
+
     m_subTrackPos = this->create_subscription<std_msgs::msg::Float32>(
         track_pos_topic, 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
     m_subTrackDetect = this->create_subscription<std_msgs::msg::Bool>(
@@ -141,8 +157,8 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         tape_cross_topic, 10, std::bind(&PidController::tapeCrossCallback, this, std::placeholders::_1));
 
     // ROS 2 Publishers
-    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::TwistStamped>("/diff_drive_controller/cmd_vel", 10);
-    m_pubControllerState = this->create_publisher<std_msgs::msg::String>("/controller_state", 10);
+    m_pubCmdVel = this->create_publisher<geometry_msgs::msg::Twist>("/path_follower/cmd_vel", 10);
+    m_pubControllerState = this->create_publisher<ControllerState>("/controller_state", 10);
 
     // ROS 2 Services
     m_srvAutotune = this->create_service<std_srvs::srv::Trigger>(
@@ -154,11 +170,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_srvStop = this->create_service<std_srvs::srv::Trigger>(
         "~/stop", std::bind(&PidController::stopCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-    // ROS 2 Service Clients (MGS Driver)
-    m_cliFollowLeft = this->create_client<std_srvs::srv::Trigger>("/sensor/follow_left");
-    m_cliFollowRight = this->create_client<std_srvs::srv::Trigger>("/sensor/follow_right");
-    m_cliClearFollow = this->create_client<std_srvs::srv::Trigger>("/sensor/clear_follow");
-
     // Safety timeout check timer (50Hz = 20ms)
     m_safetyTimer = this->create_wall_timer(
         std::chrono::milliseconds(20), std::bind(&PidController::safetyCheckCallback, this));
@@ -168,7 +179,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         std::bind(&PidController::onParameterChange, this, std::placeholders::_1));
 
     // Move to run state
-    p_stateMachine->transitionTo(State::IDLE, "INITIALIZATION_COMPLETE");
+    p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
     publishControllerState();
     RCLCPP_INFO(this->get_logger(), "Path Follower running. Call ~/start to begin tracking.");
 }
@@ -178,13 +189,18 @@ PidController::~PidController()
     publishVelocity(0.0, 0.0);
 }
 
+void PidController::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
+{
+    m_cmdLinearX = msg->linear.x;
+    m_cmdAngularZ = msg->angular.z;
+}
+
 double PidController::computeSteering(double error, double dt)
 {
     assert(std::isfinite(error));
     assert(dt > 0.0);
 
     // Lookahead heading angle calculation (atan2(y, x))
-    // We treat the lateral error 'e_y' as the Y offset, and the sensor distance 'm_sensorOffsetX' as the X offset.
     double theta_correction = std::atan2(error, m_sensorOffsetX);
 
     // PID on the lookahead heading angle
@@ -217,10 +233,16 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
 
     State currentState = p_stateMachine->getCurrentState();
-    if (currentState == State::IDLE || currentState == State::INITIALIZE || currentState == State::STOP || currentState == State::ERROR) {
+    
+    // Pass-through states (Nav Server controls directly)
+    if (currentState == ControllerState::IDLE || 
+        currentState == ControllerState::INITIALIZE || 
+        currentState == ControllerState::STOP || 
+        currentState == ControllerState::ERROR) 
+    {
         m_integralError = 0.0;
         m_prevError = 0.0;
-        publishVelocity(0.0, 0.0);
+        publishVelocity(m_cmdLinearX, m_cmdAngularZ);
         
         if (m_logCounter++ % 100 == 0) {
             RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
@@ -230,19 +252,11 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     }
 
     double error = static_cast<double>(msg->data);
-    double angularVel = computeSteering(error, dt);
-
-    // Speed scaling based on error magnitude
-    double abs_error = std::abs(error);
-    double error_scale = 1.0 - (0.7 * (std::min(abs_error, 0.090) / 0.090));
-    double abs_steer = std::abs(angularVel);
-    double steer_scale = 1.0 - (0.7 * (std::min(abs_steer, 1.5) / 1.5));
-    double speed_scale = std::min(error_scale, steer_scale);
-    double linearVel = m_nominalSpeed * speed_scale * 0.30; // Clamped to 30% for testing
+    double pidAngularVel = computeSteering(error, dt);
 
     // Inverse kinematics for fault monitor saturation checking
-    double v_l = linearVel - (angularVel * m_wheelBase / 2.0);
-    double v_r = linearVel + (angularVel * m_wheelBase / 2.0);
+    double v_l = m_cmdLinearX - (pidAngularVel * m_wheelBase / 2.0);
+    double v_r = m_cmdLinearX + (pidAngularVel * m_wheelBase / 2.0);
     double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
 
@@ -252,57 +266,63 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         return;
     }
 
+    double linearVel = m_cmdLinearX;
+
     // State Management
     switch (currentState) {
-        case State::FOLLOW_LINE: {
+        case ControllerState::FOLLOW_LINE: {
+            linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
+            if (std::abs(error) > m_highErrorThreshold) {
+                linearVel = std::clamp(linearVel, -m_clampHighError, m_clampHighError);
+            }
+
             double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
             if (divergence > m_junctionDivergenceThreshold || m_tapeCross) {
-                p_stateMachine->transitionTo(State::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
+                p_stateMachine->transitionTo(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
                 publishControllerState();
             }
-            publishVelocity(linearVel, angularVel);
+            publishVelocity(linearVel, pidAngularVel);
             break;
         }
 
-        case State::JUNCTION_DETECTED: {
-            // Drop speed approaching junction
-            publishVelocity(linearVel * 0.60, angularVel);
+        case ControllerState::JUNCTION_DETECTED: {
+            linearVel = std::clamp(linearVel, -m_clampJunction, m_clampJunction);
+            publishVelocity(linearVel, pidAngularVel);
             
-            // Execute programmatic sequence
-            executeJunctionTurn();
-            break;
-        }
-
-        case State::EXECUTE_TURN: {
-            // Slower speed for sharp cornering
-            publishVelocity(linearVel * 0.40, angularVel);
-            
-            // Check if tracks have merged back into one line
-            double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-            double elapsed = (this->now() - m_turnStartTime).seconds();
-            
-            // Ensure minimum time spent in turn so we don't prematurely exit before crossing the gap
-            if (divergence < m_junctionDivergenceThreshold && elapsed >= 1.0 && !m_tapeCross) {
-                
-                // Clear the manual track follow override
-                auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-                m_cliClearFollow->async_send_request(req);
-                
-                p_stateMachine->transitionTo(State::RESUME_TRACKING, "TRACKS_MERGED");
-                publishControllerState();
-            }
-            break;
-        }
-
-        case State::RESUME_TRACKING:
-            publishVelocity(linearVel, angularVel);
-            p_stateMachine->transitionTo(State::FOLLOW_LINE, "RESUMED");
+            // Immediately transition to EXECUTE_TURN so middleware can handle track switching
+            p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "JUNCTION_ACKNOWLEDGED");
             publishControllerState();
             break;
-
-        case State::ERROR:
+        }
+        
+        case ControllerState::READ_TAG: {
+            // Stub for future RFID/Tag integration
             publishVelocity(0.0, 0.0);
+            p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "TAG_READ_STUB");
+            publishControllerState();
             break;
+        }
+
+        case ControllerState::EXECUTE_TURN: {
+            linearVel = std::clamp(linearVel, -m_clampTurn, m_clampTurn);
+            publishVelocity(linearVel, pidAngularVel);
+            
+            double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+            // Once the sensor merges back to a single track, we can resume normal following
+            if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
+                p_stateMachine->transitionTo(ControllerState::RESUME_TRACKING, "TRACKS_MERGED");
+                publishControllerState();
+            }
+            break;
+        }
+
+        case ControllerState::RESUME_TRACKING: {
+            linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
+            publishVelocity(linearVel, pidAngularVel);
+            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "RESUMED");
+            publishControllerState();
+            break;
+        }
 
         default:
             break;
@@ -311,51 +331,8 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     if (m_logCounter++ % 10 == 0) {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
             "State: %s | Err: %.3f | Steer: %.3f", 
-            p_stateMachine->getCurrentStateString().c_str(), error, angularVel);
+            p_stateMachine->getCurrentStateString().c_str(), error, pidAngularVel);
     }
-}
-
-void PidController::executeJunctionTurn()
-{
-    if (m_turnSequence.empty()) {
-        RCLCPP_WARN(this->get_logger(), "Turn sequence is empty! Halting.");
-        handleFault("EMPTY_SEQUENCE");
-        return;
-    }
-
-    if (m_turnIndex >= m_turnSequence.size()) {
-        if (m_loopSequence) {
-            m_turnIndex = 0; // Wrap around
-            RCLCPP_INFO(this->get_logger(), "Turn sequence wrapped around to 0.");
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Reached end of turn sequence. Halting.");
-            handleFault("SEQUENCE_COMPLETE");
-            return;
-        }
-    }
-
-    std::string nextTurn = m_turnSequence[m_turnIndex];
-    m_turnIndex++;
-
-    RCLCPP_INFO(this->get_logger(), "Executing Turn: %s", nextTurn.c_str());
-
-    auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-
-    if (nextTurn == "LEFT") {
-        m_cliFollowLeft->async_send_request(req);
-    } else if (nextTurn == "RIGHT") {
-        m_cliFollowRight->async_send_request(req);
-    } else if (nextTurn == "STRAIGHT") {
-        // Clear follow implicitly favors dominant track or straight line
-        m_cliClearFollow->async_send_request(req);
-    } else {
-        RCLCPP_WARN(this->get_logger(), "Unknown turn command '%s', defaulting to clear.", nextTurn.c_str());
-        m_cliClearFollow->async_send_request(req);
-    }
-
-    m_turnStartTime = this->now();
-    p_stateMachine->transitionTo(State::EXECUTE_TURN, "TURN_COMMAND_SENT");
-    publishControllerState();
 }
 
 void PidController::trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg)
@@ -394,10 +371,10 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
     (void)request;
     State currentState = p_stateMachine->getCurrentState();
     
-    if (currentState == State::IDLE || currentState == State::STOP || currentState == State::ERROR) {
+    if (currentState == ControllerState::IDLE || currentState == ControllerState::STOP || currentState == ControllerState::ERROR) {
         p_stateMachine->reset();
         p_faultMonitor->reset();
-        p_stateMachine->transitionTo(State::FOLLOW_LINE, "START_SERVICE_CALLED");
+        p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
         publishControllerState();
         
         response->success = true;
@@ -412,7 +389,7 @@ void PidController::stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::R
                                  std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    p_stateMachine->transitionTo(State::STOP, "STOP_SERVICE_CALLED");
+    p_stateMachine->transitionTo(ControllerState::STOP, "STOP_SERVICE_CALLED");
     publishControllerState();
     publishVelocity(0.0, 0.0);
     
@@ -433,37 +410,38 @@ void PidController::safetyCheckCallback()
 
 void PidController::publishVelocity(double linearVel, double angularVel)
 {
+    // Clamp angular velocity dynamically to prevent wheel saturation
     if (std::abs(linearVel) > 1e-4) {
         double max_allowed_angular_vel = 2.0 * std::abs(linearVel) / m_wheelBase;
         angularVel = std::max(-max_allowed_angular_vel, std::min(angularVel, max_allowed_angular_vel));
-    } else {
+    } else if (p_stateMachine->getCurrentState() != ControllerState::IDLE &&
+               p_stateMachine->getCurrentState() != ControllerState::STOP) {
+        // If we are tracking but linear velocity is zero, do not allow turn-in-place from PID
         angularVel = 0.0;
     }
 
-    geometry_msgs::msg::TwistStamped twistMsg;
-    twistMsg.header.stamp = this->now();
-    twistMsg.header.frame_id = "base_link";
-    twistMsg.twist.linear.x = linearVel;
-    twistMsg.twist.angular.z = angularVel;
+    geometry_msgs::msg::Twist twistMsg;
+    twistMsg.linear.x = linearVel;
+    twistMsg.angular.z = angularVel;
     m_pubCmdVel->publish(twistMsg);
 }
 
 void PidController::publishControllerState()
 {
-    std_msgs::msg::String stateMsg;
-    stateMsg.data = p_stateMachine->getCurrentStateString();
-    m_pubControllerState->publish(stateMsg);
+    ControllerState msg;
+    msg.state = p_stateMachine->getCurrentState();
+    m_pubControllerState->publish(msg);
 }
 
 void PidController::handleFault(const std::string& faultType)
 {
     State currentState = p_stateMachine->getCurrentState();
-    if (currentState != State::ERROR) {
-        p_stateMachine->transitionTo(State::ERROR, "FAULT_" + faultType);
+    if (currentState != ControllerState::ERROR) {
+        p_stateMachine->transitionTo(ControllerState::ERROR, "FAULT_" + faultType);
         publishControllerState();
         publishVelocity(0.0, 0.0);
         
-        std::string faultLog = p_faultMonitor->getFaultLog(stateToString(currentState));
+        std::string faultLog = p_faultMonitor->getFaultLog(p_stateMachine->getCurrentStateString());
         RCLCPP_ERROR(this->get_logger(), "[SAFETY_FAULT] %s", faultLog.c_str());
     }
 }
@@ -472,15 +450,14 @@ void PidController::autotuneCallback(const std::shared_ptr<std_srvs::srv::Trigge
                                      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    m_kp = 1.5 * (1.0 + (m_nominalSpeed - 0.2) * 5.0);
+    m_kp = 1.5;
     m_ki = 0.02;
-    m_kd = 0.12 * (1.0 + (m_nominalSpeed - 0.2) * 5.0);
+    m_kd = 0.12;
     
     m_integralError = 0.0;
     m_prevError = 0.0;
     
-    RCLCPP_INFO(this->get_logger(), "[AUTOTUNE] Complete! Set Kp=%.3f, Ki=%.3f, Kd=%.3f for Nominal Speed=%.2f m/s", 
-        m_kp, m_ki, m_kd, m_nominalSpeed);
+    RCLCPP_INFO(this->get_logger(), "[AUTOTUNE] Complete! Set Kp=%.3f, Ki=%.3f, Kd=%.3f", m_kp, m_ki, m_kd);
         
     response->success = true;
     response->message = "Autotune complete!";
@@ -515,7 +492,6 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("pid.kd"): m_kd = param.as_double(); break;
             case const_hash("pid.windup_limit"): m_windupLimit = param.as_double(); break;
             case const_hash("pid.max_output"): m_maxOutput = param.as_double(); break;
-            case const_hash("robot.nominal_speed"): m_nominalSpeed = param.as_double(); break;
             case const_hash("robot.max_rpm"): m_maxRpm = param.as_double(); break;
             case const_hash("robot.wheel_base"): m_wheelBase = param.as_double(); break;
             case const_hash("robot.wheel_radius"): m_wheelRadius = param.as_double(); break;
@@ -529,9 +505,12 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
                 p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
                 break;
             case const_hash("safety.turn_duration"): m_turnDuration = param.as_double(); break;
+            case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
+            case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
+            case const_hash("velocity_clamps.turn"): m_clampTurn = param.as_double(); break;
+            case const_hash("velocity_clamps.high_error"): m_clampHighError = param.as_double(); break;
+            case const_hash("velocity_clamps.high_error_threshold"): m_highErrorThreshold = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
-            case const_hash("junction.turn_sequence"): m_turnSequence = param.as_string_array(); break;
-            case const_hash("junction.loop_sequence"): m_loopSequence = param.as_bool(); break;
             default: break;
         }
     }

@@ -22,15 +22,17 @@ namespace path_follower {
  */
 std::string stateToString(State state)
 {
+    using custom_interfaces::msg::ControllerState;
     switch (state) {
-        case State::IDLE:              return "IDLE";
-        case State::INITIALIZE:        return "INITIALIZE";
-        case State::FOLLOW_LINE:       return "FOLLOW_LINE";
-        case State::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
-        case State::EXECUTE_TURN:      return "EXECUTE_TURN";
-        case State::RESUME_TRACKING:   return "RESUME_TRACKING";
-        case State::STOP:              return "STOP";
-        case State::ERROR:             return "ERROR";
+        case ControllerState::IDLE:              return "IDLE";
+        case ControllerState::INITIALIZE:        return "INITIALIZE";
+        case ControllerState::FOLLOW_LINE:       return "FOLLOW_LINE";
+        case ControllerState::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
+        case ControllerState::READ_TAG:          return "READ_TAG";
+        case ControllerState::EXECUTE_TURN:      return "EXECUTE_TURN";
+        case ControllerState::RESUME_TRACKING:   return "RESUME_TRACKING";
+        case ControllerState::STOP:              return "STOP";
+        case ControllerState::ERROR:             return "ERROR";
     }
     return "UNKNOWN";
 }
@@ -39,7 +41,7 @@ std::string stateToString(State state)
  * @brief  Constructor initializing the state machine to IDLE.
  */
 NavigationStateMachine::NavigationStateMachine()
-    : m_currentState(State::IDLE)
+    : m_currentState(custom_interfaces::msg::ControllerState::IDLE)
 {
 }
 
@@ -96,10 +98,10 @@ std::string NavigationStateMachine::getCurrentStateString() const
  */
 void NavigationStateMachine::reset()
 {
-    m_currentState = State::IDLE;
+    m_currentState = custom_interfaces::msg::ControllerState::IDLE;
     
     // Postcondition
-    assert(m_currentState == State::IDLE);
+    assert(m_currentState == custom_interfaces::msg::ControllerState::IDLE);
 }
 
 } // namespace path_follower

@@ -21,6 +21,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(custom_interfaces REQUIRED)
 find_package(nav_msgs REQUIRED)
 
 include_directories(
@@ -38,6 +39,7 @@ ament_target_dependencies(path_follower_node
   std_msgs
   geometry_msgs
   std_srvs
+  custom_interfaces
   nav_msgs
 )
 
@@ -47,7 +49,9 @@ install(TARGETS path_follower_node
 )
 
 # Install python scripts
-install(PROGRAMS scripts/tune_line_follower.py
+install(PROGRAMS 
+  scripts/junction_manager.py
+  scripts/nav_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

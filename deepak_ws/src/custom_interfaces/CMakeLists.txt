@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DriveFeedback.msg"
   "msg/DriveDiagnostics.msg"
   "msg/WheelRpm.msg"
+  "msg/ControllerState.msg"
 )
 
 ament_package()
