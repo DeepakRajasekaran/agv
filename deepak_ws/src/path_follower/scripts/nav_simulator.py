@@ -3,6 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Bool
 from custom_interfaces.msg import ControllerState
 
 from std_srvs.srv import Trigger
@@ -11,24 +12,24 @@ class NavSimulator(Node):
     def __init__(self):
         super().__init__('nav_simulator')
         
-        self.declare_parameter('turn_sequence', ['left', 'right', 'straight'])
-        self.declare_parameter('loop_sequence', True)
         self.declare_parameter('nominal_speed', 0.2)
-        
-        self.turn_sequence = self.get_parameter('turn_sequence').value
-        self.loop_sequence = self.get_parameter('loop_sequence').value
         self.nominal_speed = self.get_parameter('nominal_speed').value
         
-        self.turn_index = 0
         self.current_state = ControllerState.IDLE
+        self.junction_count = 0
+        self.active_turn_cmd = 0.0
+        self.last_left_marker = False
         
         self.pub_cmd_vel = self.create_publisher(Twist, '/nav/cmd_vel', 10)
         
         self.sub_state = self.create_subscription(
             ControllerState, '/controller_state', self.state_callback, 10)
             
+        self.sub_left_marker = self.create_subscription(
+            Bool, '/sensor/left_marker', self.marker_callback, 10)
+            
         self.timer = self.create_timer(0.1, self.timer_callback)
-        self.get_logger().info(f'Nav Simulator started with sequence: {self.turn_sequence}')
+        self.get_logger().info('Nav Simulator started. First command defaults to STRAIGHT.')
         
         self.start_client = self.create_client(Trigger, '/path_follower_node/start')
         self.start_called = False
@@ -37,23 +38,30 @@ class NavSimulator(Node):
         prev_state = self.current_state
         self.current_state = msg.state
         
-        # When we transition from JUNCTION_DETECTED to EXECUTE_TURN, we advance the sequence
-        if prev_state == ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.EXECUTE_TURN:
-            self.advance_sequence()
+        # Reset turn command when we successfully transition back to normal line following
+        if prev_state in [ControllerState.EXECUTE_TURN, ControllerState.JUNCTION_DETECTED] and self.current_state == ControllerState.FOLLOW_LINE:
+            self.get_logger().info('Resumed standard tracking. Resetting command to STRAIGHT.')
+            self.active_turn_cmd = 0.0
             
-    def advance_sequence(self):
-        if len(self.turn_sequence) == 0:
-            return
+    def marker_callback(self, msg: Bool):
+        # Detect rising edge of left marker
+        if msg.data and not self.last_left_marker:
+            self.get_logger().info('Left marker detected!')
             
-        self.turn_index += 1
-        
-        if self.turn_index >= len(self.turn_sequence):
-            if self.loop_sequence:
-                self.turn_index = 0
-                self.get_logger().info('Turn sequence finished. Looping back to start.')
+            # Check if this marker signifies a junction
+            if self.current_state == ControllerState.JUNCTION_DETECTED:
+                self.junction_count += 1
+                if self.junction_count % 2 != 0:
+                    self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Commanding LEFT')
+                    self.active_turn_cmd = 0.5
+                else:
+                    self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Commanding RIGHT')
+                    self.active_turn_cmd = -0.5
             else:
-                self.turn_index = -1
-                self.get_logger().info('Turn sequence finished. Stopping navigation.')
+                self.get_logger().info('State is not JUNCTION_DETECTED. Following the natural turn.')
+                self.active_turn_cmd = 0.0
+                
+        self.last_left_marker = msg.data
 
     def timer_callback(self):
         # Auto-start if IDLE
@@ -68,23 +76,8 @@ class NavSimulator(Node):
         
         # If tracking is active, provide velocity
         if self.current_state in [ControllerState.FOLLOW_LINE, ControllerState.JUNCTION_DETECTED, ControllerState.EXECUTE_TURN]:
-            
-            # Sequence finished and no looping
-            if self.turn_index == -1:
-                msg.linear.x = 0.0
-                msg.angular.z = 0.0
-            else:
-                msg.linear.x = self.nominal_speed
-                
-                # Apply angular bias based on current requested turn
-                if len(self.turn_sequence) > 0:
-                    current_turn = self.turn_sequence[self.turn_index]
-                    if current_turn == 'left':
-                        msg.angular.z = 0.5
-                    elif current_turn == 'right':
-                        msg.angular.z = -0.5
-                    elif current_turn == 'straight':
-                        msg.angular.z = 0.0
+            msg.linear.x = self.nominal_speed
+            msg.angular.z = self.active_turn_cmd
         
         self.pub_cmd_vel.publish(msg)
 
