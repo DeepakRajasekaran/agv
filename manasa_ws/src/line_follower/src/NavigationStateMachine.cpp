@@ -128,8 +128,9 @@ void NavigationStateMachine::tick()
       }
       // Junction: tape cross detected
       if (m_tapeCrossed) {
-        RCLCPP_INFO(this->get_logger(), "Junction detected (tape_cross)");
-        setState(NavState::JUNCTION_DETECTED);
+        // [User Request: Ignore junction for now]
+        // RCLCPP_INFO(this->get_logger(), "Junction detected (tape_cross)");
+        // setState(NavState::JUNCTION_DETECTED);
       }
       break;
 

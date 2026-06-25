@@ -21,6 +21,7 @@ namespace line_follower
 LineFollowerNode::LineFollowerNode()
 : Node("line_follower_node"),
   m_currentErrorMm(0.0), m_teleopLinearX(0.0), m_teleopAngularZ(0.0),
+  m_trackDetected(false), m_leftTrackMm(0.0), m_rightTrackMm(0.0),
   m_peakError(0.0), m_settledTime(0.0), m_wasSettled(true)
 {
   this->declare_parameter<std::string>("teleop_input_topic", "/cmd_vel");
@@ -67,6 +68,12 @@ LineFollowerNode::LineFollowerNode()
     teleopIn, 10, std::bind(&LineFollowerNode::teleopCallback, this, std::placeholders::_1));
   m_trackErrorSub = this->create_subscription<std_msgs::msg::Float64>(
     trackIn, 10, std::bind(&LineFollowerNode::trackErrorCallback, this, std::placeholders::_1));
+  m_trackDetectSub = this->create_subscription<std_msgs::msg::Bool>(
+    "/mgs/track_detect", 10, std::bind(&LineFollowerNode::trackDetectCallback, this, std::placeholders::_1));
+  m_leftTrackSub = this->create_subscription<std_msgs::msg::Float64>(
+    "/mgs/left_track", 10, std::bind(&LineFollowerNode::leftTrackCallback, this, std::placeholders::_1));
+  m_rightTrackSub = this->create_subscription<std_msgs::msg::Float64>(
+    "/mgs/right_track", 10, std::bind(&LineFollowerNode::rightTrackCallback, this, std::placeholders::_1));
 
   m_enableSrv = this->create_service<std_srvs::srv::SetBool>(
     "/line_follower/enable", std::bind(&LineFollowerNode::srvEnable, this, std::placeholders::_1, std::placeholders::_2));
@@ -98,22 +105,59 @@ void LineFollowerNode::trackErrorCallback(const std_msgs::msg::Float64::SharedPt
   m_currentErrorMm = msg->data;
 }
 
+void LineFollowerNode::trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_trackDetected = msg->data;
+}
+
+void LineFollowerNode::leftTrackCallback(const std_msgs::msg::Float64::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_leftTrackMm = msg->data;
+}
+
+void LineFollowerNode::rightTrackCallback(const std_msgs::msg::Float64::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(m_mutex);
+  m_rightTrackMm = msg->data;
+}
+
 void LineFollowerNode::controlLoop()
 {
-  double linearX, angularZ, errorMm;
-  bool enabled;
+  double linearX, angularZ, errorMm, leftTrackMm, rightTrackMm;
+  bool enabled, trackDetected;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
     linearX = m_teleopLinearX;
     angularZ = m_teleopAngularZ;
     errorMm = m_currentErrorMm;
     enabled = m_pidEnabled;
+    trackDetected = m_trackDetected;
+    leftTrackMm = m_leftTrackMm;
+    rightTrackMm = m_rightTrackMm;
   }
 
   geometry_msgs::msg::Twist cmd;
   cmd.linear.x = linearX;
 
   if (enabled) {
+    if (!trackDetected) {
+      cmd.linear.x = 0.0;
+      cmd.angular.z = 0.0;
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                           "Track LOST! Stopping robot.");
+      m_cmdVelPub->publish(cmd);
+      return;
+    }
+
+    // Identify which track we are following
+    std::string trackingStatus = "Unknown";
+    if (std::abs(errorMm - leftTrackMm) < 1.0) trackingStatus = "LEFT";
+    else if (std::abs(errorMm - rightTrackMm) < 1.0) trackingStatus = "RIGHT";
+    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                         "Tracking: %s (Error: %.1fmm)", trackingStatus.c_str(), errorMm);
+
     // Deadband
     if (std::abs(errorMm) < m_errorDeadband) errorMm = 0.0;
 

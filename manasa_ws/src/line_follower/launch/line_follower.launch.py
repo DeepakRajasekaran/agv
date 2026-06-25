@@ -24,8 +24,7 @@ def generate_launch_description():
                 config_file,
                 {
                     'wheel_base': wheel_base,
-                    'sensor_offset_m': sensor_offset_m,
-                    'corrected_output_topic': '/diff_drive_controller/cmd_vel_unstamped'
+                    'sensor_offset_m': sensor_offset_m
                 }
             ]
         ),

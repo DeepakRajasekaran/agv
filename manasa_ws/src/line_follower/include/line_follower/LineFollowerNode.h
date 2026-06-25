@@ -11,6 +11,7 @@ Description: PID line follower with mm->rad conversion, diagnostics, performance
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_srvs/srv/set_bool.hpp"
@@ -32,6 +33,9 @@ private:
   void controlLoop();
   void teleopCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
   void trackErrorCallback(const std_msgs::msg::Float64::SharedPtr msg);
+  void trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg);
+  void leftTrackCallback(const std_msgs::msg::Float64::SharedPtr msg);
+  void rightTrackCallback(const std_msgs::msg::Float64::SharedPtr msg);
   void srvEnable(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
                  std::shared_ptr<std_srvs::srv::SetBool::Response> res);
   rcl_interfaces::msg::SetParametersResult paramCallback(
@@ -41,6 +45,9 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr m_pidStatePub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_teleopSub;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr m_trackErrorSub;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_trackDetectSub;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr m_leftTrackSub;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr m_rightTrackSub;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr m_enableSrv;
   rclcpp::TimerBase::SharedPtr m_controlTimer;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr m_paramCbHandle;
@@ -52,6 +59,10 @@ private:
   double m_teleopLinearX;
   double m_teleopAngularZ;
   bool m_pidEnabled;
+
+  bool m_trackDetected;
+  double m_leftTrackMm;
+  double m_rightTrackMm;
 
   double m_maxAngular;
   double m_errorDeadband;
