@@ -80,7 +80,8 @@ RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
                 -DCMAKE_SYSROOT=/sysroot \
                 -DCMAKE_BUILD_TYPE=Release \
                 -G Ninja && \
-            source install/local_setup.bash && \
+            export CMAKE_PREFIX_PATH=/agv/deepak_ws/install:\$CMAKE_PREFIX_PATH && \
+            export AMENT_PREFIX_PATH=/agv/deepak_ws/install:\$AMENT_PREFIX_PATH && \
             colcon build \
                 --merge-install \
                 --cmake-args \
