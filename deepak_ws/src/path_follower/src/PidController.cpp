@@ -289,9 +289,18 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
             linearVel = std::clamp(linearVel, -m_clampJunction, m_clampJunction);
             publishVelocity(linearVel, pidAngularVel);
             
-            // Immediately transition to EXECUTE_TURN so middleware can handle track switching
-            p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "JUNCTION_ACKNOWLEDGED");
-            publishControllerState();
+            // Wait for navigation server to acknowledge and send a turn command
+            if (std::abs(m_cmdAngularZ) > 0.05) {
+                p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "NAV_COMMAND_RECEIVED");
+                publishControllerState();
+            } else {
+                // If divergence drops and we never got a command, it might have been a false positive or we drove past it
+                double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+                if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
+                    p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "FALSE_JUNCTION_CLEARED");
+                    publishControllerState();
+                }
+            }
             break;
         }
         
