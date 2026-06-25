@@ -170,6 +170,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         "~/start", std::bind(&PidController::startCallback, this, std::placeholders::_1, std::placeholders::_2));
     m_srvStop = this->create_service<std_srvs::srv::Trigger>(
         "~/stop", std::bind(&PidController::stopCallback, this, std::placeholders::_1, std::placeholders::_2));
+        
+    m_srvSelectTrack = this->create_service<custom_interfaces::srv::SelectTrack>(
+        "~/select_track", std::bind(&PidController::selectTrackCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Safety timeout check timer (50Hz = 20ms)
     m_safetyTimer = this->create_wall_timer(
@@ -229,6 +232,21 @@ double PidController::computeSteering(double error, double dt)
     return steering;
 }
 
+void PidController::selectTrackCallback(const std::shared_ptr<custom_interfaces::srv::SelectTrack::Request> request,
+                                      std::shared_ptr<custom_interfaces::srv::SelectTrack::Response> response)
+{
+    if (request->track_id >= 0 && request->track_id <= 2) {
+        m_selectedTrackId = request->track_id;
+        response->success = true;
+        response->message = "Track selected successfully: " + std::to_string(m_selectedTrackId);
+        RCLCPP_INFO(this->get_logger(), "Selected Track updated to: %d", m_selectedTrackId);
+    } else {
+        response->success = false;
+        response->message = "Invalid track_id. Must be 0 (AVG), 1 (LEFT), or 2 (RIGHT).";
+        RCLCPP_WARN(this->get_logger(), "Failed to update Selected Track. Invalid ID: %d", request->track_id);
+    }
+}
+
 void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
     m_firstMessageReceived = true;
@@ -273,13 +291,26 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double computed_error = 0.0;
     double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
     
-    if (divergence < m_junctionDivergenceThreshold) {
-        computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
-    } else {
-        if (currentState == ControllerState::EXECUTE_TURN) {
-            computed_error = static_cast<double>(msg->data);
+    if (currentState == ControllerState::JUNCTION_DETECTED || currentState == ControllerState::FOLLOW_LINE) {
+        if (m_selectedTrackId == 1) {
+            computed_error = m_leftTrackPos;
+        } else if (m_selectedTrackId == 2) {
+            computed_error = m_rightTrackPos;
         } else {
             computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
+        }
+    } else {
+        computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
+    }
+    
+    // Auto-reset selected track when junction clears
+    if (divergence < m_junctionDivergenceThreshold && m_selectedTrackId != 0 && !m_tapeCross) {
+        RCLCPP_INFO(this->get_logger(), "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
+        m_selectedTrackId = 0;
+        
+        if (currentState == ControllerState::JUNCTION_DETECTED) {
+            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
+            publishControllerState();
         }
     }
 
@@ -318,24 +349,12 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
 
         case ControllerState::JUNCTION_DETECTED: {
+            // PID continues to control steering, but using the selected track
             linearVel = std::clamp(linearVel, -m_clampJunction, m_clampJunction);
             publishVelocity(linearVel, pidAngularVel);
-            
-            // Wait for navigation server to acknowledge and send a turn command
-            if (std::abs(m_cmdAngularZ) > 0.05) {
-                p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "NAV_COMMAND_RECEIVED");
-                publishControllerState();
-            } else {
-                // If divergence drops and we never got a command, it might have been a false positive or we drove past it
-                divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-                if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
-                    p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "FALSE_JUNCTION_CLEARED");
-                    publishControllerState();
-                }
-            }
             break;
         }
-        
+
         case ControllerState::READ_TAG: {
             // Stub for future RFID/Tag integration
             publishVelocity(0.0, 0.0);
@@ -345,15 +364,9 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
 
         case ControllerState::EXECUTE_TURN: {
+            // Deprecated logic, no longer used. Fallback to normal PID
             linearVel = std::clamp(linearVel, -m_clampTurn, m_clampTurn);
             publishVelocity(linearVel, pidAngularVel);
-            
-            divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-            // Once the sensor merges back to a single track, we can resume normal following
-            if (divergence < m_junctionDivergenceThreshold && !m_tapeCross) {
-                p_stateMachine->transitionTo(ControllerState::RESUME_TRACKING, "TRACKS_MERGED");
-                publishControllerState();
-            }
             break;
         }
 

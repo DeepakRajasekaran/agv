@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DriveDiagnostics.msg"
   "msg/WheelRpm.msg"
   "msg/ControllerState.msg"
+  "srv/SelectTrack.srv"
 )
 
 ament_package()

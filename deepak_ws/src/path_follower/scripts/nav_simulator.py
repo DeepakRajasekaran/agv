@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from custom_interfaces.msg import ControllerState
+from custom_interfaces.srv import SelectTrack
 
 from std_srvs.srv import Trigger
 
@@ -16,7 +17,6 @@ class NavSimulator(Node):
         
         self.current_state = ControllerState.IDLE
         self.junction_count = 0
-        self.active_turn_cmd = 0.0
         self.pub_cmd_vel = self.create_publisher(Twist, '/nav/cmd_vel', 10)
         
         self.sub_state = self.create_subscription(
@@ -26,6 +26,7 @@ class NavSimulator(Node):
         self.get_logger().info('Nav Simulator started. First command defaults to STRAIGHT.')
         
         self.start_client = self.create_client(Trigger, '/path_follower_node/start')
+        self.select_track_client = self.create_client(SelectTrack, '/path_follower_node/select_track')
         self.start_called = False
         
     def state_callback(self, msg: ControllerState):
@@ -35,17 +36,23 @@ class NavSimulator(Node):
         # Detect transition into JUNCTION_DETECTED
         if prev_state != ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.JUNCTION_DETECTED:
             self.junction_count += 1
+            req = SelectTrack.Request()
+            
             if self.junction_count % 2 != 0:
-                self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Commanding LEFT turn')
-                self.active_turn_cmd = 0.5
+                self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Calling service to track LEFT (1)')
+                req.track_id = 1
             else:
-                self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Commanding RIGHT turn')
-                self.active_turn_cmd = -0.5
+                self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Calling service to track RIGHT (2)')
+                req.track_id = 2
                 
-        # Reset turn command when we successfully transition back to normal line following
-        if prev_state in [ControllerState.EXECUTE_TURN, ControllerState.JUNCTION_DETECTED] and self.current_state == ControllerState.FOLLOW_LINE:
-            self.get_logger().info('Resumed standard tracking. Resetting command to STRAIGHT.')
-            self.active_turn_cmd = 0.0
+            if self.select_track_client.wait_for_service(timeout_sec=0.5):
+                self.select_track_client.call_async(req)
+            else:
+                self.get_logger().error('Service /path_follower_node/select_track not available!')
+                
+        # Logging standard track resumption
+        if prev_state == ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.FOLLOW_LINE:
+            self.get_logger().info('Resumed standard tracking (Controller auto-reset track to AVERAGE).')
 
     def timer_callback(self):
         # Auto-start if IDLE
@@ -59,9 +66,9 @@ class NavSimulator(Node):
         msg = Twist()
         
         # If tracking is active, provide velocity
-        if self.current_state in [ControllerState.FOLLOW_LINE, ControllerState.JUNCTION_DETECTED, ControllerState.EXECUTE_TURN, ControllerState.RESUME_TRACKING]:
+        if self.current_state in [ControllerState.FOLLOW_LINE, ControllerState.JUNCTION_DETECTED, ControllerState.RESUME_TRACKING]:
             msg.linear.x = self.nominal_speed
-            msg.angular.z = self.active_turn_cmd
+            msg.angular.z = 0.0
         else:
             msg.linear.x = 0.0
             msg.angular.z = 0.0

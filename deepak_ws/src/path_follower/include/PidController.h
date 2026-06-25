@@ -15,6 +15,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <custom_interfaces/msg/controller_state.hpp>
+#include <custom_interfaces/srv/select_track.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <memory>
 #include <string>
@@ -76,6 +77,13 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvStop;
     void stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                       std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+    rclcpp::Service<custom_interfaces::srv::SelectTrack>::SharedPtr m_srvSelectTrack;
+    void selectTrackCallback(const std::shared_ptr<custom_interfaces::srv::SelectTrack::Request> request,
+                             std::shared_ptr<custom_interfaces::srv::SelectTrack::Response> response);
+
+    // Track Selection State
+    int m_selectedTrackId = 0; // 0=AVG, 1=LEFT, 2=RIGHT
 
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
