@@ -277,8 +277,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     }
     
     // Inactive states (Remain silent to allow twist_mux to fallback to other inputs like teleop)
-    if (currentState == ControllerState::IDLE || 
-        currentState == ControllerState::INITIALIZE) 
+    if (currentState == ControllerState::INITIALIZE) 
     {
         m_integralError = 0.0;
         m_prevError = 0.0;
@@ -331,14 +330,27 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     // which triggers a false positive 'FROZEN_SENSOR / SENSOR_DROPOUT' fault.
     p_faultMonitor->update(computed_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
     if (p_faultMonitor->hasFault()) {
-        handleFault(p_faultMonitor->getFaultType());
-        return;
+        if (currentState != ControllerState::IDLE) {
+            handleFault(p_faultMonitor->getFaultType());
+            return;
+        }
     }
 
     double linearVel = m_cmdLinearX;
 
     // State Management
     switch (currentState) {
+        case ControllerState::IDLE: {
+            // Yaw correction runs in idle, allowing guided teleop or compass-like auto-alignment
+            // If track is lost in IDLE, gracefully pass through manual angular Z instead of PID
+            if (m_trackDetect && !p_faultMonitor->hasFault()) {
+                publishVelocity(linearVel, pidAngularVel);
+            } else {
+                publishVelocity(linearVel, m_cmdAngularZ);
+            }
+            break;
+        }
+
         case ControllerState::FOLLOW_LINE: {
             linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
 
