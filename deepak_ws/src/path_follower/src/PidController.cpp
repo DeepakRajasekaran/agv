@@ -90,6 +90,14 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<double>("safety.turn_duration", m_turnDuration);
     
+    // Initialize defaults to prevent garbage memory values
+    m_clampStraight = 1.0;
+    m_clampJunction = 0.5;
+    m_clampTurn = 0.3;
+    m_clampHighError = 0.2;
+    m_highErrorThreshold = 0.1;
+    m_junctionDivergenceThreshold = 0.035;
+
     this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
     this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
     this->declare_parameter<double>("velocity_clamps.turn", m_clampTurn);
@@ -136,6 +144,8 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     std::string left_track_pos_topic = this->declare_parameter("topics.left_track_position", "/sensor/left_track_position");
     std::string right_track_pos_topic = this->declare_parameter("topics.right_track_position", "/sensor/right_track_position");
     std::string tape_cross_topic = this->declare_parameter("topics.tape_cross", "/sensor/tape_cross");
+    
+    bool autostart = this->declare_parameter("autostart", false);
 
     // ROS 2 Subscribers
     m_subCmdVel = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -178,10 +188,15 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_callbackHandle = this->add_on_set_parameters_callback(
         std::bind(&PidController::onParameterChange, this, std::placeholders::_1));
 
-    // Move to run state
-    p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
+    // Move to initial state
+    if (autostart) {
+        p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "AUTOSTART_ENABLED");
+        RCLCPP_INFO(this->get_logger(), "Path Follower auto-started. Tracking active.");
+    } else {
+        p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
+        RCLCPP_INFO(this->get_logger(), "Path Follower running in IDLE. Call ~/start to begin tracking.");
+    }
     publishControllerState();
-    RCLCPP_INFO(this->get_logger(), "Path Follower running. Call ~/start to begin tracking.");
 }
 
 PidController::~PidController()
