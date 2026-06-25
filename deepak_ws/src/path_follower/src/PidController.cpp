@@ -249,19 +249,32 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
 
     State currentState = p_stateMachine->getCurrentState();
     
-    // Pass-through states (Nav Server controls directly)
-    if (currentState == ControllerState::IDLE || 
-        currentState == ControllerState::INITIALIZE || 
-        currentState == ControllerState::STOP || 
+    // Safety states (Enforce zero velocity)
+    if (currentState == ControllerState::STOP || 
         currentState == ControllerState::ERROR) 
     {
         m_integralError = 0.0;
         m_prevError = 0.0;
-        publishVelocity(m_cmdLinearX, m_cmdAngularZ);
+        publishVelocity(0.0, 0.0);
         
         if (m_logCounter++ % 100 == 0) {
             RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                "State: %s | Err: %.3f", p_stateMachine->getCurrentStateString().c_str(), msg->data);
+                "State: %s | Enforcing 0.0 vel", p_stateMachine->getCurrentStateString().c_str());
+        }
+        return;
+    }
+    
+    // Inactive states (Remain silent to allow twist_mux to fallback to other inputs like teleop)
+    if (currentState == ControllerState::IDLE || 
+        currentState == ControllerState::INITIALIZE) 
+    {
+        m_integralError = 0.0;
+        m_prevError = 0.0;
+        // DO NOT publish anything. Let twist_mux handle priorities.
+        
+        if (m_logCounter++ % 100 == 0) {
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                "State: %s | Controller inactive (silent)", p_stateMachine->getCurrentStateString().c_str());
         }
         return;
     }
