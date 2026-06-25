@@ -451,12 +451,9 @@ void PidController::safetyCheckCallback()
 
 void PidController::publishVelocity(double linearVel, double angularVel)
 {
-    // Clamp angular velocity dynamically to prevent wheel saturation
-    if (std::abs(linearVel) > 1e-4) {
-        double max_allowed_angular_vel = 2.0 * std::abs(linearVel) / m_wheelBase;
-        angularVel = std::max(-max_allowed_angular_vel, std::min(angularVel, max_allowed_angular_vel));
-    } else if (p_stateMachine->getCurrentState() != ControllerState::IDLE &&
-               p_stateMachine->getCurrentState() != ControllerState::STOP) {
+    if (std::abs(linearVel) <= 1e-4 && 
+        p_stateMachine->getCurrentState() != ControllerState::IDLE &&
+        p_stateMachine->getCurrentState() != ControllerState::STOP) {
         // If we are tracking but linear velocity is zero, do not allow turn-in-place from PID
         angularVel = 0.0;
     }
