@@ -65,6 +65,8 @@ private:
   double m_rightTrackMm;
 
   double m_maxAngular;
+  double m_maxLinear;
+  double m_maxAngularVel;
   double m_errorDeadband;
   double m_sensorOffsetM;
   double m_controlRateHz;

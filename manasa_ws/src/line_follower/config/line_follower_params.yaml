@@ -12,6 +12,8 @@ line_follower:
       i_clamp_min: -0.3
       
     max_angular_correction: 0.5
+    max_linear_velocity: 0.5
+    max_angular_velocity: 1.0
     error_deadband_mm: 1.0
     control_rate_hz: 50.0
     pid_enabled: true

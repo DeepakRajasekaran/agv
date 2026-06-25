@@ -1,9 +1,9 @@
 /*
 Name: NavigationStateMachine.cpp
 Author: ANSCER Robotics
-Date: 2026-06-24
-Version: 1.0
-Description: Navigation state machine implementation.
+Date: 2026-06-25
+Version: 2.0
+Description: Navigation state machine with junction detection and odd/even turn sequencing.
 */
 
 #include "line_follower/NavigationStateMachine.h"
@@ -15,7 +15,9 @@ NavigationStateMachine::NavigationStateMachine()
 : Node("navigation_state_machine"),
   m_state(NavState::IDLE),
   m_trackDetected(false), m_tapeCrossed(false), m_selectedTrackMm(0.0),
-  m_turnRight(false), m_resumeStartTime(0.0), m_trackLostCount(0)
+  m_leftTrackMm(0.0), m_rightTrackMm(0.0),
+  m_turnRight(false), m_resumeStartTime(0.0), m_trackLostCount(0),
+  m_junctionCount(0), m_inJunction(false)
 {
   m_statePub = this->create_publisher<std_msgs::msg::String>("/navigation/state", 10);
 
@@ -25,6 +27,10 @@ NavigationStateMachine::NavigationStateMachine()
     "/mgs/tape_cross", 10, std::bind(&NavigationStateMachine::tapeCrossCb, this, std::placeholders::_1));
   m_selectedTrackSub = this->create_subscription<std_msgs::msg::Float64>(
     "/mgs/selected_track", 10, std::bind(&NavigationStateMachine::selectedTrackCb, this, std::placeholders::_1));
+  m_leftTrackSub = this->create_subscription<std_msgs::msg::Float64>(
+    "/mgs/left_track", 10, std::bind(&NavigationStateMachine::leftTrackCb, this, std::placeholders::_1));
+  m_rightTrackSub = this->create_subscription<std_msgs::msg::Float64>(
+    "/mgs/right_track", 10, std::bind(&NavigationStateMachine::rightTrackCb, this, std::placeholders::_1));
 
   m_srvStart = this->create_service<std_srvs::srv::Trigger>(
     "/navigation/start", std::bind(&NavigationStateMachine::srvStart, this, std::placeholders::_1, std::placeholders::_2));
@@ -77,6 +83,8 @@ void NavigationStateMachine::setState(NavState newState)
 void NavigationStateMachine::trackDetectCb(const std_msgs::msg::Bool::SharedPtr msg) { m_trackDetected = msg->data; }
 void NavigationStateMachine::tapeCrossCb(const std_msgs::msg::Bool::SharedPtr msg) { m_tapeCrossed = msg->data; }
 void NavigationStateMachine::selectedTrackCb(const std_msgs::msg::Float64::SharedPtr msg) { m_selectedTrackMm = msg->data; }
+void NavigationStateMachine::leftTrackCb(const std_msgs::msg::Float64::SharedPtr msg) { m_leftTrackMm = msg->data; }
+void NavigationStateMachine::rightTrackCb(const std_msgs::msg::Float64::SharedPtr msg) { m_rightTrackMm = msg->data; }
 
 void NavigationStateMachine::enablePid(bool enable)
 {
@@ -100,6 +108,12 @@ void NavigationStateMachine::switchTrack(bool followRight)
 
 void NavigationStateMachine::tick()
 {
+  // Junction hysteresis: clear the latch once the two tracks re-converge
+  // (robot has physically moved past the junction). Runs every state so the
+  // latch is always ready when we return to FOLLOW_LINE.
+  if (std::abs(m_leftTrackMm - m_rightTrackMm) < JUNCTION_CLEAR_THRESHOLD)
+    m_inJunction = false;
+
   switch (m_state) {
 
     case NavState::IDLE:
@@ -107,41 +121,48 @@ void NavigationStateMachine::tick()
       break;
 
     case NavState::INITIALIZE:
-      // Enable PID and transition to FOLLOW_LINE
       enablePid(true);
       m_trackLostCount = 0;
       setState(NavState::FOLLOW_LINE);
       break;
 
     case NavState::FOLLOW_LINE:
+    {
       // Track-loss is handled by LineFollowerNode (it zeroes cmd_vel while
-      // track_detect == false and resumes automatically when it returns).
-      // Keep the PID ENABLED throughout so it self-recovers — no ERROR latch.
+      // track_detect == false and resumes automatically). PID stays enabled.
       if (!m_trackDetected) {
         RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                              "Track not detected — robot holding, PID stays enabled");
+        break;  // don't run junction detection on stale left/right values
       }
-      // Junction: tape cross detected
-      if (m_tapeCrossed) {
-        // [User Request: Ignore junction for now]
-        // RCLCPP_INFO(this->get_logger(), "Junction detected (tape_cross)");
-        // setState(NavState::JUNCTION_DETECTED);
+
+      // ── Junction detection: left/right track divergence > threshold ──
+      double junctionDiff = std::abs(m_leftTrackMm - m_rightTrackMm);
+      if (junctionDiff > JUNCTION_DIFF_THRESHOLD && !m_inJunction) {
+        m_inJunction = true;        // latch — one count per physical junction
+        m_junctionCount++;
+        RCLCPP_INFO(this->get_logger(),
+                    "Junction #%d detected (L=%.1f R=%.1f diff=%.1fmm)",
+                    m_junctionCount, m_leftTrackMm, m_rightTrackMm, junctionDiff);
+        setState(NavState::JUNCTION_DETECTED);
       }
       break;
+    }
 
     case NavState::JUNCTION_DETECTED:
-      // Auto-transition through READ_TAG (placeholder — no RFID)
-      setState(NavState::READ_TAG);
+      // Sequence rule: odd junction → RIGHT, even junction → LEFT.
+      m_turnRight = (m_junctionCount % 2 == 1);
+      RCLCPP_INFO(this->get_logger(), "Junction #%d → %s turn",
+                  m_junctionCount, m_turnRight ? "RIGHT" : "LEFT");
+      // READ_TAG skipped (no RFID) — proceed straight to turn execution.
+      setState(NavState::EXECUTE_TURN);
       break;
 
     case NavState::READ_TAG:
-      // No RFID reader — auto-transition, wait for /navigation/switch_track service call
-      // If user has already called switch_track, we'll transition on next tick
-      // Otherwise stay here until the user calls it
+      // Reachable only via manual /navigation/switch_track. No RFID — auto-pass.
       break;
 
     case NavState::EXECUTE_TURN:
-      // Track switch command has been sent, transition to resume
       switchTrack(m_turnRight);
       m_resumeStartTime = this->now().seconds();
       setState(NavState::RESUME_TRACKING);
@@ -149,14 +170,17 @@ void NavigationStateMachine::tick()
 
     case NavState::RESUME_TRACKING:
     {
-      // Wait for PID to re-center on new track
       double elapsed = this->now().seconds() - m_resumeStartTime;
+
+      // Give the MGS CANopen SDO write time to complete and
+      // selected_track to reflect the new tape before checking settle.
+      if (elapsed < SDO_SETTLE_GUARD_S) break;
+
       bool settled = std::abs(m_selectedTrackMm) < 10.0; // within 10mm
       if (settled && elapsed > RESUME_SETTLE_S) {
         RCLCPP_INFO(this->get_logger(), "Track locked (%.1fmm error, %.1fs)", m_selectedTrackMm, elapsed);
         setState(NavState::FOLLOW_LINE);
       }
-      // Timeout safety — if not settled after 5s, still resume
       if (elapsed > 5.0) {
         RCLCPP_WARN(this->get_logger(), "Resume timeout — forcing FOLLOW_LINE");
         setState(NavState::FOLLOW_LINE);
@@ -165,12 +189,11 @@ void NavigationStateMachine::tick()
     }
 
     case NavState::STOP:
-      // PID disabled, robot should stop. Stay here until reset.
+      // PID disabled, robot stopped. Stay here until start/reset.
       break;
 
     case NavState::ERROR:
-      // Fault state. Wait for /navigation/reset service call.
-      // Track recovery: if track reappears, allow reset
+      // Fault state. Wait for /navigation/reset or /navigation/start.
       break;
   }
 }
@@ -209,6 +232,8 @@ void NavigationStateMachine::srvReset(const std::shared_ptr<std_srvs::srv::Trigg
   (void)req;
   enablePid(false);
   m_trackLostCount = 0;
+  m_junctionCount = 0;     // reset sequence on full reset
+  m_inJunction = false;
   setState(NavState::IDLE);
   res->success = true;
   res->message = "Reset to IDLE";

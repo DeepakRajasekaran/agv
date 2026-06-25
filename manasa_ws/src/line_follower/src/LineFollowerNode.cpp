@@ -35,6 +35,8 @@ LineFollowerNode::LineFollowerNode()
   this->declare_parameter<double>("pid.i_clamp_min", -0.3);
 
   this->declare_parameter<double>("max_angular_correction", 0.5);
+  this->declare_parameter<double>("max_linear_velocity", 0.5);
+  this->declare_parameter<double>("max_angular_velocity", 1.0);
   this->declare_parameter<double>("error_deadband_mm", 2.0);
   this->declare_parameter<double>("control_rate_hz", 50.0);
   this->declare_parameter<bool>("pid_enabled", true);
@@ -54,6 +56,8 @@ LineFollowerNode::LineFollowerNode()
   this->get_parameter("pid.i_clamp_min", i_min);
 
   this->get_parameter("max_angular_correction", m_maxAngular);
+  this->get_parameter("max_linear_velocity", m_maxLinear);
+  this->get_parameter("max_angular_velocity", m_maxAngularVel);
   this->get_parameter("error_deadband_mm", m_errorDeadband);
   this->get_parameter("control_rate_hz", m_controlRateHz);
   this->get_parameter("pid_enabled", m_pidEnabled);
@@ -202,6 +206,9 @@ void LineFollowerNode::controlLoop()
     cmd.angular.z = angularZ;
   }
 
+  // ── Output velocity clamps (safety limit on final command) ──
+  cmd.linear.x  = std::clamp(cmd.linear.x,  -m_maxLinear,     m_maxLinear);
+  cmd.angular.z = std::clamp(cmd.angular.z, -m_maxAngularVel, m_maxAngularVel);
   m_cmdVelPub->publish(cmd);
 }
 
@@ -245,6 +252,8 @@ rcl_interfaces::msg::SetParametersResult LineFollowerNode::paramCallback(
     if (p.get_name() == "error_deadband_mm") {
       m_errorDeadband = p.as_double();
     }
+    if (p.get_name() == "max_linear_velocity")  m_maxLinear     = p.as_double();
+    if (p.get_name() == "max_angular_velocity") m_maxAngularVel = p.as_double();
   }
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;
