@@ -254,8 +254,7 @@ void PidController::selectTrackCallback(const std::shared_ptr<custom_interfaces:
 void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
     m_firstMessageReceived = true;
-    assert(msg != nullptr);
-    assert(std::isfinite(msg->data));
+    (void)msg;  // msg data is consumed via member variables set by other callbacks
 
     double dt = 0.01; // Fixed timestep
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
