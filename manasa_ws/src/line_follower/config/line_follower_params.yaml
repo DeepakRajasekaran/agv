@@ -5,7 +5,7 @@ line_follower:
     sensor_track_topic: "/mgs/selected_track"
     
     pid:
-      p: 0.01
+      p: 1.0
       i: 0.0000
       d: 0.001
       i_clamp_max: 0.3
