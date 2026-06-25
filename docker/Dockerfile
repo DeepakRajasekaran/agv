@@ -53,17 +53,15 @@ RUN mkdir -p /agv/deepak_ws/install /agv/manasa_ws/install
 
 # Build deepak_ws
 WORKDIR /agv/deepak_ws
-COPY deepak_ws/src/ ./src/
-RUN --mount=type=cache,target=/agv/deepak_ws/build \
-    if [ "$BUILD_DEEPAK" = "true" ]; then \
+COPY deepak_ws/sr[c]/ ./src/
+RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
         /bin/bash -c "source /opt/ros/jazzy/setup.bash && MAKEFLAGS=\"-j\$(nproc)\" colcon build --parallel-workers \$(nproc) --cmake-args -DCMAKE_BUILD_PARALLEL_LEVEL=\$(nproc) -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
     fi
 
 # Build manasa_ws independently
 WORKDIR /agv/manasa_ws
-COPY manasa_ws/src/ ./src/
-RUN --mount=type=cache,target=/agv/manasa_ws/build \
-    if [ "$BUILD_MANASA" = "true" ]; then \
+COPY manasa_ws/sr[c]/ ./src/
+RUN if [ "$BUILD_MANASA" = "true" ]; then \
         /bin/bash -c "source /opt/ros/jazzy/setup.bash && MAKEFLAGS=\"-j\$(nproc)\" colcon build --parallel-workers \$(nproc) --cmake-args -DCMAKE_BUILD_PARALLEL_LEVEL=\$(nproc) -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
     fi
 
