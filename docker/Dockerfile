@@ -44,17 +44,27 @@ CMD ["sleep", "infinity"]
 
 # Stage 3: Builder Image (For deployment compilation)
 FROM base AS builder
+ARG BUILD_DEEPAK=true
+ARG BUILD_MANASA=true
+
+# Create base install directories just in case they are skipped
+RUN mkdir -p /agv/deepak_ws/install /agv/manasa_ws/install
+
 # Build deepak_ws
 WORKDIR /agv/deepak_ws
 COPY deepak_ws/src/ ./src/
 RUN --mount=type=cache,target=/agv/deepak_ws/build \
-    /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"
+    if [ "$BUILD_DEEPAK" = "true" ]; then \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
+    fi
 
 # Build manasa_ws independently
 WORKDIR /agv/manasa_ws
 COPY manasa_ws/src/ ./src/
 RUN --mount=type=cache,target=/agv/manasa_ws/build \
-    /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"
+    if [ "$BUILD_MANASA" = "true" ]; then \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
+    fi
 
 # Stage 4: Deployment Image
 FROM base AS deployment

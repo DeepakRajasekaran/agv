@@ -47,6 +47,22 @@ else
 fi
 
 echo ""
+echo "Which workspace do you want to build?"
+echo "  a) deepak_ws only"
+echo "  b) manasa_ws only"
+echo "  c) Both"
+echo -n "Enter choice [a-c]: "
+read -r WS_CHOICE
+
+export BUILD_DEEPAK="true"
+export BUILD_MANASA="true"
+case $WS_CHOICE in
+    a) export BUILD_MANASA="false" ;;
+    b) export BUILD_DEEPAK="false" ;;
+    c|*) ;;
+esac
+
+echo ""
 echo "Select Deployment Method:"
 echo "1) Sync source and build natively on Jetson (Recommended, fast, simple)"
 echo "2) Cross-compile on Host (Buildx arm64) and push image tarball"
@@ -72,7 +88,7 @@ case $CHOICE in
             
         # 2. Build on target
         echo -e "\nStep 2: Triggering Docker build natively on the Jetson..."
-        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml build"
+        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && source ./agv_env.bash && export BUILD_DEEPAK=$BUILD_DEEPAK BUILD_MANASA=$BUILD_MANASA && docker compose -f docker/docker-compose.yml build"
         
         # 3. Cleanup source code
         echo -e "\nStep 3: Cleaning up source code from Jetson host (leaving only the container)..."
@@ -104,6 +120,8 @@ case $CHOICE in
             -t agv:latest \
             -f docker/Dockerfile \
             --target $BUILD_MODE \
+            --build-arg BUILD_DEEPAK=$BUILD_DEEPAK \
+            --build-arg BUILD_MANASA=$BUILD_MANASA \
             --load .
             
         echo "Exporting image using docker save..."
