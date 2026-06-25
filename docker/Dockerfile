@@ -55,14 +55,14 @@ RUN mkdir -p /agv/deepak_ws/install /agv/manasa_ws/install
 WORKDIR /agv/deepak_ws
 COPY deepak_ws/sr[c]/ ./src/
 RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
-        /bin/bash -c "source /opt/ros/jazzy/setup.bash && MAKEFLAGS=\"-j2\" colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_PARALLEL_LEVEL=2 -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --parallel-workers 1"; \
     fi
 
 # Build manasa_ws independently
 WORKDIR /agv/manasa_ws
 COPY manasa_ws/sr[c]/ ./src/
 RUN if [ "$BUILD_MANASA" = "true" ]; then \
-        /bin/bash -c "source /opt/ros/jazzy/setup.bash && MAKEFLAGS=\"-j2\" colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_PARALLEL_LEVEL=2 -DCMAKE_BUILD_TYPE=Release -G Ninja"; \
+        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build --parallel-workers 1"; \
     fi
 
 # Stage 4: Deployment Image
