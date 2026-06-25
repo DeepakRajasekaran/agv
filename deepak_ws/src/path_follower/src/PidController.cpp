@@ -53,7 +53,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_wheelRadius(0.08),
       m_sensorOffsetX(0.48),
       m_lostThreshold(0.25),
-      m_maxFrozenSteps(50),
+      m_maxFrozenSteps(500),
       m_turnDuration(3.0),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
