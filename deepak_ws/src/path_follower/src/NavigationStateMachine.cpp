@@ -30,7 +30,6 @@ std::string stateToString(State state)
         case ControllerState::FOLLOW_LINE:       return "FOLLOW_LINE";
         case ControllerState::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
         case ControllerState::READ_TAG:          return "READ_TAG";
-        case ControllerState::EXECUTE_TURN:      return "EXECUTE_TURN";
         case ControllerState::RESUME_TRACKING:   return "RESUME_TRACKING";
         case ControllerState::STOP:              return "STOP";
         case ControllerState::ERROR:             return "ERROR";

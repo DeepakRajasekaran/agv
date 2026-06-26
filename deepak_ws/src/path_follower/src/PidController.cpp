@@ -57,15 +57,12 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_maxFrozenSteps(50),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
-      m_clampTurn(0.3),
       m_junctionDivergenceThreshold(0.035),
       m_integralError(0.0),
       m_prevError(0.0),
       m_cmdLinearX(0.0),
       m_cmdAngularZ(0.0),
       m_trackDetect(false),
-      m_leftMarker(false),
-      m_rightMarker(false),
       m_tapeCross(false),
       m_leftTrackPos(0.0),
       m_rightTrackPos(0.0),
@@ -90,12 +87,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     // Initialize defaults to prevent garbage memory values
     m_clampStraight = 1.0;
     m_clampJunction = 0.5;
-    m_clampTurn = 0.3;
     m_junctionDivergenceThreshold = 0.035;
 
     this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
     this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
-    this->declare_parameter<double>("velocity_clamps.turn", m_clampTurn);
 
     this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
 
@@ -114,7 +109,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
-    this->get_parameter("velocity_clamps.turn", m_clampTurn);
     this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
 
     // Initial time points
@@ -128,8 +122,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     // Parameterize input topics
     std::string track_pos_topic = this->declare_parameter("topics.track_position", "/sensor/track_position");
     std::string track_detect_topic = this->declare_parameter("topics.track_detect", "/sensor/track_detect");
-    std::string left_marker_topic = this->declare_parameter("topics.left_marker", "/sensor/left_marker");
-    std::string right_marker_topic = this->declare_parameter("topics.right_marker", "/sensor/right_marker");
     std::string left_track_pos_topic = this->declare_parameter("topics.left_track_position", "/sensor/left_track_position");
     std::string right_track_pos_topic = this->declare_parameter("topics.right_track_position", "/sensor/right_track_position");
     std::string tape_cross_topic = this->declare_parameter("topics.tape_cross", "/sensor/tape_cross");
@@ -144,10 +136,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         track_pos_topic, 10, std::bind(&PidController::trackPosCallback, this, std::placeholders::_1));
     m_subTrackDetect = this->create_subscription<std_msgs::msg::Bool>(
         track_detect_topic, 10, std::bind(&PidController::trackDetectCallback, this, std::placeholders::_1));
-    m_subLeftMarker = this->create_subscription<std_msgs::msg::Bool>(
-        left_marker_topic, 10, std::bind(&PidController::leftMarkerCallback, this, std::placeholders::_1));
-    m_subRightMarker = this->create_subscription<std_msgs::msg::Bool>(
-        right_marker_topic, 10, std::bind(&PidController::rightMarkerCallback, this, std::placeholders::_1));
     m_subLeftTrackPos = this->create_subscription<std_msgs::msg::Float32>(
         left_track_pos_topic, 10, std::bind(&PidController::leftTrackPosCallback, this, std::placeholders::_1));
     m_subRightTrackPos = this->create_subscription<std_msgs::msg::Float32>(
@@ -419,15 +407,8 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         case ControllerState::READ_TAG: {
             // Stub for future RFID/Tag integration
             publishVelocity(0.0, 0.0);
-            p_stateMachine->transitionTo(ControllerState::EXECUTE_TURN, "TAG_READ_STUB");
+            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
             publishControllerState();
-            break;
-        }
-
-        case ControllerState::EXECUTE_TURN: {
-            // Deprecated logic, no longer used. Fallback to normal PID
-            linearVel = std::clamp(linearVel, -m_clampTurn, m_clampTurn);
-            publishVelocity(linearVel, pidAngularVel);
             break;
         }
 
@@ -453,16 +434,6 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
 void PidController::trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg)
 {
     m_trackDetect = msg->data;
-}
-
-void PidController::leftMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg)
-{
-    m_leftMarker = msg->data;
-}
-
-void PidController::rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg)
-{
-    m_rightMarker = msg->data;
 }
 
 void PidController::tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg)
@@ -613,7 +584,7 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("robot.wheel_radius"): m_wheelRadius = param.as_double(); break;
             case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
             case const_hash("safety.grace_period_ms"): 
-                m_gracePeriodMs = param.as_int(); 
+                m_gracePeriodMs = static_cast<int>(param.as_int()); 
                 // Re-initialize Fault Monitor with new grace steps (ms / 20ms)
                 p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
                 break;
@@ -623,7 +594,6 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
                 break;
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
-            case const_hash("velocity_clamps.turn"): m_clampTurn = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
             default: break;
         }

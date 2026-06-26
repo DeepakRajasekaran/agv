@@ -43,8 +43,6 @@ private:
     // ROS 2 Subscribers
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subTrackPos;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subTrackDetect;
-    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subLeftMarker;
-    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subRightMarker;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subLeftTrackPos;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subRightTrackPos;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subTapeCross;
@@ -57,8 +55,6 @@ private:
     // Subscriber Callbacks
     void trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg);
-    void leftMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
-    void rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void leftTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void rightTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg);
@@ -120,7 +116,6 @@ private:
     // Velocity & Junction Clamps
     double m_clampStraight;
     double m_clampJunction;
-    double m_clampTurn;
     double m_junctionDivergenceThreshold;
 
     // Control Loop State
@@ -131,8 +126,6 @@ private:
     std::chrono::steady_clock::time_point m_lastSensorUpdateTime;
 
     bool m_trackDetect;
-    bool m_leftMarker;
-    bool m_rightMarker;
     bool m_tapeCross;
     double m_leftTrackPos;
     double m_rightTrackPos;
