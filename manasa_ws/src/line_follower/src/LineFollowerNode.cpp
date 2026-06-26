@@ -213,7 +213,7 @@ void LineFollowerNode::controlLoop()
   std::string srcLabel;
 
   if (diff > 20.0) {
-    if (rightMm > leftMm) {
+    if (std::abs(rightMm) > std::abs(leftMm)) {
       errorMm = rightMm;
       srcLabel = "DRIFT_RIGHT";
     } else {
