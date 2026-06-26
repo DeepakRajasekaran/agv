@@ -31,6 +31,7 @@ class PidController : public rclcpp::Node {
 public:
     explicit PidController(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
     ~PidController();
+    void stopRobot();
 
     // Disable copy/move constructors for safety
     PidController(const PidController&) = delete;

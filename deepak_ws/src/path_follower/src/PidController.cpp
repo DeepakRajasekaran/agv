@@ -199,7 +199,12 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
 PidController::~PidController()
 {
+}
+
+void PidController::stopRobot()
+{
     publishVelocity(0.0, 0.0);
+    RCLCPP_INFO(this->get_logger(), "Robot stopped by shutdown hook.");
 }
 
 void PidController::cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -590,6 +595,11 @@ int main(int argc, char* argv[])
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<path_follower::PidController>();
+    
+    rclcpp::on_shutdown([node]() {
+        node->stopRobot();
+    });
+    
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
