@@ -368,7 +368,9 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
     
     double safe_velocity = m_cmdLinearX;
-    m_btTree.rootBlackboard()->get("safe_vel", safe_velocity);
+    if (!m_btTree.rootBlackboard()->get("safe_vel", safe_velocity)) {
+        safe_velocity = m_cmdLinearX; // fallback if not set
+    }
 
     if (m_logCounter % 20 == 0 && std::abs(m_cmdLinearX - safe_velocity) > 0.01) {
         RCLCPP_INFO(this->get_logger(), 
