@@ -7,7 +7,7 @@
       windup_limit: 0.5
       max_output: 3.0
     robot:
-      nominal_speed: 1.5
+      nominal_speed: 0.8
       max_rpm: 300.0
       wheel_base: 0.512
       wheel_radius: 0.08
@@ -17,7 +17,8 @@
     junction:
       divergence_threshold: 0.035
     behavior_tree:
-      error_scaling_max_dist: 0.15
-      min_scale: 0.2
-      error_threshold: 0.08
-      fallback_scale: 0.4
+      error_scaling_max_dist: 0.15   # At this error distance (m), speed is reduced to min_scale
+      min_scale: 0.1                 # The lowest scaling factor (e.g., 0.2 = 20% of nominal_speed)
+      error_threshold: 0.08          # Error distance (m) to trigger the high error state
+      fallback_scale: 0.4            # Speed scale if the robot recovers from an unstable error state
+
