@@ -58,6 +58,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_clampStraight(1.0),
       m_clampJunction(0.5),
       m_junctionDivergenceThreshold(0.035),
+      m_btErrorScalingMaxDist(0.15),
+      m_btMinScale(0.2),
+      m_btErrorThreshold(0.08),
+      m_btFallbackScale(0.4),
       m_integralError(0.0),
       m_prevError(0.0),
       m_cmdLinearX(0.0),
@@ -94,6 +98,11 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
 
     this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
+    
+    this->declare_parameter<double>("behavior_tree.error_scaling_max_dist", m_btErrorScalingMaxDist);
+    this->declare_parameter<double>("behavior_tree.min_scale", m_btMinScale);
+    this->declare_parameter<double>("behavior_tree.error_threshold", m_btErrorThreshold);
+    this->declare_parameter<double>("behavior_tree.fallback_scale", m_btFallbackScale);
 
     // Retrieve parameter values
     this->get_parameter("pid.kp", m_kp);
@@ -111,6 +120,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
     this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
+    this->get_parameter("behavior_tree.error_scaling_max_dist", m_btErrorScalingMaxDist);
+    this->get_parameter("behavior_tree.min_scale", m_btMinScale);
+    this->get_parameter("behavior_tree.error_threshold", m_btErrorThreshold);
+    this->get_parameter("behavior_tree.fallback_scale", m_btFallbackScale);
 
     // Initial time points
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
@@ -181,14 +194,14 @@ PidController::PidController(const rclcpp::NodeOptions& options)
   <BehaviorTree>
     <Fallback>
       <Sequence>
-        <IsErrorHigh error="{current_error}" threshold="0.08" last_high_time="{last_high_time}" />
-        <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" safe_velocity="{safe_vel}" />
+        <IsErrorHigh error="{current_error}" threshold="{error_threshold}" last_high_time="{last_high_time}" />
+        <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" error_scaling_max_dist="{error_scaling_max_dist}" min_scale="{min_scale}" safe_velocity="{safe_vel}" />
       </Sequence>
       <Sequence>
         <IsErrorStable last_high_time="{last_high_time}" duration="3.0" />
         <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
       </Sequence>
-      <SetSafeVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" scale="0.4" />
+      <SetSafeVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" scale="{fallback_scale}" />
     </Fallback>
   </BehaviorTree>
 </root>
@@ -375,6 +388,10 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     // Tick Behavior Tree to dynamically compute safe velocity based on track error
     m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
     m_btTree.rootBlackboard()->set("nominal_vel", m_cmdLinearX);
+    m_btTree.rootBlackboard()->set("error_scaling_max_dist", m_btErrorScalingMaxDist);
+    m_btTree.rootBlackboard()->set("min_scale", m_btMinScale);
+    m_btTree.rootBlackboard()->set("error_threshold", m_btErrorThreshold);
+    m_btTree.rootBlackboard()->set("fallback_scale", m_btFallbackScale);
     
     BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
     
@@ -614,6 +631,10 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
+            case const_hash("behavior_tree.error_scaling_max_dist"): m_btErrorScalingMaxDist = param.as_double(); break;
+            case const_hash("behavior_tree.min_scale"): m_btMinScale = param.as_double(); break;
+            case const_hash("behavior_tree.error_threshold"): m_btErrorThreshold = param.as_double(); break;
+            case const_hash("behavior_tree.fallback_scale"): m_btFallbackScale = param.as_double(); break;
             default: break;
         }
     }

@@ -16,3 +16,8 @@
       max_frozen_steps: 50
     junction:
       divergence_threshold: 0.035
+    behavior_tree:
+      error_scaling_max_dist: 0.15
+      min_scale: 0.2
+      error_threshold: 0.08
+      fallback_scale: 0.4

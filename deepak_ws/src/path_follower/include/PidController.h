@@ -84,6 +84,7 @@ private:
     // Track Selection State
     int m_selectedTrackId = 0; // 0=AVG, 1=LEFT, 2=RIGHT
 
+
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
     void safetyCheckCallback();
@@ -117,6 +118,12 @@ private:
     double m_clampStraight;
     double m_clampJunction;
     double m_junctionDivergenceThreshold;
+
+    // Behavior Tree Params
+    double m_btErrorScalingMaxDist;
+    double m_btMinScale;
+    double m_btErrorThreshold;
+    double m_btFallbackScale;
 
     // Control Loop State
     double m_integralError;

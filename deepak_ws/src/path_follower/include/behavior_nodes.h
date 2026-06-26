@@ -78,6 +78,8 @@ public:
         return {
             BT::InputPort<double>("nominal_velocity"),
             BT::InputPort<double>("current_error"),
+            BT::InputPort<double>("error_scaling_max_dist"),
+            BT::InputPort<double>("min_scale"),
             BT::OutputPort<double>("safe_velocity")
         };
     }
@@ -85,13 +87,19 @@ public:
     BT::NodeStatus tick() override {
         double nominal_vel = 0.0;
         double error = 0.0;
+        double max_dist = 0.15;
+        double min_scale = 0.2;
 
         if (!getInput("nominal_velocity", nominal_vel) || !getInput("current_error", error)) {
             return BT::NodeStatus::FAILURE;
         }
+        getInput("error_scaling_max_dist", max_dist);
+        getInput("min_scale", min_scale);
 
-        double scale = 1.0 - (std::abs(error) / 0.15);
-        scale = std::clamp(scale, 0.2, 1.0);
+        if (max_dist <= 0.0) max_dist = 0.15; // prevent div-by-zero
+
+        double scale = 1.0 - (std::abs(error) / max_dist);
+        scale = std::clamp(scale, min_scale, 1.0);
         
         double safe_vel = nominal_vel * scale;
         setOutput("safe_velocity", safe_vel);
