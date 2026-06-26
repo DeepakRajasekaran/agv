@@ -213,15 +213,17 @@ void LineFollowerNode::controlLoop()
   double errorMm;
   std::string srcLabel;
 
-  if (rightMarker) {
-    errorMm = rightMm;
-    srcLabel = (diff >= divLimit) ? "JUNC_RIGHT" : "RIGHT_MARKER";
-  } else if (leftMarker) {
-    errorMm = leftMm;
-    srcLabel = (diff >= divLimit) ? "JUNC_LEFT" : "LEFT_MARKER";
+  if (diff > 20.0) {
+    if (rightMm > leftMm) {
+      errorMm = rightMm;
+      srcLabel = "DRIFT_RIGHT";
+    } else {
+      errorMm = leftMm;
+      srcLabel = "DRIFT_LEFT";
+    }
   } else {
     errorMm = (leftMm + rightMm) / 2.0;
-    srcLabel = (diff >= divLimit) ? "JUNC_MID" : "STRAIGHT_AVG";
+    srcLabel = "STRAIGHT_AVG";
   }
 
   // Deceleration logic based on error magnitude
