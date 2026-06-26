@@ -465,6 +465,8 @@ void PidController::stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::R
     (void)request;
     p_stateMachine->transitionTo(ControllerState::STOP, "STOP_SERVICE_CALLED");
     publishControllerState();
+    m_cmdLinearX = 0.0;
+    m_cmdAngularZ = 0.0;
     publishVelocity(0.0, 0.0);
     
     response->success = true;
@@ -510,6 +512,8 @@ void PidController::handleFault(const std::string& faultType)
     if (currentState != ControllerState::ERROR) {
         p_stateMachine->transitionTo(ControllerState::ERROR, "FAULT_" + faultType);
         publishControllerState();
+        m_cmdLinearX = 0.0;
+        m_cmdAngularZ = 0.0;
         publishVelocity(0.0, 0.0);
         
         std::string faultLog = p_faultMonitor->getFaultLog(p_stateMachine->getCurrentStateString());
