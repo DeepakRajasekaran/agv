@@ -66,6 +66,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_tapeCross(false),
       m_leftTrackPos(0.0),
       m_rightTrackPos(0.0),
+      m_lastPidAngularVel(0.0),
       m_firstMessageReceived(false),
       m_logCounter(0)
 {
@@ -336,11 +337,14 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double pidAngularVel = 0.0;
     if (m_trackDetect) {
         pidAngularVel = computeSteering(computed_error, dt);
+        m_lastPidAngularVel = pidAngularVel;
     } else {
         // Track lost (grace period active).
-        // Skip PID calculation to prevent huge derivative spikes (since sensor outputs error=0).
-        // Command 0.0 angular velocity to drive straight across the gap and reset PID memory.
-        pidAngularVel = 0.0;
+        // Skip PID calculation to prevent huge derivative spikes.
+        // Command the last known angular velocity to maintain the turning arc across the gap.
+        pidAngularVel = m_lastPidAngularVel;
+        
+        // Reset PID memory so upon re-acquisition it doesn't spike from an old accumulated error
         m_integralError = 0.0;
         m_prevError = 0.0;
     }

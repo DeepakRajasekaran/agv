@@ -129,6 +129,7 @@ private:
     bool m_tapeCross;
     double m_leftTrackPos;
     double m_rightTrackPos;
+    double m_lastPidAngularVel;
 
     // Subclass pointer instances
     std::unique_ptr<NavigationStateMachine> p_stateMachine;
