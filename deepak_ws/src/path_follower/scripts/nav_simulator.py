@@ -10,11 +10,26 @@ from custom_interfaces.srv import SelectTrack
 from std_srvs.srv import Trigger
 from std_msgs.msg import Bool
 
+import os
+import yaml
+from ament_index_python.packages import get_package_share_directory
+
 class NavSimulator(Node):
     def __init__(self):
         super().__init__('nav_simulator')
         
-        self.declare_parameter('nominal_speed', 0.2)
+        # Load nominal_speed from the shared params.yaml
+        default_speed = 0.2
+        try:
+            params_path = os.path.join(get_package_share_directory('path_follower'), 'config', 'params.yaml')
+            with open(params_path, 'r') as f:
+                config = yaml.safe_load(f)
+                default_speed = config['/path_follower_node']['ros__parameters']['robot']['nominal_speed']
+                self.get_logger().info(f"Loaded nominal_speed from params.yaml: {default_speed}")
+        except Exception as e:
+            self.get_logger().warn(f"Could not load nominal_speed from params.yaml, defaulting to {default_speed}: {e}")
+            
+        self.declare_parameter('nominal_speed', float(default_speed))
         self.nominal_speed = self.get_parameter('nominal_speed').value
         
         self.add_on_set_parameters_callback(self.parameters_callback)
