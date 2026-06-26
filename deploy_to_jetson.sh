@@ -130,28 +130,25 @@ case $CHOICE in
         echo "Exporting image using docker save..."
         docker save agv:latest -o agv.tar
             
-        # 3. Transfer image to target
-        echo -e "\nStep 3: Transferring image tarball to Jetson..."
+        # 3. Package config files
+        echo -e "\nStep 3: Packaging configuration files..."
+        tar -czf config.tar.gz docker/docker-compose.yml agv_env.bash deepak_ws/config/ 2>/dev/null || true
+            
+        # 4. Transfer files to target
+        echo -e "\nStep 4: Transferring files to Jetson..."
         check_and_wait_for_jetson
-        scp agv.tar "$JETSON_USER@$JETSON_IP:/home/$JETSON_USER/"
+        scp agv.tar config.tar.gz "$JETSON_USER@$JETSON_IP:/home/$JETSON_USER/"
         
-        # 4. Load image on target
-        echo -e "\nStep 4: Loading image into Jetson's Docker daemon..."
-        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar"
-        
-        # 5. Sync configuration files to Jetson
-        echo -e "\nStep 5: Syncing configuration files to Jetson..."
-        ssh "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/docker $JETSON_DIR/deepak_ws/config"
-        scp docker/docker-compose.yml "$JETSON_USER@$JETSON_IP:$JETSON_DIR/docker/docker-compose.yml"
-        scp agv_env.bash "$JETSON_USER@$JETSON_IP:$JETSON_DIR/agv_env.bash"
-        scp -r deepak_ws/config/* "$JETSON_USER@$JETSON_IP:$JETSON_DIR/deepak_ws/config/" 2>/dev/null || true
+        # 5. Load image and extract configs on target
+        echo -e "\nStep 5: Loading image and extracting configurations on Jetson..."
+        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar && mkdir -p $JETSON_DIR && tar -xzf /home/$JETSON_USER/config.tar.gz -C $JETSON_DIR && rm /home/$JETSON_USER/config.tar.gz"
         
         echo -e "\n${GREEN}Cross-build and transfer completed successfully!${NC}"
         echo "To run the container on Jetson, execute:"
         echo "  ssh $JETSON_USER@$JETSON_IP 'cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml up -d'"
         
-        # Clean up local tar file
-        rm -f agv.tar
+        # Clean up local files
+        rm -f agv.tar config.tar.gz
         ;;
         
     3|*)
