@@ -276,46 +276,56 @@ void MgsCanopen::sdoWriteU8(uint16_t index, uint8_t subindex, uint8_t value)
 void MgsCanopen::queryNav()
 {
   int32_t val = 0;
-  MgsState temp;
+  bool use_sdo_pos = true;
+
   {
     std::lock_guard<std::mutex> lock(m_stateMutex);
-    temp = m_state;
+    if (m_state.tpdo1Count > 10) use_sdo_pos = false;
   }
 
-  if (sdoRead(OD_LEFT_TRACK,     0x01, val, 2)) { temp.leftTrack = val; }
+  if (use_sdo_pos) {
+    if (sdoRead(OD_LEFT_TRACK,     0x01, val, 2)) {
+      std::lock_guard<std::mutex> lock(m_stateMutex);
+      m_state.leftTrack = val;
+    }
+    sdoGap();
+    if (sdoRead(OD_RIGHT_TRACK,    0x02, val, 2)) {
+      std::lock_guard<std::mutex> lock(m_stateMutex);
+      m_state.rightTrack = val;
+    }
+    sdoGap();
+  }
+
+  if (sdoRead(OD_SELECTED_TRACK, 0x03, val, 2)) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    m_state.selectedTrack = val;
+  }
   sdoGap();
-  if (sdoRead(OD_RIGHT_TRACK,    0x02, val, 2)) { temp.rightTrack = val; }
+  if (sdoRead(OD_DOMINANT_TRACK, 0x00, val, 1)) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    m_state.dominantTrack = val;
+  }
   sdoGap();
-  if (sdoRead(OD_SELECTED_TRACK, 0x03, val, 2)) { temp.selectedTrack = val; }
-  sdoGap();
-  if (sdoRead(OD_DOMINANT_TRACK, 0x00, val, 1)) { temp.dominantTrack = val; }
-  sdoGap();
-  if (sdoRead(OD_TRACK_DETECT,   0x01, val, 1)) { temp.trackDetect = (val != 0); }
+  if (sdoRead(OD_TRACK_DETECT,   0x01, val, 1)) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    m_state.trackDetect = (val != 0);
+  }
   sdoGap();
   if (sdoRead(OD_LEFT_MARKER,    0x01, val, 1)) {
-    temp.leftMarker = ((val & 0x01) != 0);
-    temp.rightMarker = ((val & 0x02) != 0);
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    m_state.leftMarker = ((val & 0x01) != 0);
+    m_state.rightMarker = ((val & 0x02) != 0);
   }
   sdoGap();
-  if (sdoRead(OD_TAPE_CROSS,     0x01, val, 1)) { temp.tapeCross = (val != 0); }
+  if (sdoRead(OD_TAPE_CROSS,     0x01, val, 1)) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    m_state.tapeCross = (val != 0);
+  }
   sdoGap();
   if (sdoRead(OD_STATUS, 0x01, val, 2)) {
-    temp.status = val;
-    temp.sensorFailure = (val & 0x0100) != 0;
-  }
-
-  {
     std::lock_guard<std::mutex> lock(m_stateMutex);
-    m_state.leftTrack = temp.leftTrack;
-    m_state.rightTrack = temp.rightTrack;
-    m_state.selectedTrack = temp.selectedTrack;
-    m_state.dominantTrack = temp.dominantTrack;
-    m_state.trackDetect = temp.trackDetect;
-    m_state.leftMarker = temp.leftMarker;
-    m_state.rightMarker = temp.rightMarker;
-    m_state.tapeCross = temp.tapeCross;
-    m_state.status = temp.status;
-    m_state.sensorFailure = temp.sensorFailure;
+    m_state.status = val;
+    m_state.sensorFailure = (val & 0x0100) != 0;
   }
 }
 
