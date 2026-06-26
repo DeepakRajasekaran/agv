@@ -188,7 +188,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Behavior Tree Initialization
     m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
+    m_btFactory.registerNodeType<IsErrorStable>("IsErrorStable");
     m_btFactory.registerNodeType<ReduceVelocity>("ReduceVelocity");
+    m_btFactory.registerNodeType<SetSafeVelocity>("SetSafeVelocity");
     m_btFactory.registerNodeType<SetNominalVelocity>("SetNominalVelocity");
 
     const std::string bt_xml = R"(
@@ -196,15 +198,23 @@ PidController::PidController(const rclcpp::NodeOptions& options)
   <BehaviorTree>
     <Fallback>
       <Sequence>
-        <IsErrorHigh error="{current_error}" threshold="0.08" />
+        <IsErrorHigh error="{current_error}" threshold="0.08" last_high_time="{last_high_time}" />
         <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" safe_velocity="{safe_vel}" />
       </Sequence>
-      <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
+      <Sequence>
+        <IsErrorStable last_high_time="{last_high_time}" duration="3.0" />
+        <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
+      </Sequence>
+      <SetSafeVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" scale="0.4" />
     </Fallback>
   </BehaviorTree>
 </root>
 )";
     m_btTree = m_btFactory.createTreeFromText(bt_xml);
+    
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    double start_time = std::chrono::duration<double>(now).count();
+    m_btTree.rootBlackboard()->set("last_high_time", start_time);
 
     // Move to initial state
     if (autostart) {
