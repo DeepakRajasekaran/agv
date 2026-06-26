@@ -138,6 +138,11 @@ private:
     double m_rightTrackPos;
     double m_lastPidAngularVel;
 
+    // Response time estimator
+    double m_lastErrorForZc;
+    std::chrono::steady_clock::time_point m_lastZeroCrossingTime;
+    bool m_hasCrossedZero;
+
     // Subclass pointer instances
     std::unique_ptr<NavigationStateMachine> p_stateMachine;
     std::unique_ptr<FaultMonitor> p_faultMonitor;

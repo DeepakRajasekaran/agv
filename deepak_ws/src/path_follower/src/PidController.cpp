@@ -71,6 +71,8 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_leftTrackPos(0.0),
       m_rightTrackPos(0.0),
       m_lastPidAngularVel(0.0),
+      m_lastErrorForZc(0.0),
+      m_hasCrossedZero(false),
       m_firstMessageReceived(false),
       m_logCounter(0)
 {
@@ -259,6 +261,26 @@ double PidController::computeSteering(double error, double dt)
         d = m_kd * (theta_correction - m_prevError) / dt;
     }
     m_prevError = theta_correction;
+
+    // Response time estimator (Zero-crossing detection)
+    bool currentSign = (theta_correction > 0.0);
+    bool prevSign = (m_lastErrorForZc > 0.0);
+    
+    if (currentSign != prevSign && m_firstMessageReceived) {
+        auto now = std::chrono::steady_clock::now();
+        if (m_hasCrossedZero) {
+            double half_period = std::chrono::duration<double>(now - m_lastZeroCrossingTime).count();
+            // Filter out noise or very long drifts (e.g. valid half-periods between 0.05s and 5.0s)
+            if (half_period > 0.05 && half_period < 5.0) {
+                RCLCPP_INFO(this->get_logger(), 
+                    "[Response Estimator] Oscillation Half-Period: %.3f sec | Est. Frequency: %.2f Hz", 
+                    half_period, 1.0 / (2.0 * half_period));
+            }
+        }
+        m_lastZeroCrossingTime = now;
+        m_hasCrossedZero = true;
+    }
+    m_lastErrorForZc = theta_correction;
 
     double steering = p + i + d;
     steering = std::max(-m_maxOutput, std::min(steering, m_maxOutput));
