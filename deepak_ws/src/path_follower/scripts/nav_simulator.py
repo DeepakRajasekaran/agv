@@ -8,6 +8,7 @@ from custom_interfaces.msg import ControllerState
 from custom_interfaces.srv import SelectTrack
 
 from std_srvs.srv import Trigger
+from std_msgs.msg import Bool
 
 class NavSimulator(Node):
     def __init__(self):
@@ -33,12 +34,19 @@ class NavSimulator(Node):
         self.start_called = False
         self.error_start_time = None
         
+        self.track_detect = False
+        self.sub_track_detect = self.create_subscription(
+            Bool, '/sensor/track_detect', self.track_detect_callback, 10)
+        
     def parameters_callback(self, params):
         for param in params:
             if param.name == 'nominal_speed':
                 self.nominal_speed = param.value
                 self.get_logger().info(f"Updated nominal_speed to {self.nominal_speed}")
         return SetParametersResult(successful=True)
+        
+    def track_detect_callback(self, msg: Bool):
+        self.track_detect = msg.data
         
     def state_callback(self, msg: ControllerState):
         prev_state = self.current_state
@@ -80,8 +88,8 @@ class NavSimulator(Node):
                 self.error_start_time = self.get_clock().now()
             else:
                 elapsed = (self.get_clock().now() - self.error_start_time).nanoseconds / 1e9
-                if elapsed > 2.0:
-                    self.get_logger().warn('Auto-recovering from ERROR state...')
+                if elapsed > 2.0 and self.track_detect:
+                    self.get_logger().warn('Auto-recovering from ERROR state (tape detected)...')
                     if self.start_client.wait_for_service(timeout_sec=0.1):
                         req = Trigger.Request()
                         self.start_client.call_async(req)
