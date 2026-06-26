@@ -55,7 +55,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_sensorOffsetX(0.48),
       m_gracePeriodMs(200),
       m_maxFrozenSteps(50),
-      m_turnDuration(3.0),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
       m_clampTurn(0.3),
@@ -85,7 +84,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("robot.wheel_radius", m_wheelRadius);
     this->declare_parameter<double>("robot.sensor_offset_x", m_sensorOffsetX);
     
-    this->declare_parameter<double>("safety.turn_duration", m_turnDuration);
     this->declare_parameter<int>("safety.grace_period_ms", m_gracePeriodMs);
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     
@@ -111,7 +109,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("robot.wheel_base", m_wheelBase);
     this->get_parameter("robot.wheel_radius", m_wheelRadius);
     this->get_parameter("robot.sensor_offset_x", m_sensorOffsetX);
-    this->get_parameter("safety.turn_duration", m_turnDuration);
     this->get_parameter("safety.grace_period_ms", m_gracePeriodMs);
     this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     
@@ -615,9 +612,6 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("robot.wheel_base"): m_wheelBase = param.as_double(); break;
             case const_hash("robot.wheel_radius"): m_wheelRadius = param.as_double(); break;
             case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
-            case const_hash("safety.turn_duration"): 
-                m_turnDuration = param.as_double(); 
-                break;
             case const_hash("safety.grace_period_ms"): 
                 m_gracePeriodMs = param.as_int(); 
                 // Re-initialize Fault Monitor with new grace steps (ms / 20ms)

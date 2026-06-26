@@ -12,8 +12,7 @@
       wheel_base: 0.512
       wheel_radius: 0.08
     safety:
-      grace_period_ms: 200
+      grace_period_ms: 1000
       max_frozen_steps: 50
-      turn_duration: 3.0
     junction:
       divergence_threshold: 0.035

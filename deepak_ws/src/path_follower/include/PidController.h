@@ -116,7 +116,6 @@ private:
     // Safety Parameters
     int m_gracePeriodMs;
     int m_maxFrozenSteps;
-    double m_turnDuration;
 
     // Velocity & Junction Clamps
     double m_clampStraight;
