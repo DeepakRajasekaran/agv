@@ -157,7 +157,7 @@ void LineFollowerNode::rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr 
 
 void LineFollowerNode::controlLoop()
 {
-  double teleopLinX, teleopAngZ, leftMm, rightMm, autoLinear, turnLinear, divLimit;
+  double teleopLinX, teleopAngZ, leftMm, rightMm, autoLinear, turnLinear;
   bool enabled, trackDetected, leftMarker, rightMarker;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -171,7 +171,6 @@ void LineFollowerNode::controlLoop()
     rightMarker   = m_rightMarker;
     autoLinear    = m_autoLinearVel;
     turnLinear    = m_turnLinearVel;
-    divLimit      = m_divergenceLimit;
   }
 
   geometry_msgs::msg::Twist cmd;
