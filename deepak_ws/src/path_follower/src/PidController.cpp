@@ -361,21 +361,22 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
     }
 
-    double linearVel = m_cmdLinearX;
+    // Tick Behavior Tree to dynamically compute safe velocity based on track error
+    m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
+    m_btTree.rootBlackboard()->set("nominal_vel", m_cmdLinearX);
+    
+    BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
+    
+    double safe_velocity = m_cmdLinearX;
+    m_btTree.rootBlackboard()->get("safe_vel", safe_velocity);
 
-    // Modulate linear velocity dynamically using Behavior Tree
-    if (currentState == ControllerState::FOLLOW_LINE || currentState == ControllerState::JUNCTION_DETECTED) {
-        m_btTree.rootBlackboard()->set("current_error", computed_error);
-        m_btTree.rootBlackboard()->set("nominal_vel", linearVel);
-        
-        m_btTree.tickExactlyOnce();
-        
-        try {
-            linearVel = m_btTree.rootBlackboard()->get<double>("safe_velocity");
-        } catch (const std::exception& e) {
-            RCLCPP_DEBUG(this->get_logger(), "BT error: %s", e.what());
-        }
+    if (m_logCounter % 20 == 0 && std::abs(m_cmdLinearX - safe_velocity) > 0.01) {
+        RCLCPP_INFO(this->get_logger(), 
+            "[BT Status: %s] Error High: %.3f -> Scaled Vel: %.3f (Nominal: %.3f)", 
+            BT::toStr(bt_status).c_str(), std::abs(computed_error), safe_velocity, m_cmdLinearX);
     }
+
+    double linearVel = safe_velocity;
 
     // State Management
     switch (currentState) {
