@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rcl_interfaces.msg import SetParametersResult
 from geometry_msgs.msg import Twist
 from custom_interfaces.msg import ControllerState
 from custom_interfaces.srv import SelectTrack
@@ -14,6 +15,8 @@ class NavSimulator(Node):
         
         self.declare_parameter('nominal_speed', 0.2)
         self.nominal_speed = self.get_parameter('nominal_speed').value
+        
+        self.add_on_set_parameters_callback(self.parameters_callback)
         
         self.current_state = ControllerState.IDLE
         self.junction_count = 0
@@ -29,6 +32,13 @@ class NavSimulator(Node):
         self.select_track_client = self.create_client(SelectTrack, '/path_follower_node/select_track')
         self.start_called = False
         self.error_start_time = None
+        
+    def parameters_callback(self, params):
+        for param in params:
+            if param.name == 'nominal_speed':
+                self.nominal_speed = param.value
+                self.get_logger().info(f"Updated nominal_speed to {self.nominal_speed}")
+        return SetParametersResult(successful=True)
         
     def state_callback(self, msg: ControllerState):
         prev_state = self.current_state
