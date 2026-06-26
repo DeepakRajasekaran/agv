@@ -141,7 +141,7 @@ case $CHOICE in
         
         # 5. Load image and extract configs on target
         echo -e "\nStep 5: Loading image and extracting configurations on Jetson..."
-        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar && mkdir -p $JETSON_DIR && tar -xzf /home/$JETSON_USER/config.tar.gz -C $JETSON_DIR && rm /home/$JETSON_USER/config.tar.gz"
+        ssh "$JETSON_USER@$JETSON_IP" "docker load -i /home/$JETSON_USER/agv.tar && rm /home/$JETSON_USER/agv.tar && rm -rf $JETSON_DIR/* && mkdir -p $JETSON_DIR && tar -xzf /home/$JETSON_USER/config.tar.gz -C $JETSON_DIR && rm /home/$JETSON_USER/config.tar.gz"
         
         echo -e "\n${GREEN}Cross-build and transfer completed successfully!${NC}"
         echo "To run the container on Jetson, execute:"
