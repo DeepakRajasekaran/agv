@@ -309,8 +309,14 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     m_firstMessageReceived = true;
     (void)msg;  // msg data is consumed via member variables set by other callbacks
 
-    double dt = 0.01; // Fixed timestep
-    m_lastSensorUpdateTime = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    double dt = std::chrono::duration<double>(now - m_lastSensorUpdateTime).count();
+    m_lastSensorUpdateTime = now;
+    
+    // Fallback if this is the very first message or if there was a massive freeze
+    if (dt <= 0.0 || dt > 1.0) {
+        dt = 0.02; // Nominal 50Hz
+    }
 
     State currentState = p_stateMachine->getCurrentState();
     
