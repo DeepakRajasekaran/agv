@@ -95,13 +95,11 @@ class NavSimulator(Node):
         if self.current_state in [ControllerState.FOLLOW_LINE, ControllerState.JUNCTION_DETECTED, ControllerState.RESUME_TRACKING]:
             msg.linear.x = self.nominal_speed
             msg.angular.z = 0.0
+            self.get_logger().info(f'Tick | State: {self.current_state} | cmd_vel: v={msg.linear.x:.2f}, w={msg.angular.z:.2f}')
+            self.pub_cmd_vel.publish(msg)
         else:
-            msg.linear.x = 0.0
-            msg.angular.z = 0.0
-            
-        self.get_logger().info(f'Tick | State: {self.current_state} | cmd_vel: v={msg.linear.x:.2f}, w={msg.angular.z:.2f}')
-        
-        self.pub_cmd_vel.publish(msg)
+            # Do not publish when in IDLE or ERROR, so we don't block manual teleop recovery
+            pass
 
 def main(args=None):
     rclpy.init(args=args)
