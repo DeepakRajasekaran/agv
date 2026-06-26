@@ -5,9 +5,9 @@ line_follower:
     sensor_track_topic: "/mgs/selected_track"
     
     pid:
-      p: 2.8
+      p: 3.5
       i: 0.0000
-      d: 0.1
+      d: 0.08
       i_clamp_max: 1.0
       i_clamp_min: -1.0
       
@@ -18,7 +18,7 @@ line_follower:
     control_rate_hz: 50.0
     pid_enabled: true
 
-    turn_linear_velocity: 0.05
+    turn_linear_velocity: 0.5
 
 navigation_bt_node:
   ros__parameters:

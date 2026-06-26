@@ -115,8 +115,8 @@ OD: Dict[str, Tuple[int, int]] = {
     "LEFT_TRACK":     (0x211E, 0x01),  # S16 RO
     "RIGHT_TRACK":    (0x211E, 0x02),  # S16 RO
     "SELECTED_TRACK": (0x211E, 0x03),  # S16 RO
-    "LEFT_MARKER":    (0x211F, 0x01),  # U8  RO
-    "RIGHT_MARKER":   (0x211F, 0x02),  # U8  RO
+    "LEFT_MARKER":    (0x211F, 0x01),  # U8  RO (Bit 0)
+    "RIGHT_MARKER":   (0x211F, 0x01),  # U8  RO (Bit 1)
     "STATUS":         (0x2120, 0x01),  # U16 RO
     "RAW_SENSOR":     (0x212D, 0x00),  # U32 RO sub 01-10
     "ZERO_ADJ":       (0x212E, 0x00),  # S32 RO sub 01-10
@@ -420,15 +420,15 @@ class MGS1600CANopen:
         v = self._rd_u8(*OD["LEFT_MARKER"])
         if v is not None:
             with self._lock:
-                self.state.left_marker = bool(v)
-        return bool(v) if v is not None else None
+                self.state.left_marker = bool(v & 0x01)
+        return bool(v & 0x01) if v is not None else None
 
     def query_right_marker(self) -> Optional[bool]:
         v = self._rd_u8(*OD["RIGHT_MARKER"])
         if v is not None:
             with self._lock:
-                self.state.right_marker = bool(v)
-        return bool(v) if v is not None else None
+                self.state.right_marker = bool(v & 0x02)
+        return bool(v & 0x02) if v is not None else None
 
     def query_tape_cross(self) -> Optional[bool]:
         v = self._rd_u8(*OD["TAPE_CROSS"])

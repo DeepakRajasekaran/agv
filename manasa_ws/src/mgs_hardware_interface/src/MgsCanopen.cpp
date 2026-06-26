@@ -282,14 +282,23 @@ void MgsCanopen::queryNav()
     temp = m_state;
   }
 
-  if (sdoRead(OD_LEFT_TRACK,     0x01, val, 2)) temp.leftTrack = val;     sdoGap();
-  if (sdoRead(OD_RIGHT_TRACK,    0x02, val, 2)) temp.rightTrack = val;    sdoGap();
-  if (sdoRead(OD_SELECTED_TRACK, 0x03, val, 2)) temp.selectedTrack = val; sdoGap();
-  if (sdoRead(OD_DOMINANT_TRACK, 0x00, val, 1)) temp.dominantTrack = val; sdoGap();
-  if (sdoRead(OD_TRACK_DETECT,   0x01, val, 1)) temp.trackDetect = (val != 0); sdoGap();
-  if (sdoRead(OD_LEFT_MARKER,    0x01, val, 1)) temp.leftMarker = (val != 0);  sdoGap();
-  if (sdoRead(OD_RIGHT_MARKER,   0x02, val, 1)) temp.rightMarker = (val != 0); sdoGap();
-  if (sdoRead(OD_TAPE_CROSS,     0x01, val, 1)) temp.tapeCross = (val != 0);   sdoGap();
+  if (sdoRead(OD_LEFT_TRACK,     0x01, val, 2)) { temp.leftTrack = val; }
+  sdoGap();
+  if (sdoRead(OD_RIGHT_TRACK,    0x02, val, 2)) { temp.rightTrack = val; }
+  sdoGap();
+  if (sdoRead(OD_SELECTED_TRACK, 0x03, val, 2)) { temp.selectedTrack = val; }
+  sdoGap();
+  if (sdoRead(OD_DOMINANT_TRACK, 0x00, val, 1)) { temp.dominantTrack = val; }
+  sdoGap();
+  if (sdoRead(OD_TRACK_DETECT,   0x01, val, 1)) { temp.trackDetect = (val != 0); }
+  sdoGap();
+  if (sdoRead(OD_LEFT_MARKER,    0x01, val, 1)) {
+    temp.leftMarker = ((val & 0x01) != 0);
+    temp.rightMarker = ((val & 0x02) != 0);
+  }
+  sdoGap();
+  if (sdoRead(OD_TAPE_CROSS,     0x01, val, 1)) { temp.tapeCross = (val != 0); }
+  sdoGap();
   if (sdoRead(OD_STATUS, 0x01, val, 2)) {
     temp.status = val;
     temp.sensorFailure = (val & 0x0100) != 0;

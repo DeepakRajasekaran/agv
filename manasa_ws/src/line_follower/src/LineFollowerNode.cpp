@@ -157,13 +157,12 @@ void LineFollowerNode::rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr 
 
 void LineFollowerNode::controlLoop()
 {
-  double teleopLinX, teleopAngZ, selectedMm, leftMm, rightMm, autoLinear, turnLinear, divLimit;
+  double teleopLinX, teleopAngZ, leftMm, rightMm, autoLinear, turnLinear, divLimit;
   bool enabled, trackDetected, leftMarker, rightMarker;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
     teleopLinX    = m_teleopLinearX;
     teleopAngZ    = m_teleopAngularZ;
-    selectedMm    = m_currentErrorMm;
     enabled       = m_pidEnabled;
     trackDetected = m_trackDetected;
     leftMm        = m_leftTrackMm;
