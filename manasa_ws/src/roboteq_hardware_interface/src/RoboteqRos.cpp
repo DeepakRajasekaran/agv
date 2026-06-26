@@ -31,6 +31,7 @@ RoboteqRos::RoboteqRos(RoboteqInterface * p_interface)
   this->declare_parameter<std::string>("drive_diagnostics_topic", "/drive_diagnostics");
   this->declare_parameter<std::string>("drive_rpm_topic", "/drive_rpm");
   this->declare_parameter<double>("publish_rate_hz", 20.0);
+  this->declare_parameter<double>("max_rpm", 3000.0);
 
   // Get parameters
   this->get_parameter("can_interface", m_canInterface);
@@ -40,6 +41,7 @@ RoboteqRos::RoboteqRos(RoboteqInterface * p_interface)
   this->get_parameter("drive_diagnostics_topic", m_driveDiagnosticsTopic);
   this->get_parameter("drive_rpm_topic", m_driveRpmTopic);
   this->get_parameter("publish_rate_hz", m_publishRateHz);
+  this->get_parameter("max_rpm", m_maxRpm);
 
   // Initialize publishers
   m_driveFeedbackPub = this->create_publisher<roboteq_hardware_interface::msg::DriveFeedback>(
@@ -106,7 +108,13 @@ void RoboteqRos::cmdRpmCallback(const std_msgs::msg::Float32MultiArray::SharedPt
   float leftRpm = msg->data[0];
   float rightRpm = msg->data[1];
 
-  m_pInterface->handleCmdRpm(leftRpm, rightRpm);
+  float left_cmd = (leftRpm / m_maxRpm) * 1000.0f;
+  float right_cmd = (rightRpm / m_maxRpm) * 1000.0f;
+
+  left_cmd = std::max(-1000.0f, std::min(1000.0f, left_cmd));
+  right_cmd = std::max(-1000.0f, std::min(1000.0f, right_cmd));
+
+  m_pInterface->handleCmdRpm(left_cmd, right_cmd);
 }
 
 void RoboteqRos::srvEmergencyStop(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,

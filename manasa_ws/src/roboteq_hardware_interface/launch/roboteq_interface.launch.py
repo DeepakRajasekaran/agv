@@ -14,6 +14,9 @@ def generate_launch_description():
             executable='roboteq_hardware_interface_node',
             name='roboteq_interface',
             output='screen',
-            parameters=[config_file]
+            parameters=[
+                config_file,
+                {'max_rpm': float(os.environ.get('MAX_RPM', '3000.0'))}
+            ]
         )
     ])

@@ -63,6 +63,7 @@ private:
   std::string m_driveDiagnosticsTopic;
   std::string m_driveRpmTopic;
   double m_publishRateHz;
+  double m_maxRpm;
 };
 
 } // namespace roboteq_hardware_interface

@@ -22,7 +22,7 @@ echo ""
 # Function to check and wait for Jetson connection
 check_and_wait_for_jetson() {
     echo -n "Checking network connection to Jetson... "
-    while ! ping -c 1 -W 2 "$JETSON_IP" > /dev/null 2>&1; then
+    while ! ping -c 1 -W 2 "$JETSON_IP" > /dev/null 2>&1; do
         echo -e "${RED}OFFLINE${NC}"
         echo -e "${YELLOW}Please connect to the robot network (IP: $JETSON_IP) and press Enter to continue...${NC}"
         read -r
