@@ -32,6 +32,7 @@ def generate_launch_description():
             package='line_follower',
             executable='navigation_state_machine_node',
             name='navigation_state_machine',
-            output='screen'
+            output='screen',
+            parameters=[config_file]
         )
     ])

@@ -5,7 +5,7 @@ line_follower:
     sensor_track_topic: "/mgs/selected_track"
     
     pid:
-      p: 1.0
+      p: 0.9
       i: 0.0000
       d: 0.001
       i_clamp_max: 0.3
@@ -17,3 +17,13 @@ line_follower:
     error_deadband_mm: 1.0
     control_rate_hz: 50.0
     pid_enabled: true
+
+navigation_state_machine:
+  ros__parameters:
+    track_lost_threshold: 25
+    resume_settle_s: 1.0
+    sdo_settle_guard_s: 0.3
+    junction_diff_threshold: 25.0
+    junction_clear_threshold: 20.0
+    junction_right_threshold: -40.0
+    junction_left_threshold: 40.0

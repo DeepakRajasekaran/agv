@@ -19,6 +19,21 @@ NavigationStateMachine::NavigationStateMachine()
   m_turnRight(false), m_resumeStartTime(0.0), m_trackLostCount(0),
   m_junctionCount(0), m_inJunction(false)
 {
+  this->declare_parameter<int>("track_lost_threshold", 25);
+  this->declare_parameter<double>("resume_settle_s", 1.0);
+  this->declare_parameter<double>("sdo_settle_guard_s", 0.3);
+  this->declare_parameter<double>("junction_diff_threshold", 25.0);
+  this->declare_parameter<double>("junction_clear_threshold", 20.0);
+  this->declare_parameter<double>("junction_right_threshold", -40.0);
+  this->declare_parameter<double>("junction_left_threshold", 40.0);
+
+  this->get_parameter("track_lost_threshold", m_trackLostThreshold);
+  this->get_parameter("resume_settle_s", m_resumeSettleS);
+  this->get_parameter("sdo_settle_guard_s", m_sdoSettleGuardS);
+  this->get_parameter("junction_diff_threshold", m_junctionDiffThreshold);
+  this->get_parameter("junction_clear_threshold", m_junctionClearThreshold);
+  this->get_parameter("junction_right_threshold", m_junctionRightThreshold);
+  this->get_parameter("junction_left_threshold", m_junctionLeftThreshold);
   m_statePub = this->create_publisher<std_msgs::msg::String>("/navigation/state", 10);
 
   m_trackDetectSub = this->create_subscription<std_msgs::msg::Bool>(
@@ -111,7 +126,7 @@ void NavigationStateMachine::tick()
   // Junction hysteresis: clear the latch once the two tracks re-converge
   // (robot has physically moved past the junction). Runs every state so the
   // latch is always ready when we return to FOLLOW_LINE.
-  if (std::abs(m_leftTrackMm - m_rightTrackMm) < JUNCTION_CLEAR_THRESHOLD)
+  if (std::abs(m_leftTrackMm - m_rightTrackMm) < m_junctionClearThreshold)
     m_inJunction = false;
 
   switch (m_state) {
@@ -136,14 +151,21 @@ void NavigationStateMachine::tick()
         break;  // don't run junction detection on stale left/right values
       }
 
-      // ── Junction detection: left/right track divergence > threshold ──
-      double junctionDiff = std::abs(m_leftTrackMm - m_rightTrackMm);
-      if (junctionDiff > JUNCTION_DIFF_THRESHOLD && !m_inJunction) {
-        m_inJunction = true;        // latch — one count per physical junction
+      // ── Junction detection: width AND directional condition ──
+      double diff = std::abs(m_leftTrackMm - m_rightTrackMm);
+      bool rightJunction = (m_rightTrackMm > m_junctionRightThreshold);
+      bool leftJunction  = (m_leftTrackMm  >= m_junctionLeftThreshold);
+
+      if (diff > m_junctionDiffThreshold && (rightJunction || leftJunction) && !m_inJunction) {
+        m_inJunction = true;
         m_junctionCount++;
+
+        const char* detectedDir = leftJunction ? (rightJunction ? "BOTH" : "LEFT")
+                                                : "RIGHT";
         RCLCPP_INFO(this->get_logger(),
-                    "Junction #%d detected (L=%.1f R=%.1f diff=%.1fmm)",
-                    m_junctionCount, m_leftTrackMm, m_rightTrackMm, junctionDiff);
+                    "Junction #%d detected [%s] (L=%.1f R=%.1f diff=%.1fmm)",
+                    m_junctionCount, detectedDir,
+                    m_leftTrackMm, m_rightTrackMm, diff);
         setState(NavState::JUNCTION_DETECTED);
       }
       break;
@@ -174,10 +196,10 @@ void NavigationStateMachine::tick()
 
       // Give the MGS CANopen SDO write time to complete and
       // selected_track to reflect the new tape before checking settle.
-      if (elapsed < SDO_SETTLE_GUARD_S) break;
+      if (elapsed < m_sdoSettleGuardS) break;
 
       bool settled = std::abs(m_selectedTrackMm) < 10.0; // within 10mm
-      if (settled && elapsed > RESUME_SETTLE_S) {
+      if (settled && elapsed > m_resumeSettleS) {
         RCLCPP_INFO(this->get_logger(), "Track locked (%.1fmm error, %.1fs)", m_selectedTrackMm, elapsed);
         setState(NavState::FOLLOW_LINE);
       }

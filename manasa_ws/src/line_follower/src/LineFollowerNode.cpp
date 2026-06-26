@@ -156,11 +156,13 @@ void LineFollowerNode::controlLoop()
     }
 
     // Identify which track we are following
-    std::string trackingStatus = "Unknown";
-    if (std::abs(errorMm - leftTrackMm) < 1.0) trackingStatus = "LEFT";
-    else if (std::abs(errorMm - rightTrackMm) < 1.0) trackingStatus = "RIGHT";
+    std::string trackingStatus = "UNKNOWN";
+    if (std::abs(errorMm - leftTrackMm) < 5.0)        trackingStatus = "LEFT";
+    else if (std::abs(errorMm - rightTrackMm) < 5.0)  trackingStatus = "RIGHT";
+    else if (std::abs(errorMm) < m_errorDeadband)     trackingStatus = "CENTER";
     RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                         "Tracking: %s (Error: %.1fmm)", trackingStatus.c_str(), errorMm);
+                         "Tracking: %s | sel=%.1f L=%.1f R=%.1f mm",
+                         trackingStatus.c_str(), errorMm, leftTrackMm, rightTrackMm);
 
     // Deadband
     if (std::abs(errorMm) < m_errorDeadband) errorMm = 0.0;

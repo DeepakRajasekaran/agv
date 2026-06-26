@@ -171,11 +171,13 @@ private:
   int m_junctionCount;     // total junctions encountered
   bool m_inJunction;       // hysteresis latch (one count per physical junction)
 
-  static constexpr int TRACK_LOST_THRESHOLD = 25;     // ~0.5s at 50Hz
-  static constexpr double RESUME_SETTLE_S = 1.0;
-  static constexpr double SDO_SETTLE_GUARD_S = 0.3;        // guard before settling
-  static constexpr double JUNCTION_DIFF_THRESHOLD = 35.0;  // mm, fork detected
-  static constexpr double JUNCTION_CLEAR_THRESHOLD = 20.0; // mm, latch reset (hysteresis)
+  int m_trackLostThreshold;
+  double m_resumeSettleS;
+  double m_sdoSettleGuardS;
+  double m_junctionDiffThreshold;
+  double m_junctionClearThreshold;
+  double m_junctionRightThreshold;
+  double m_junctionLeftThreshold;
 };
 
 } // namespace line_follower
