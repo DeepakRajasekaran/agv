@@ -22,4 +22,4 @@ line_follower:
 
 navigation_bt_node:
   ros__parameters:
-    bt_xml_file: "/home/ar/ros2/agv/manasa_ws/src/line_follower/config/line_follower_tree.xml"
+    bt_xml_file: "line_follower_tree.xml"

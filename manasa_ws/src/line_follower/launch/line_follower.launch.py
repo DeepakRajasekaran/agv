@@ -6,6 +6,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_dir = get_package_share_directory('line_follower')
     config_file = os.path.join(pkg_dir, 'config', 'line_follower_params.yaml')
+    bt_xml_file = os.path.join(pkg_dir, 'config', 'line_follower_tree.xml')
 
     # Read from environment with defaults
     wheel_base = float(os.environ.get('WHEEL_BASE', '0.512'))
@@ -33,6 +34,9 @@ def generate_launch_description():
             executable='navigation_bt_node',
             name='navigation_bt_node',
             output='screen',
-            parameters=[config_file]
+            parameters=[
+                config_file,
+                {'bt_xml_file': bt_xml_file}
+            ]
         )
     ])
