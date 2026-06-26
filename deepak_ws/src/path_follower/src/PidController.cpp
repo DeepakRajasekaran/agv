@@ -333,7 +333,17 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
     }
 
-    double pidAngularVel = computeSteering(computed_error, dt);
+    double pidAngularVel = 0.0;
+    if (m_trackDetect) {
+        pidAngularVel = computeSteering(computed_error, dt);
+    } else {
+        // Track lost (grace period active).
+        // Skip PID calculation to prevent huge derivative spikes (since sensor outputs error=0).
+        // Command 0.0 angular velocity to drive straight across the gap and reset PID memory.
+        pidAngularVel = 0.0;
+        m_integralError = 0.0;
+        m_prevError = 0.0;
+    }
 
 
     // Inverse kinematics for fault monitor saturation checking
