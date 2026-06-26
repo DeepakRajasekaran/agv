@@ -271,17 +271,23 @@ void LineFollowerNode::controlLoop()
 void LineFollowerNode::srvEnable(const std::shared_ptr<std_srvs::srv::SetBool::Request> req,
                                  std::shared_ptr<std_srvs::srv::SetBool::Response> res)
 {
+  bool changed = false;
   std::lock_guard<std::mutex> lock(m_mutex);
-  m_pidEnabled = req->data;
-  if (!m_pidEnabled) {
-    m_pid.reset();
-    m_peakError = 0.0;
-    m_errorHistory.clear();
+  if (m_pidEnabled != req->data) {
+    m_pidEnabled = req->data;
+    changed = true;
+    if (!m_pidEnabled) {
+      m_pid.reset();
+      m_peakError = 0.0;
+      m_errorHistory.clear();
+    }
+    m_prevTrackDetected = true;   // clean edge state whenever enable toggles
   }
-  m_prevTrackDetected = true;   // clean edge state whenever enable toggles
   res->success = true;
   res->message = m_pidEnabled ? "PID ENABLED" : "PID DISABLED (robot stopped)";
-  RCLCPP_INFO(this->get_logger(), "%s", res->message.c_str());
+  if (changed) {
+    RCLCPP_INFO(this->get_logger(), "%s", res->message.c_str());
+  }
 }
 
 rcl_interfaces::msg::SetParametersResult LineFollowerNode::paramCallback(
