@@ -56,13 +56,8 @@ class NavSimulator(Node):
         if prev_state != ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.JUNCTION_DETECTED:
             self.junction_count += 1
             req = SelectTrack.Request()
-            
-            if self.junction_count % 2 != 0:
-                self.get_logger().info(f'Junction #{self.junction_count} (Odd) -> Calling service to track LEFT (1)')
-                req.track_id = 1
-            else:
-                self.get_logger().info(f'Junction #{self.junction_count} (Even) -> Calling service to track RIGHT (2)')
-                req.track_id = 2
+            self.get_logger().info(f'Junction #{self.junction_count} -> Calling service to track FORWARD (0)')
+            req.track_id = 0
                 
             if self.select_track_client.wait_for_service(timeout_sec=0.5):
                 self.select_track_client.call_async(req)
