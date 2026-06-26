@@ -334,19 +334,24 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
     }
 
+    static bool was_lost = false;
     double pidAngularVel = 0.0;
     if (m_trackDetect) {
+        if (was_lost) {
+            // First frame seeing the track again. Preset previous error to current 
+            // so the Derivative term is exactly 0.0 for this frame, eliminating the swing!
+            m_prevError = std::atan2(computed_error, m_sensorOffsetX);
+            was_lost = false;
+        }
         pidAngularVel = computeSteering(computed_error, dt);
         m_lastPidAngularVel = pidAngularVel;
     } else {
         // Track lost (grace period active).
-        // Skip PID calculation to prevent huge derivative spikes.
         // Command the last known angular velocity to maintain the turning arc across the gap.
         pidAngularVel = m_lastPidAngularVel;
         
-        // Reset PID memory so upon re-acquisition it doesn't spike from an old accumulated error
         m_integralError = 0.0;
-        m_prevError = 0.0;
+        was_lost = true;
     }
 
 
