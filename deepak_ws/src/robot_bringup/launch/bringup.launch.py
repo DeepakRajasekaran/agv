@@ -16,8 +16,20 @@ def generate_launch_description():
         default_value='true',
         description='Launch the path_follower node'
     )
+    launch_nav_simulator_arg = DeclareLaunchArgument(
+        'launch_nav_simulator',
+        default_value='false',
+        description='Launch the nav_simulator node'
+    )
+    force_track_detect_arg = DeclareLaunchArgument(
+        'force_track_detect',
+        default_value='false',
+        description='Force track detection to True in simulator'
+    )
     
     launch_path_follower = LaunchConfiguration('launch_path_follower')
+    launch_nav_simulator = LaunchConfiguration('launch_nav_simulator')
+    force_track_detect = LaunchConfiguration('force_track_detect')
 
     # Read Environment Variables
     mode = os.environ.get('MODE', 'HARDWARE').upper()
@@ -36,7 +48,7 @@ def generate_launch_description():
     doc = xacro.process_file(urdf_file, mappings={'mode': mode, 'sim_tool': sim_tool})
     robot_description = {'robot_description': doc.toxml()}
 
-    nodes = [launch_path_follower_arg]
+    nodes = [launch_path_follower_arg, launch_nav_simulator_arg, force_track_detect_arg]
 
     # 1. Robot State Publisher (Always runs)
     nodes.append(Node(
@@ -127,6 +139,19 @@ def generate_launch_description():
         executable='junction_manager.py',
         output='screen',
         condition=IfCondition(launch_path_follower)
+    ))
+
+    # 6c. Nav Simulator (Conditional)
+    nodes.append(Node(
+        package='path_follower',
+        executable='nav_simulator.py',
+        output='screen',
+        parameters=[
+            {'turn_sequence': ['left', 'right', 'straight']},
+            {'loop_sequence': True},
+            {'force_track_detect': force_track_detect}
+        ],
+        condition=IfCondition(launch_nav_simulator)
     ))
 
     # 7. Mode-specific launches

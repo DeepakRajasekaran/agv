@@ -37,6 +37,9 @@ class NavSimulator(Node):
         self.current_state = ControllerState.IDLE
         self.junction_count = 0
         self.pub_cmd_vel = self.create_publisher(Twist, '/nav/cmd_vel', 10)
+        self.pub_track_detect = self.create_publisher(Bool, '/sensor/track_detect', 10)
+        
+        self.declare_parameter('force_track_detect', False)
         
         self.sub_state = self.create_subscription(
             ControllerState, '/controller_state', self.state_callback, 10)
@@ -84,6 +87,13 @@ class NavSimulator(Node):
             self.get_logger().info('Resumed standard tracking (Controller auto-reset track to AVERAGE).')
 
     def timer_callback(self):
+        # Force track detect if enabled
+        if self.get_parameter('force_track_detect').value:
+            msg = Bool()
+            msg.data = True
+            self.pub_track_detect.publish(msg)
+            self.track_detect = True
+
         # Auto-start if IDLE
         if self.current_state == ControllerState.IDLE and not self.start_called:
             if self.start_client.wait_for_service(timeout_sec=0.1):
