@@ -20,8 +20,11 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-twist-mux \
     && rm -rf /var/lib/apt/lists/*
 
-COPY docker/bt.deb /tmp/bt.deb
-RUN dpkg -i /tmp/bt.deb || apt-get install -f -y && rm -f /tmp/bt.deb
+# Install BT separately to not invalidate the cache of the huge install above
+RUN apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 update && \
+    apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 install -y \
+    ros-jazzy-behaviortree-cpp \
+    && rm -rf /var/lib/apt/lists/*
 
 # Stage 1.5: Host Dev Image (Stops here, expects volume mounts)
 FROM target_sysroot AS host
