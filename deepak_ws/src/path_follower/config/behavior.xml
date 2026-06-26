@@ -1,0 +1,14 @@
+<root BTCPP_format="4">
+  <BehaviorTree>
+    <Fallback>
+      <!-- If the tracking error is too high, aggressively reduce speed -->
+      <Sequence>
+        <IsErrorHigh error="{current_error}" threshold="{error_threshold}" />
+        <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" safe_velocity="{safe_vel}" />
+      </Sequence>
+      
+      <!-- Otherwise, maintain nominal speed -->
+      <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
+    </Fallback>
+  </BehaviorTree>
+</root>

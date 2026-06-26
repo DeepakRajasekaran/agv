@@ -16,6 +16,7 @@
   <depend>std_srvs</depend>
   <depend>custom_interfaces</depend>
   <depend>nav_msgs</depend>
+  <depend>behaviortree_cpp</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

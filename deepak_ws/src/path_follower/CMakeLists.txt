@@ -23,6 +23,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(custom_interfaces REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
 
 include_directories(
   include
@@ -41,6 +42,7 @@ ament_target_dependencies(path_follower_node
   std_srvs
   custom_interfaces
   nav_msgs
+  behaviortree_cpp
 )
 
 # Install executable

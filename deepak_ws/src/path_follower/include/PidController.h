@@ -24,6 +24,8 @@
 
 #include "NavigationStateMachine.h"
 #include "FaultMonitor.h"
+#include "behavior_nodes.h"
+#include <behaviortree_cpp/bt_factory.h>
 
 namespace path_follower {
 
@@ -140,6 +142,10 @@ private:
     // Subclass pointer instances
     std::unique_ptr<NavigationStateMachine> p_stateMachine;
     std::unique_ptr<FaultMonitor> p_faultMonitor;
+
+    // Behavior Tree
+    BT::BehaviorTreeFactory m_btFactory;
+    BT::Tree m_btTree;
 
     bool m_firstMessageReceived;
 

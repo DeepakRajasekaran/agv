@@ -186,6 +186,26 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_callbackHandle = this->add_on_set_parameters_callback(
         std::bind(&PidController::onParameterChange, this, std::placeholders::_1));
 
+    // Behavior Tree Initialization
+    m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
+    m_btFactory.registerNodeType<ReduceVelocity>("ReduceVelocity");
+    m_btFactory.registerNodeType<SetNominalVelocity>("SetNominalVelocity");
+
+    const std::string bt_xml = R"(
+<root BTCPP_format="4">
+  <BehaviorTree>
+    <Fallback>
+      <Sequence>
+        <IsErrorHigh error="{current_error}" threshold="0.08" />
+        <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" safe_velocity="{safe_vel}" />
+      </Sequence>
+      <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
+    </Fallback>
+  </BehaviorTree>
+</root>
+)";
+    m_btTree = m_btFactory.createTreeFromText(bt_xml);
+
     // Move to initial state
     if (autostart) {
         p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "AUTOSTART_ENABLED");
@@ -342,6 +362,20 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     }
 
     double linearVel = m_cmdLinearX;
+
+    // Modulate linear velocity dynamically using Behavior Tree
+    if (currentState == ControllerState::FOLLOW_LINE || currentState == ControllerState::JUNCTION_DETECTED) {
+        m_btTree.rootBlackboard()->set("current_error", computed_error);
+        m_btTree.rootBlackboard()->set("nominal_vel", linearVel);
+        
+        m_btTree.tickExactlyOnce();
+        
+        try {
+            linearVel = m_btTree.rootBlackboard()->get<double>("safe_velocity");
+        } catch (const std::exception& e) {
+            RCLCPP_DEBUG(this->get_logger(), "BT error: %s", e.what());
+        }
+    }
 
     // State Management
     switch (currentState) {

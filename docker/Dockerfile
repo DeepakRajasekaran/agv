@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robot-state-publisher \
     ros-jazzy-twist-stamper \
     ros-jazzy-twist-mux \
+    ros-jazzy-behaviortree-cpp \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 1.5: Host Dev Image (Stops here, expects volume mounts)
