@@ -26,7 +26,7 @@ def generate_launch_description():
     # Parse directories
     driver_dir = get_package_share_directory('roboteq_driver')
     desc_dir = get_package_share_directory('robot_description')
-    bringup_dir = get_package_share_directory('agv_bringup')
+    bringup_dir = get_package_share_directory('robot_bringup')
 
     # Files
     controllers_file = os.path.join(driver_dir, 'config', 'controllers.yaml')

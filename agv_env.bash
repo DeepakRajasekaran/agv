@@ -44,8 +44,8 @@ export ROS_DOMAIN_ID=42
 
 # Useful Aliases
 alias teleop="ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/teleop/cmd_vel"
-alias tk="ros2 launch agv_bringup teleop.launch.py teleop_type:=tk"
-alias tb3="ros2 launch agv_bringup teleop.launch.py teleop_type:=tb3"
+alias tk="ros2 launch robot_bringup teleop.launch.py teleop_type:=tk"
+alias tb3="ros2 launch robot_bringup teleop.launch.py teleop_type:=tb3"
 
 # Print Configuration
 echo "=== AGV Environment Configured ==="

@@ -19,15 +19,17 @@ echo "Target: $JETSON_USER@$JETSON_IP"
 echo "Target Directory: $JETSON_DIR"
 echo ""
 
-# Check if Jetson is online
-echo -n "Checking network connection to Jetson... "
-if ping -c 1 -W 2 "$JETSON_IP" > /dev/null 2>&1; then
+# Function to check and wait for Jetson connection
+check_and_wait_for_jetson() {
+    echo -n "Checking network connection to Jetson... "
+    while ! ping -c 1 -W 2 "$JETSON_IP" > /dev/null 2>&1; then
+        echo -e "${RED}OFFLINE${NC}"
+        echo -e "${YELLOW}Please connect to the robot network (IP: $JETSON_IP) and press Enter to continue...${NC}"
+        read -r
+        echo -n "Re-checking network connection... "
+    done
     echo -e "${GREEN}ONLINE${NC}"
-else
-    echo -e "${RED}OFFLINE${NC}"
-    echo "Please verify the Jetson is powered on, connected to the network, and the IP is correct ($JETSON_IP)."
-    exit 1
-fi
+}
 
 # Check for upstream Git changes
 echo -n "Checking for updates from GitHub... "
@@ -76,6 +78,7 @@ case $CHOICE in
         
         # 1. Sync source code
         echo "Step 1: Syncing workspace source files via rsync..."
+        check_and_wait_for_jetson
         ssh "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR"
         rsync -avz --delete \
             --exclude 'build/' \
@@ -129,6 +132,7 @@ case $CHOICE in
             
         # 3. Transfer image to target
         echo -e "\nStep 3: Transferring image tarball to Jetson..."
+        check_and_wait_for_jetson
         scp agv.tar "$JETSON_USER@$JETSON_IP:/home/$JETSON_USER/"
         
         # 4. Load image on target
