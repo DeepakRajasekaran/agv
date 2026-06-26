@@ -18,8 +18,10 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robot-state-publisher \
     ros-jazzy-twist-stamper \
     ros-jazzy-twist-mux \
-    ros-jazzy-behaviortree-cpp \
     && rm -rf /var/lib/apt/lists/*
+
+COPY docker/bt.deb /tmp/bt.deb
+RUN dpkg -i /tmp/bt.deb || apt-get install -f -y && rm -f /tmp/bt.deb
 
 # Stage 1.5: Host Dev Image (Stops here, expects volume mounts)
 FROM target_sysroot AS host
