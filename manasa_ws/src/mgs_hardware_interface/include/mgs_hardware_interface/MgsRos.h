@@ -46,6 +46,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_rightTrackPub;
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr m_selectedTrackPub;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_tapeCrossPub;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_leftMarkerPub;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr m_rightMarkerPub;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr m_srvSwitchTrack;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvSetZero;
   rclcpp::TimerBase::SharedPtr m_telemetryTimer;

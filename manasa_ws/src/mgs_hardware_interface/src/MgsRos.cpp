@@ -28,6 +28,8 @@ MgsRos::MgsRos(MgsInterface * p_interface)
   m_rightTrackPub = this->create_publisher<std_msgs::msg::Float64>("/mgs/right_track", 10);
   m_selectedTrackPub = this->create_publisher<std_msgs::msg::Float64>("/mgs/selected_track", 10);
   m_tapeCrossPub = this->create_publisher<std_msgs::msg::Bool>("/mgs/tape_cross", 10);
+  m_leftMarkerPub = this->create_publisher<std_msgs::msg::Bool>("/mgs/left_marker", 10);
+  m_rightMarkerPub = this->create_publisher<std_msgs::msg::Bool>("/mgs/right_marker", 10);
 
   m_srvSwitchTrack = this->create_service<std_srvs::srv::SetBool>(
     "/mgs/switch_track", std::bind(&MgsRos::srvSwitchTrack, this, std::placeholders::_1, std::placeholders::_2));
@@ -57,6 +59,8 @@ void MgsRos::publishTelemetry(const MgsState & state)
 
   bMsg.data = state.trackDetect; m_trackDetectPub->publish(bMsg);
   bMsg.data = state.tapeCross;   m_tapeCrossPub->publish(bMsg);
+  bMsg.data = state.leftMarker;  m_leftMarkerPub->publish(bMsg);
+  bMsg.data = state.rightMarker; m_rightMarkerPub->publish(bMsg);
 
   fMsg.data = state.leftTrack;     m_leftTrackPub->publish(fMsg);
   fMsg.data = state.rightTrack;    m_rightTrackPub->publish(fMsg);

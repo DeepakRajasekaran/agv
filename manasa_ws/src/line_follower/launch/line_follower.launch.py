@@ -30,8 +30,8 @@ def generate_launch_description():
         ),
         Node(
             package='line_follower',
-            executable='navigation_state_machine_node',
-            name='navigation_state_machine',
+            executable='navigation_bt_node',
+            name='navigation_bt_node',
             output='screen',
             parameters=[config_file]
         )

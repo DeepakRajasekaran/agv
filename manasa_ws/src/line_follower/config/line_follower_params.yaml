@@ -5,25 +5,21 @@ line_follower:
     sensor_track_topic: "/mgs/selected_track"
     
     pid:
-      p: 0.9
+      p: 2.8
       i: 0.0000
-      d: 0.001
-      i_clamp_max: 0.3
-      i_clamp_min: -0.3
+      d: 0.1
+      i_clamp_max: 1.0
+      i_clamp_min: -1.0
       
     max_angular_correction: 0.5
-    max_linear_velocity: 0.5
+    max_linear_velocity: 1.0
     max_angular_velocity: 1.0
     error_deadband_mm: 1.0
     control_rate_hz: 50.0
     pid_enabled: true
 
-navigation_state_machine:
+    turn_linear_velocity: 0.05
+
+navigation_bt_node:
   ros__parameters:
-    track_lost_threshold: 25
-    resume_settle_s: 1.0
-    sdo_settle_guard_s: 0.3
-    junction_diff_threshold: 25.0
-    junction_clear_threshold: 20.0
-    junction_right_threshold: -40.0
-    junction_left_threshold: 40.0
+    bt_xml_file: "/home/ar/ros2/agv/manasa_ws/src/line_follower/config/line_follower_tree.xml"
