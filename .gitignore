@@ -21,3 +21,5 @@ install/
 log/
 
 /test/
+*.tar.zst
+*.deb
