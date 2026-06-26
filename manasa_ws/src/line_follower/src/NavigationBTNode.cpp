@@ -39,7 +39,7 @@ public:
 class SetLineFollowerState : public BT::SyncActionNode
 {
 public:
-  SetLineFollowerState(const std::string& name, const BT::NodeConfig& config, rclcpp::Node::SharedPtr node)
+  SetLineFollowerState(const std::string& name, const BT::NodeConfig& config, rclcpp::Node* node)
     : BT::SyncActionNode(name, config), node_(node)
   {
     client_ = node_->create_client<std_srvs::srv::SetBool>("/line_follower/enable");
@@ -69,7 +69,7 @@ public:
   }
 
 private:
-  rclcpp::Node::SharedPtr node_;
+  rclcpp::Node* node_;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr client_;
 };
 
@@ -77,7 +77,7 @@ private:
 class PublishNavState : public BT::SyncActionNode
 {
 public:
-  PublishNavState(const std::string& name, const BT::NodeConfig& config, rclcpp::Node::SharedPtr node)
+  PublishNavState(const std::string& name, const BT::NodeConfig& config, rclcpp::Node* node)
     : BT::SyncActionNode(name, config), node_(node)
   {
     pub_ = node_->create_publisher<std_msgs::msg::String>("/navigation/state", 10);
@@ -98,7 +98,7 @@ public:
   }
 
 private:
-  rclcpp::Node::SharedPtr node_;
+  rclcpp::Node* node_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub_;
 };
 
@@ -126,12 +126,12 @@ public:
     // Register actions passing the ROS node pointer
     factory.registerBuilder<SetLineFollowerState>("SetLineFollowerState",
       [this](const std::string& name, const BT::NodeConfig& config) {
-        return std::make_unique<SetLineFollowerState>(name, config, this->shared_from_this());
+        return std::make_unique<SetLineFollowerState>(name, config, this);
       });
 
     factory.registerBuilder<PublishNavState>("PublishNavState",
       [this](const std::string& name, const BT::NodeConfig& config) {
-        return std::make_unique<PublishNavState>(name, config, this->shared_from_this());
+        return std::make_unique<PublishNavState>(name, config, this);
       });
 
     if (xml_file.empty()) {
