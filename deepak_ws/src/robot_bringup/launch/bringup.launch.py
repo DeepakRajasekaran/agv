@@ -6,6 +6,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch.actions import IncludeLaunchDescription, TimerAction, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
@@ -26,10 +27,16 @@ def generate_launch_description():
         default_value='false',
         description='Force track detection to True in simulator'
     )
+    track_detect_stable_ms_arg = DeclareLaunchArgument(
+        'track_detect_stable_ms',
+        default_value='1000',
+        description='Required continuous track_detect duration before start/recovery, in ms'
+    )
     
     launch_path_follower = LaunchConfiguration('launch_path_follower')
     launch_nav_simulator = LaunchConfiguration('launch_nav_simulator')
     force_track_detect = LaunchConfiguration('force_track_detect')
+    track_detect_stable_ms = LaunchConfiguration('track_detect_stable_ms')
 
     # Read Environment Variables
     mode = os.environ.get('MODE', 'HARDWARE').upper()
@@ -48,7 +55,12 @@ def generate_launch_description():
     doc = xacro.process_file(urdf_file, mappings={'mode': mode, 'sim_tool': sim_tool})
     robot_description = {'robot_description': doc.toxml()}
 
-    nodes = [launch_path_follower_arg, launch_nav_simulator_arg, force_track_detect_arg]
+    nodes = [
+        launch_path_follower_arg,
+        launch_nav_simulator_arg,
+        force_track_detect_arg,
+        track_detect_stable_ms_arg
+    ]
 
     # 1. Robot State Publisher (Always runs)
     nodes.append(Node(
@@ -124,6 +136,9 @@ def generate_launch_description():
     path_follower_params = []
     if os.path.exists('/agv_config/follower_params.yaml'):
         path_follower_params.append('/agv_config/follower_params.yaml')
+    path_follower_params.append({
+        'safety.track_detect_stable_ms': ParameterValue(track_detect_stable_ms, value_type=int)
+    })
 
     nodes.append(Node(
         package='path_follower',
@@ -149,7 +164,8 @@ def generate_launch_description():
         parameters=[
             {'turn_sequence': ['left', 'right', 'straight']},
             {'loop_sequence': True},
-            {'force_track_detect': force_track_detect}
+            {'force_track_detect': force_track_detect},
+            {'track_detect_stable_ms': ParameterValue(track_detect_stable_ms, value_type=int)}
         ],
         condition=IfCondition(launch_nav_simulator)
     ))

@@ -20,17 +20,23 @@ class NavSimulator(Node):
         
         # Load nominal_speed from the shared params.yaml
         default_speed = 0.2
+        default_track_detect_stable_ms = 1000
         try:
             params_path = os.path.join(get_package_share_directory('path_follower'), 'config', 'params.yaml')
             with open(params_path, 'r') as f:
                 config = yaml.safe_load(f)
-                default_speed = config['/path_follower_node']['ros__parameters']['robot']['nominal_speed']
+                ros_params = config['/path_follower_node']['ros__parameters']
+                default_speed = ros_params['robot']['nominal_speed']
+                default_track_detect_stable_ms = ros_params['safety'].get(
+                    'track_detect_stable_ms', default_track_detect_stable_ms)
                 self.get_logger().info(f"Loaded nominal_speed from params.yaml: {default_speed}")
         except Exception as e:
             self.get_logger().warn(f"Could not load nominal_speed from params.yaml, defaulting to {default_speed}: {e}")
             
         self.declare_parameter('nominal_speed', float(default_speed))
+        self.declare_parameter('track_detect_stable_ms', int(default_track_detect_stable_ms))
         self.nominal_speed = self.get_parameter('nominal_speed').value
+        self.track_detect_stable_ms = int(self.get_parameter('track_detect_stable_ms').value)
         
         self.add_on_set_parameters_callback(self.parameters_callback)
         
@@ -50,9 +56,11 @@ class NavSimulator(Node):
         self.start_client = self.create_client(Trigger, '/path_follower_node/start')
         self.select_track_client = self.create_client(SelectTrack, '/path_follower_node/select_track')
         self.start_called = False
+        self.start_request_pending = False
         self.error_start_time = None
         
         self.track_detect = False
+        self.track_detect_true_since = None
         self.sub_track_detect = self.create_subscription(
             Bool, '/sensor/track_detect', self.track_detect_callback, 10)
         
@@ -61,10 +69,60 @@ class NavSimulator(Node):
             if param.name == 'nominal_speed':
                 self.nominal_speed = param.value
                 self.get_logger().info(f"Updated nominal_speed to {self.nominal_speed}")
+            elif param.name == 'track_detect_stable_ms':
+                if int(param.value) < 0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='track_detect_stable_ms must be >= 0')
+                self.track_detect_stable_ms = int(param.value)
+                self.get_logger().info(
+                    f"Updated track_detect_stable_ms to {self.track_detect_stable_ms}")
         return SetParametersResult(successful=True)
         
+    def update_track_detect(self, detected: bool):
+        if detected:
+            if not self.track_detect or self.track_detect_true_since is None:
+                self.track_detect_true_since = self.get_clock().now()
+        else:
+            self.track_detect_true_since = None
+        self.track_detect = detected
+
+    def is_track_detect_stable(self) -> bool:
+        if not self.track_detect or self.track_detect_true_since is None:
+            return False
+
+        elapsed_ms = (
+            self.get_clock().now() - self.track_detect_true_since
+        ).nanoseconds / 1e6
+        return elapsed_ms >= self.track_detect_stable_ms
+
+    def request_start(self, reason: str):
+        if self.start_request_pending:
+            return
+
+        if self.start_client.wait_for_service(timeout_sec=0.1):
+            self.get_logger().info(f'Calling /path_follower_node/start... ({reason})')
+            req = Trigger.Request()
+            future = self.start_client.call_async(req)
+            self.start_request_pending = True
+            future.add_done_callback(self.start_response_callback)
+
+    def start_response_callback(self, future):
+        self.start_request_pending = False
+        try:
+            response = future.result()
+            if response.success:
+                self.start_called = True
+                self.get_logger().info(f'Start accepted: {response.message}')
+            else:
+                self.start_called = False
+                self.get_logger().warn(f'Start rejected: {response.message}')
+        except Exception as e:
+            self.start_called = False
+            self.get_logger().error(f'Start service call failed: {str(e)}')
+
     def track_detect_callback(self, msg: Bool):
-        self.track_detect = msg.data
+        self.update_track_detect(msg.data)
         
     def state_callback(self, msg: ControllerState):
         prev_state = self.current_state
@@ -92,15 +150,13 @@ class NavSimulator(Node):
             msg = Bool()
             msg.data = True
             self.pub_track_detect.publish(msg)
-            self.track_detect = True
+            self.update_track_detect(True)
+
+        track_detect_stable = self.is_track_detect_stable()
 
         # Auto-start if IDLE
-        if self.current_state == ControllerState.IDLE and not self.start_called:
-            if self.start_client.wait_for_service(timeout_sec=0.1):
-                self.get_logger().info('Calling /path_follower_node/start...')
-                req = Trigger.Request()
-                self.start_client.call_async(req)
-                self.start_called = True
+        if self.current_state == ControllerState.IDLE and not self.start_called and track_detect_stable:
+            self.request_start('stable track detected')
         
         # Auto-recovery if ERROR
         if self.current_state == ControllerState.ERROR:
@@ -108,12 +164,10 @@ class NavSimulator(Node):
                 self.error_start_time = self.get_clock().now()
             else:
                 elapsed = (self.get_clock().now() - self.error_start_time).nanoseconds / 1e9
-                if elapsed > 2.0 and self.track_detect:
+                if elapsed > 2.0 and track_detect_stable:
                     self.get_logger().warn('Auto-recovering from ERROR state (tape detected)...')
-                    if self.start_client.wait_for_service(timeout_sec=0.1):
-                        req = Trigger.Request()
-                        self.start_client.call_async(req)
-                        self.error_start_time = None
+                    self.request_start('stable track recovery')
+                    self.error_start_time = None
         else:
             self.error_start_time = None
         

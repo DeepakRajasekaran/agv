@@ -14,6 +14,7 @@
     safety:
       grace_period_ms: 1000
       max_frozen_steps: 50
+      track_detect_stable_ms: 1000
     junction:
       divergence_threshold: 0.035
     behavior_tree:
@@ -21,4 +22,3 @@
       min_scale: 0.1                 # The lowest scaling factor (e.g., 0.2 = 20% of nominal_speed)
       error_threshold: 0.08          # Error distance (m) to trigger the high error state
       fallback_scale: 0.4            # Speed scale if the robot recovers from an unstable error state
-

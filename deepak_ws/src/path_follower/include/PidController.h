@@ -96,6 +96,8 @@ private:
     void publishVelocity(double linearVel, double angularVel);
     void handleFault(const std::string& faultType);
     void publishControllerState();
+    bool isTrackDetectStable() const;
+    std::chrono::milliseconds getTrackDetectStableElapsed() const;
 
     // Tunable Parameters (PID)
     double m_kp;
@@ -113,6 +115,7 @@ private:
     // Safety Parameters
     int m_gracePeriodMs;
     int m_maxFrozenSteps;
+    int m_trackDetectStableMs;
 
     // Velocity & Junction Clamps
     double m_clampStraight;
@@ -131,8 +134,10 @@ private:
     double m_cmdLinearX;
     double m_cmdAngularZ;
     std::chrono::steady_clock::time_point m_lastSensorUpdateTime;
+    std::chrono::steady_clock::time_point m_trackDetectTrueStartTime;
 
     bool m_trackDetect;
+    bool m_trackDetectStableTimerActive;
     bool m_tapeCross;
     double m_leftTrackPos;
     double m_rightTrackPos;

@@ -55,6 +55,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_sensorOffsetX(0.48),
       m_gracePeriodMs(200),
       m_maxFrozenSteps(50),
+      m_trackDetectStableMs(1000),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
       m_junctionDivergenceThreshold(0.035),
@@ -66,7 +67,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_prevError(0.0),
       m_cmdLinearX(0.0),
       m_cmdAngularZ(0.0),
+      m_lastSensorUpdateTime(std::chrono::steady_clock::now()),
+      m_trackDetectTrueStartTime(m_lastSensorUpdateTime),
       m_trackDetect(false),
+      m_trackDetectStableTimerActive(false),
       m_tapeCross(false),
       m_leftTrackPos(0.0),
       m_rightTrackPos(0.0),
@@ -90,6 +94,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     
     this->declare_parameter<int>("safety.grace_period_ms", m_gracePeriodMs);
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
+    this->declare_parameter<int>("safety.track_detect_stable_ms", m_trackDetectStableMs);
     
     // Initialize defaults to prevent garbage memory values
     m_clampStraight = 1.0;
@@ -118,6 +123,13 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("robot.sensor_offset_x", m_sensorOffsetX);
     this->get_parameter("safety.grace_period_ms", m_gracePeriodMs);
     this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
+    this->get_parameter("safety.track_detect_stable_ms", m_trackDetectStableMs);
+
+    if (m_trackDetectStableMs < 0) {
+        RCLCPP_WARN(this->get_logger(),
+            "safety.track_detect_stable_ms cannot be negative. Resetting to 1000 ms.");
+        m_trackDetectStableMs = 1000;
+    }
     
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
@@ -129,6 +141,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Initial time points
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
+    m_trackDetectTrueStartTime = m_lastSensorUpdateTime;
 
     // Instantiate State Machine and Safety Monitor
     p_stateMachine = std::make_unique<NavigationStateMachine>();
@@ -216,12 +229,11 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Move to initial state
     if (autostart) {
-        p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "AUTOSTART_ENABLED");
-        RCLCPP_INFO(this->get_logger(), "Path Follower auto-started. Tracking active.");
-    } else {
-        p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
-        RCLCPP_INFO(this->get_logger(), "Path Follower running in IDLE. Call ~/start to begin tracking.");
+        RCLCPP_WARN(this->get_logger(),
+            "Autostart requested, but stable track detection is required before tracking starts.");
     }
+    p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
+    RCLCPP_INFO(this->get_logger(), "Path Follower running in IDLE. Call ~/start to begin tracking.");
     publishControllerState();
 }
 
@@ -287,6 +299,43 @@ double PidController::computeSteering(double error, double dt)
 
     assert(std::isfinite(steering));
     return steering;
+}
+
+/**
+ * @brief  Returns how long tape detection has been continuously true.
+ * @return Continuous track-detect duration in milliseconds.
+ */
+std::chrono::milliseconds PidController::getTrackDetectStableElapsed() const
+{
+    assert(m_trackDetectStableMs >= 0);
+
+    if (!m_trackDetect || !m_trackDetectStableTimerActive) {
+        return 0ms;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_trackDetectTrueStartTime);
+
+    assert(elapsed.count() >= 0);
+    return elapsed;
+}
+
+/**
+ * @brief  Checks whether tape detection has been continuously true long enough to start.
+ * @return True when the track-detect recovery gate is satisfied.
+ */
+bool PidController::isTrackDetectStable() const
+{
+    assert(m_trackDetectStableMs >= 0);
+
+    if (!m_trackDetect || !m_trackDetectStableTimerActive) {
+        return false;
+    }
+
+    const bool stable = getTrackDetectStableElapsed() >= std::chrono::milliseconds(m_trackDetectStableMs);
+
+    assert(m_trackDetect || !stable);
+    return stable;
 }
 
 void PidController::selectTrackCallback(const std::shared_ptr<custom_interfaces::srv::SelectTrack::Request> request,
@@ -497,7 +546,19 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
 
 void PidController::trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg)
 {
-    m_trackDetect = msg->data;
+    assert(msg != nullptr);
+
+    const bool detected = msg->data;
+    if (detected && (!m_trackDetect || !m_trackDetectStableTimerActive)) {
+        m_trackDetectTrueStartTime = std::chrono::steady_clock::now();
+        m_trackDetectStableTimerActive = true;
+    } else if (!detected) {
+        m_trackDetectStableTimerActive = false;
+    }
+
+    m_trackDetect = detected;
+
+    assert(m_trackDetect == detected);
 }
 
 void PidController::tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg)
@@ -522,6 +583,17 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
     State currentState = p_stateMachine->getCurrentState();
     
     if (currentState == ControllerState::IDLE || currentState == ControllerState::STOP || currentState == ControllerState::ERROR) {
+        if (!isTrackDetectStable()) {
+            const auto elapsed = getTrackDetectStableElapsed();
+            response->success = false;
+            response->message = "Track detect must be stable for " +
+                std::to_string(m_trackDetectStableMs) + " ms before start. Current stable time: " +
+                std::to_string(elapsed.count()) + " ms.";
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                "Start rejected: %s", response->message.c_str());
+            return;
+        }
+
         p_stateMachine->reset();
         p_faultMonitor->reset();
         p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
@@ -656,6 +728,16 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
                 m_maxFrozenSteps = static_cast<int>(param.as_int()); 
                 p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
                 break;
+            case const_hash("safety.track_detect_stable_ms"): {
+                int requestedStableMs = static_cast<int>(param.as_int());
+                if (requestedStableMs < 0) {
+                    result.successful = false;
+                    result.reason = "safety.track_detect_stable_ms must be >= 0";
+                    return result;
+                }
+                m_trackDetectStableMs = requestedStableMs;
+                break;
+            }
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
