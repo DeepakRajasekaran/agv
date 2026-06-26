@@ -17,8 +17,8 @@ line_follower:
     error_deadband_mm: 1.0
     control_rate_hz: 50.0
     pid_enabled: true
-    auto_linear_velocity: 0.2
-    turn_linear_velocity: 0.5
+    auto_linear_velocity: 0.5
+    turn_linear_velocity: 0.2
 
 navigation_bt_node:
   ros__parameters:

@@ -226,7 +226,7 @@ void LineFollowerNode::controlLoop()
   }
 
   // Deceleration logic based on error magnitude
-  double currentTargetVel = (std::abs(errorMm) > 15.0) ? turnLinear : autoLinear;
+  double currentTargetVel = (std::abs(errorMm) > 20.0) ? turnLinear : autoLinear;
 
   RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                        "Src:%-12s err=%.1f L=%.1f R=%.1f diff=%.1f mk[L=%d R=%d] vel=%.2f",
