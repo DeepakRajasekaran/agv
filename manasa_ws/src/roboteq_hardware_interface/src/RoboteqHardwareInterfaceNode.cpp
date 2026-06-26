@@ -1,6 +1,6 @@
 /*
 Name: RoboteqHardwareInterfaceNode.cpp
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-23
 Version: 1.0
 Description: Main entry point node to instantiate the RoboteqInterface and spin it.

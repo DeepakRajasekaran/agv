@@ -1,6 +1,6 @@
 /*
 Name: RoboteqCanopen.h
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-23
 Version: 1.0
 Description: Declares the RoboteqCanopen class for low-level SocketCAN communication with FBL2360T.

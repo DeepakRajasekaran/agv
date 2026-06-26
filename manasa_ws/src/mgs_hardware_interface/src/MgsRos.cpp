@@ -1,6 +1,6 @@
 /*
 Name: MgsRos.cpp
-Author: ANSCER Robotics
+Author: Manasa
 Date: 2026-06-24
 Version: 2.0
 Description: ROS 2 pub/sub node for MGS1600. Publishes per-topic telemetry.

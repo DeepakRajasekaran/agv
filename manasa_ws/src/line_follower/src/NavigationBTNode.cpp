@@ -1,6 +1,6 @@
 /*
 Name: NavigationBTNode.cpp
-Author: ANSCER Robotics
+Author: Manasa
 Date: 2026-06-26
 Version: 1.0
 Description: Behavior Tree node for Navigation State Machine. 

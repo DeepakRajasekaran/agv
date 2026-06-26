@@ -1,6 +1,6 @@
 /*
 Name: MgsInterface.cpp
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-24
 Version: 1.0
 Description: Implements the mediator interface class coordinating MgsRos and MgsCanopen.

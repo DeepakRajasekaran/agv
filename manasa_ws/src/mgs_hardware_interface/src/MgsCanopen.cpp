@@ -1,6 +1,6 @@
 /*
 Name: MgsCanopen.cpp
-Author: ANSCER Robotics
+Author: Manasa
 Date: 2026-06-24
 Version: 2.0
 Description: SocketCAN driver for MGS1600. Mirrors updated mgs_driver.py logic:

@@ -1,6 +1,6 @@
 /*
 Name: LineFollowerMain.cpp
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-24
 Version: 1.0
 Description: Main entry point for the line follower node.

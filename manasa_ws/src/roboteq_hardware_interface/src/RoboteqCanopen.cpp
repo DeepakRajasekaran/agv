@@ -1,6 +1,6 @@
 /*
 Name: RoboteqCanopen.cpp
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-23
 Version: 1.0
 Description: Implements the RoboteqCanopen class for CANopen communications over SocketCAN.

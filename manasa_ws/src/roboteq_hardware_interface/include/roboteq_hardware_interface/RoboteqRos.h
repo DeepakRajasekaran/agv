@@ -1,6 +1,6 @@
 /*
 Name: RoboteqRos.h
-Author: Antigravity
+Author: Manasa
 Date: 2026-06-23
 Version: 1.0
 Description: Declares the RoboteqRos node class for ROS 2 pub/sub interfaces.

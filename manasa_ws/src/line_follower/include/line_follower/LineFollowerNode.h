@@ -1,6 +1,6 @@
 /*
 Name: LineFollowerNode.h
-Author: ANSCER Robotics
+Author: Manasa
 Date: 2026-06-26
 Version: 3.0
 Description: PID line follower with conditional error source, auto-linear assist,
