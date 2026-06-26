@@ -114,10 +114,9 @@ private:
     double m_sensorOffsetX;
 
     // Safety Parameters
-    double m_lostThreshold;
+    int m_gracePeriodMs;
     int m_maxFrozenSteps;
     double m_turnDuration;
-    int m_lineLostGraceSteps;
 
     // Velocity & Junction Clamps
     double m_clampStraight;

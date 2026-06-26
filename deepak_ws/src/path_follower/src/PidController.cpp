@@ -53,10 +53,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_wheelBase(0.512),
       m_wheelRadius(0.08),
       m_sensorOffsetX(0.48),
-      m_lostThreshold(0.25),
-      m_maxFrozenSteps(500),
+      m_gracePeriodMs(200),
+      m_maxFrozenSteps(50),
       m_turnDuration(3.0),
-      m_lineLostGraceSteps(10),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
       m_clampTurn(0.3),
@@ -86,10 +85,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("robot.wheel_radius", m_wheelRadius);
     this->declare_parameter<double>("robot.sensor_offset_x", m_sensorOffsetX);
     
-    this->declare_parameter<double>("safety.lost_threshold", m_lostThreshold);
-    this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<double>("safety.turn_duration", m_turnDuration);
-    this->declare_parameter<int>("safety.line_lost_grace_steps", m_lineLostGraceSteps);
+    this->declare_parameter<int>("safety.grace_period_ms", m_gracePeriodMs);
+    this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     
     // Initialize defaults to prevent garbage memory values
     m_clampStraight = 1.0;
@@ -113,10 +111,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("robot.wheel_base", m_wheelBase);
     this->get_parameter("robot.wheel_radius", m_wheelRadius);
     this->get_parameter("robot.sensor_offset_x", m_sensorOffsetX);
-    this->get_parameter("safety.lost_threshold", m_lostThreshold);
-    this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     this->get_parameter("safety.turn_duration", m_turnDuration);
-    this->get_parameter("safety.line_lost_grace_steps", m_lineLostGraceSteps);
+    this->get_parameter("safety.grace_period_ms", m_gracePeriodMs);
+    this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
@@ -128,7 +125,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Instantiate State Machine and Safety Monitor
     p_stateMachine = std::make_unique<NavigationStateMachine>();
-    p_faultMonitor = std::make_unique<FaultMonitor>(m_lineLostGraceSteps, m_maxFrozenSteps);
+    p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
     p_stateMachine->transitionTo(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
@@ -618,18 +615,18 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("robot.wheel_base"): m_wheelBase = param.as_double(); break;
             case const_hash("robot.wheel_radius"): m_wheelRadius = param.as_double(); break;
             case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
-            case const_hash("safety.lost_threshold"): 
-                m_lostThreshold = param.as_double(); 
+            case const_hash("safety.turn_duration"): 
+                m_turnDuration = param.as_double(); 
                 break;
-            case const_hash("safety.line_lost_grace_steps"): 
-                m_lineLostGraceSteps = static_cast<int>(param.as_int()); 
-                p_faultMonitor->setLineLostGraceSteps(m_lineLostGraceSteps);
+            case const_hash("safety.grace_period_ms"): 
+                m_gracePeriodMs = param.as_int(); 
+                // Re-initialize Fault Monitor with new grace steps (ms / 20ms)
+                p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
                 break;
             case const_hash("safety.max_frozen_steps"): 
                 m_maxFrozenSteps = static_cast<int>(param.as_int()); 
                 p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
                 break;
-            case const_hash("safety.turn_duration"): m_turnDuration = param.as_double(); break;
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
             case const_hash("velocity_clamps.turn"): m_clampTurn = param.as_double(); break;

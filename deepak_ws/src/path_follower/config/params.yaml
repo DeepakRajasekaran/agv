@@ -12,8 +12,7 @@
       wheel_base: 0.512
       wheel_radius: 0.08
     safety:
-      lost_threshold: 1.0
-      line_lost_grace_steps: 10
+      grace_period_ms: 200
       max_frozen_steps: 50
       turn_duration: 3.0
     junction:
