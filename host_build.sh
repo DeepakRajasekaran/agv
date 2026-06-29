@@ -32,28 +32,15 @@ case $CHOICE in
         echo "Container 'agv' is now running in Host Mode!"
         ;;
     2)
-        echo "Which workspace do you want to build?"
-        echo "  a) deepak_ws only"
-        echo "  b) manasa_ws only"
-        echo "  c) Both"
-        echo -n "Enter choice [a-c]: "
-        read -r WS_CHOICE
-        
         ensure_container_running
-        
-        if [ "$WS_CHOICE" == "a" ]; then
-            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
-        elif [ "$WS_CHOICE" == "b" ]; then
-            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/manasa_ws && colcon build"
-        else
-            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && cd /agv/manasa_ws && colcon build"
-        fi
+        echo "Building robot_ws..."
+        docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/robot_ws && colcon build"
         echo "Build complete!"
         ;;
     3)
         ensure_container_running
         echo "Connecting to container shell..."
-        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && if [ -f /agv/deepak_ws/install/setup.bash ]; then source /agv/deepak_ws/install/setup.bash; fi && if [ -f /agv/manasa_ws/install/setup.bash ]; then source /agv/manasa_ws/install/setup.bash; fi; exec bash"
+        docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && if [ -f /agv/robot_ws/install/setup.bash ]; then source /agv/robot_ws/install/setup.bash; fi; exec bash"
         ;;
     4|*)
         echo "Exiting."

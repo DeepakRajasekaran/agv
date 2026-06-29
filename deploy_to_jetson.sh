@@ -49,20 +49,8 @@ else
 fi
 
 echo ""
-echo "Which workspace do you want to build?"
-echo "  a) deepak_ws only"
-echo "  b) manasa_ws only"
-echo "  c) Both"
-echo -n "Enter choice [a-c]: "
-read -r WS_CHOICE
-
-export BUILD_DEEPAK="true"
-export BUILD_MANASA="true"
-case $WS_CHOICE in
-    a) export BUILD_MANASA="false" ;;
-    b) export BUILD_DEEPAK="false" ;;
-    c|*) ;;
-esac
+# Sourced variables
+WS_CHOICE="c"
 
 echo ""
 echo "Select Deployment Method:"
@@ -91,11 +79,11 @@ case $CHOICE in
             
         # 2. Build on target
         echo -e "\nStep 2: Triggering Docker build natively on the Jetson..."
-        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && source ./agv_env.bash && export BUILD_DEEPAK=$BUILD_DEEPAK BUILD_MANASA=$BUILD_MANASA && docker compose -f docker/docker-compose.yml build"
+        ssh -t "$JETSON_USER@$JETSON_IP" "cd $JETSON_DIR && source ./agv_env.bash && docker compose -f docker/docker-compose.yml build"
         
         # 3. Cleanup source code
         echo -e "\nStep 3: Cleaning up source code from Jetson host (leaving only the container)..."
-        ssh -t "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/deepak_ws/config && mv $JETSON_DIR/deepak_ws/config $JETSON_DIR/config_tmp && rm -rf $JETSON_DIR/deepak_ws $JETSON_DIR/manasa_ws && mkdir -p $JETSON_DIR/deepak_ws && mv $JETSON_DIR/config_tmp $JETSON_DIR/deepak_ws/config"
+        ssh -t "$JETSON_USER@$JETSON_IP" "mkdir -p $JETSON_DIR/robot_ws/config && mv $JETSON_DIR/robot_ws/config $JETSON_DIR/config_tmp && rm -rf $JETSON_DIR/robot_ws && mkdir -p $JETSON_DIR/robot_ws && mv $JETSON_DIR/config_tmp $JETSON_DIR/robot_ws/config"
         
         echo -e "\n${GREEN}Build completed successfully on Jetson!${NC}"
         echo "To run the container on Jetson, execute:"
@@ -123,8 +111,6 @@ case $CHOICE in
             -t agv:latest \
             -f docker/Dockerfile \
             --target ${BUILD_MODE:-deployment} \
-            --build-arg BUILD_DEEPAK=$BUILD_DEEPAK \
-            --build-arg BUILD_MANASA=$BUILD_MANASA \
             --load .
             
         echo "Exporting image using docker save..."
@@ -132,7 +118,7 @@ case $CHOICE in
             
         # 3. Package config files
         echo -e "\nStep 3: Packaging configuration files..."
-        tar -czf config.tar.gz docker/docker-compose.yml agv_env.bash deepak_ws/config/ 2>/dev/null || true
+        tar -czf config.tar.gz docker/docker-compose.yml agv_env.bash robot_ws/config/ 2>/dev/null || true
             
         # 4. Transfer files to target
         echo -e "\nStep 4: Transferring files to Jetson..."

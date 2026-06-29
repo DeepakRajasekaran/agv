@@ -15,4 +15,4 @@ services:
     privileged: true
     volumes:
       - ../agv_env.bash:/agv_env.bash:ro
-      - ../deepak_ws/config:/agv_config
+      - ../robot_ws/config:/agv_config

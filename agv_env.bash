@@ -7,8 +7,11 @@
 
 # MODE options: HARDWARE, SIM
 export MODE=HARDWARE
-# SIM_TOOL options: MUJOCO, GZ
-export SIM_TOOL=MUJOCO
+
+# SIM_TOOL options: MUJOCO, GZ (Only evaluated in SIM mode)
+if [ "$MODE" = "SIM" ]; then
+    export SIM_TOOL=MUJOCO
+fi
 
 
 # ==========================================

@@ -44,8 +44,7 @@ WORKDIR /agv
 # Add ROS setup to bashrc for interactive exec sessions
 RUN echo "if [ -f /agv_env.bash ]; then source /agv_env.bash; fi" >> ~/.bashrc && \
     echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
-    echo "if [ -f /agv/deepak_ws/install/local_setup.bash ]; then source /agv/deepak_ws/install/local_setup.bash; fi" >> ~/.bashrc && \
-    echo "if [ -f /agv/manasa_ws/install/local_setup.bash ]; then source /agv/manasa_ws/install/local_setup.bash; fi" >> ~/.bashrc
+    echo "if [ -f /agv/robot_ws/install/local_setup.bash ]; then source /agv/robot_ws/install/local_setup.bash; fi" >> ~/.bashrc
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -81,46 +80,31 @@ RUN rm -rf /opt/ros && ln -s /sysroot/opt/ros /opt/ros
 
 COPY docker/aarch64_toolchain.cmake /agv/aarch64_toolchain.cmake
 
-RUN mkdir -p /agv/deepak_ws/install /agv/manasa_ws/install
+RUN mkdir -p /agv/robot_ws/install
 
-# Build deepak_ws natively using the cross-compiler
-WORKDIR /agv/deepak_ws
-COPY deepak_ws/sr[c]/ ./src/
+# Build robot_ws natively using the cross-compiler
+WORKDIR /agv/robot_ws
+COPY robot_ws/sr[c]/ ./src/
 # Two-pass build: first build message interfaces, then everything else that depends on them
-RUN if [ "$BUILD_DEEPAK" = "true" ]; then \
-        /bin/bash -c "source /opt/ros/jazzy/setup.bash && \
-            colcon build \
-                --merge-install \
-                --packages-select custom_interfaces robot_description \
-                --cmake-args \
-                -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
-                -DCMAKE_SYSROOT=/sysroot \
-                -DCMAKE_BUILD_TYPE=Release \
-                -G Ninja && \
-            export CMAKE_PREFIX_PATH=/agv/deepak_ws/install:\$CMAKE_PREFIX_PATH && \
-            export AMENT_PREFIX_PATH=/agv/deepak_ws/install:\$AMENT_PREFIX_PATH && \
-            colcon build \
-                --merge-install \
-                --event-handlers console_direct+ \
-                --cmake-args \
-                -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
-                -DCMAKE_SYSROOT=/sysroot \
-                -DCMAKE_BUILD_TYPE=Release \
-                -G Ninja"; \
-    fi
-
-# Build manasa_ws natively using the cross-compiler
-WORKDIR /agv/manasa_ws
-COPY manasa_ws/sr[c]/ ./src/
-RUN if [ "$BUILD_MANASA" = "true" ]; then \
-        /bin/bash -c "source /opt/ros/jazzy/setup.bash && colcon build \
+RUN /bin/bash -c "source /opt/ros/jazzy/setup.bash && \
+        colcon build \
             --merge-install \
+            --packages-select custom_interfaces robot_description \
             --cmake-args \
             -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
             -DCMAKE_SYSROOT=/sysroot \
             -DCMAKE_BUILD_TYPE=Release \
-            -G Ninja"; \
-    fi
+            -G Ninja && \
+        export CMAKE_PREFIX_PATH=/agv/robot_ws/install:\$CMAKE_PREFIX_PATH && \
+        export AMENT_PREFIX_PATH=/agv/robot_ws/install:\$AMENT_PREFIX_PATH && \
+        colcon build \
+            --merge-install \
+            --event-handlers console_direct+ \
+            --cmake-args \
+            -DCMAKE_TOOLCHAIN_FILE=/agv/aarch64_toolchain.cmake \
+            -DCMAKE_SYSROOT=/sysroot \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja"
 
 # Stage 3: Deployment Image (ARM64)
 FROM target_sysroot AS deployment
@@ -129,16 +113,13 @@ WORKDIR /agv
 # Add ROS setup to bashrc for interactive exec sessions
 RUN echo "if [ -f /agv_env.bash ]; then source /agv_env.bash; fi" >> ~/.bashrc && \
     echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
-    echo "if [ -f /agv/deepak_ws/install/local_setup.bash ]; then source /agv/deepak_ws/install/local_setup.bash; fi" >> ~/.bashrc && \
-    echo "if [ -f /agv/manasa_ws/install/local_setup.bash ]; then source /agv/manasa_ws/install/local_setup.bash; fi" >> ~/.bashrc
+    echo "if [ -f /agv/robot_ws/install/local_setup.bash ]; then source /agv/robot_ws/install/local_setup.bash; fi" >> ~/.bashrc
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Copy ONLY the compiled install folders from the builder stage
-# Because we used --merge-install, the folder structure is simpler
-COPY --from=builder /agv/deepak_ws/install /agv/deepak_ws/install
-COPY --from=builder /agv/manasa_ws/install /agv/manasa_ws/install
+# Copy ONLY the compiled install folder from the builder stage
+COPY --from=builder /agv/robot_ws/install /agv/robot_ws/install
 
 ENTRYPOINT ["/entrypoint.sh"]
 # Idle by default so user can launch specific nodes manually

@@ -1,5 +1,4 @@
 services:
   agv:
     volumes:
-      - ../deepak_ws:/agv/deepak_ws
-      - ../manasa_ws:/agv/manasa_ws
+      - ../robot_ws:/agv/robot_ws
