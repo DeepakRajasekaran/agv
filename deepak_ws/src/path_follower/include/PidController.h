@@ -22,7 +22,7 @@
 #include <vector>
 #include <chrono>
 
-#include "NavigationStateMachine.h"
+
 #include "FaultMonitor.h"
 #include "behavior_nodes.h"
 #include <behaviortree_cpp/bt_factory.h>
@@ -148,8 +148,10 @@ private:
     std::chrono::steady_clock::time_point m_lastZeroCrossingTime;
     bool m_hasCrossedZero;
 
-    // Subclass pointer instances
-    std::unique_ptr<NavigationStateMachine> p_stateMachine;
+    // State machine logic
+    uint8_t m_currentState;
+    std::string stateToString(uint8_t state) const;
+    void transitionTo(uint8_t newState, const std::string& trigger);
     std::unique_ptr<FaultMonitor> p_faultMonitor;
 
     // Behavior Tree

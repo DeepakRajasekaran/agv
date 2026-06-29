@@ -31,7 +31,7 @@ include_directories(
 
 add_executable(path_follower_node
   src/PidController.cpp
-  src/NavigationStateMachine.cpp
+
   src/FaultMonitor.cpp
 )
 
@@ -52,7 +52,7 @@ install(TARGETS path_follower_node
 
 # Install python scripts
 install(PROGRAMS 
-  scripts/junction_manager.py
+
   scripts/nav_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )

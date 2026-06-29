@@ -143,10 +143,9 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
     m_trackDetectTrueStartTime = m_lastSensorUpdateTime;
 
-    // Instantiate State Machine and Safety Monitor
-    p_stateMachine = std::make_unique<NavigationStateMachine>();
+    // Instantiate Safety Monitor
     p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
-    p_stateMachine->transitionTo(ControllerState::INITIALIZE, "NODE_START");
+    transitionTo(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
     std::string track_pos_topic = this->declare_parameter("topics.track_position", "/sensor/track_position");
@@ -232,13 +231,35 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         RCLCPP_WARN(this->get_logger(),
             "Autostart requested, but stable track detection is required before tracking starts.");
     }
-    p_stateMachine->transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
+    transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
     RCLCPP_INFO(this->get_logger(), "Path Follower running in IDLE. Call ~/start to begin tracking.");
     publishControllerState();
 }
 
 PidController::~PidController()
 {
+}
+
+std::string PidController::stateToString(uint8_t state) const {
+    switch(state) {
+        case ControllerState::IDLE: return "IDLE";
+        case ControllerState::INITIALIZE: return "INITIALIZE";
+        case ControllerState::FOLLOW_LINE: return "FOLLOW_LINE";
+        case ControllerState::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
+        case ControllerState::READ_TAG: return "READ_TAG";
+        case ControllerState::RESUME_TRACKING: return "RESUME_TRACKING";
+        case ControllerState::STOP: return "STOP";
+        case ControllerState::ERROR: return "ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+void PidController::transitionTo(uint8_t newState, const std::string& trigger) {
+    if (m_currentState != newState) {
+        RCLCPP_INFO(this->get_logger(), "[STATE] %s -> %s (Trigger: %s)", 
+            stateToString(m_currentState).c_str(), stateToString(newState).c_str(), trigger.c_str());
+        m_currentState = newState;
+    }
 }
 
 void PidController::stopRobot()
@@ -367,7 +388,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         dt = 0.02; // Nominal 50Hz
     }
 
-    State currentState = p_stateMachine->getCurrentState();
+    uint8_t currentState = m_currentState;
     
     // Safety states (Enforce zero velocity)
     if (currentState == ControllerState::STOP || 
@@ -379,7 +400,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         
         if (m_logCounter++ % 100 == 0) {
             RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                "State: %s | Enforcing 0.0 vel", p_stateMachine->getCurrentStateString().c_str());
+                "State: %s | Enforcing 0.0 vel", stateToString(m_currentState).c_str());
         }
         return;
     }
@@ -393,7 +414,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         
         if (m_logCounter++ % 100 == 0) {
             RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                "State: %s | Controller inactive (silent)", p_stateMachine->getCurrentStateString().c_str());
+                "State: %s | Controller inactive (silent)", stateToString(m_currentState).c_str());
         }
         return;
     }
@@ -419,7 +440,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         m_selectedTrackId = 0;
         
         if (currentState == ControllerState::JUNCTION_DETECTED) {
-            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
+            transitionTo(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
             publishControllerState();
         }
     }
@@ -503,7 +524,13 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
 
             divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
             if (divergence > m_junctionDivergenceThreshold || m_tapeCross) {
-                p_stateMachine->transitionTo(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
+                transitionTo(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
+                // Native junction manager: track drift selection
+                if (computed_error < -0.02) {
+                    m_selectedTrackId = 2; // Follow Right
+                } else if (computed_error > 0.02) {
+                    m_selectedTrackId = 1; // Follow Left
+                }
                 publishControllerState();
             }
             publishVelocity(linearVel, pidAngularVel);
@@ -520,7 +547,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         case ControllerState::READ_TAG: {
             // Stub for future RFID/Tag integration
             publishVelocity(0.0, 0.0);
-            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
+            transitionTo(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
             publishControllerState();
             break;
         }
@@ -528,7 +555,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         case ControllerState::RESUME_TRACKING: {
             linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
             publishVelocity(linearVel, pidAngularVel);
-            p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "RESUMED");
+            transitionTo(ControllerState::FOLLOW_LINE, "RESUMED");
             publishControllerState();
             break;
         }
@@ -540,7 +567,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     if (m_logCounter++ % 10 == 0) {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
             "State: %s | Err: %.3f | Steer: %.3f", 
-            p_stateMachine->getCurrentStateString().c_str(), computed_error, pidAngularVel);
+            stateToString(m_currentState).c_str(), computed_error, pidAngularVel);
     }
 }
 
@@ -580,7 +607,7 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
                                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    State currentState = p_stateMachine->getCurrentState();
+    uint8_t currentState = m_currentState;
     
     if (currentState == ControllerState::IDLE || currentState == ControllerState::STOP || currentState == ControllerState::ERROR) {
         if (!isTrackDetectStable()) {
@@ -594,9 +621,9 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
             return;
         }
 
-        p_stateMachine->reset();
+        // p_stateMachine->reset(); (removed)
         p_faultMonitor->reset();
-        p_stateMachine->transitionTo(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
+        transitionTo(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
         publishControllerState();
         
         response->success = true;
@@ -611,7 +638,7 @@ void PidController::stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::R
                                  std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    p_stateMachine->transitionTo(ControllerState::STOP, "STOP_SERVICE_CALLED");
+    transitionTo(ControllerState::STOP, "STOP_SERVICE_CALLED");
     publishControllerState();
     m_cmdLinearX = 0.0;
     m_cmdAngularZ = 0.0;
@@ -635,8 +662,8 @@ void PidController::safetyCheckCallback()
 void PidController::publishVelocity(double linearVel, double angularVel)
 {
     if (std::abs(linearVel) <= 1e-4 && 
-        p_stateMachine->getCurrentState() != ControllerState::IDLE &&
-        p_stateMachine->getCurrentState() != ControllerState::STOP) {
+        m_currentState != ControllerState::IDLE &&
+        m_currentState != ControllerState::STOP) {
         // If we are tracking but linear velocity is zero, do not allow turn-in-place from PID
         angularVel = 0.0;
     }
@@ -650,21 +677,21 @@ void PidController::publishVelocity(double linearVel, double angularVel)
 void PidController::publishControllerState()
 {
     ControllerState msg;
-    msg.state = p_stateMachine->getCurrentState();
+    msg.state = m_currentState;
     m_pubControllerState->publish(msg);
 }
 
 void PidController::handleFault(const std::string& faultType)
 {
-    State currentState = p_stateMachine->getCurrentState();
+    uint8_t currentState = m_currentState;
     if (currentState != ControllerState::ERROR) {
-        p_stateMachine->transitionTo(ControllerState::ERROR, "FAULT_" + faultType);
+        transitionTo(ControllerState::ERROR, "FAULT_" + faultType);
         publishControllerState();
         m_cmdLinearX = 0.0;
         m_cmdAngularZ = 0.0;
         publishVelocity(0.0, 0.0);
         
-        std::string faultLog = p_faultMonitor->getFaultLog(p_stateMachine->getCurrentStateString());
+        std::string faultLog = p_faultMonitor->getFaultLog(stateToString(m_currentState));
         RCLCPP_ERROR(this->get_logger(), "[SAFETY_FAULT] %s", faultLog.c_str());
     }
 }
