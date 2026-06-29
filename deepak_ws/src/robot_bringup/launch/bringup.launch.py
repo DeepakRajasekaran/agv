@@ -162,13 +162,6 @@ def generate_launch_description():
         condition=IfCondition(launch_path_follower)
     ))
 
-    # 6b. Junction Manager Middleware
-    nodes.append(Node(
-        package='path_follower',
-        executable='junction_manager.py',
-        output='screen',
-        condition=IfCondition(launch_path_follower)
-    ))
 
     # 6c. Nav Simulator (Conditional)
     nodes.append(Node(
