@@ -12,7 +12,7 @@ echo "4) Exit"
 echo -n "Enter choice [1-4]: "
 read -r CHOICE
 
-# Source the AGV environment variables to get BUILD_MODE
+# Source the AGV environment variables
 source ./agv_env.bash
 # Force host build mode for local development to avoid exec format errors
 export BUILD_MODE=host

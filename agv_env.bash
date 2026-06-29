@@ -10,11 +10,6 @@ export MODE=HARDWARE
 # SIM_TOOL options: MUJOCO, GZ
 export SIM_TOOL=MUJOCO
 
-# ==========================================
-# Build Settings
-# ==========================================
-# BUILD_MODE options: host, deployment
-export BUILD_MODE=host
 
 # ==========================================
 # Kinematic Properties

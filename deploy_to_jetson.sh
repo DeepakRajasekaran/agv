@@ -122,7 +122,7 @@ case $CHOICE in
             --platform linux/arm64 \
             -t agv:latest \
             -f docker/Dockerfile \
-            --target $BUILD_MODE \
+            --target ${BUILD_MODE:-deployment} \
             --build-arg BUILD_DEEPAK=$BUILD_DEEPAK \
             --build-arg BUILD_MANASA=$BUILD_MANASA \
             --load .
