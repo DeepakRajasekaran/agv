@@ -1,6 +1,6 @@
 /*
  * Name:        PlcInterfaceNode.h
- * Author:      Antigravity
+ * Author:      Deepak Rajasekaran
  * Date:        2026-06-29
  * Version:     1.0
  * Description: Header for the Modbus TCP PLC interface node handling hardware I/O mapping.

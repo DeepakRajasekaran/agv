@@ -1,6 +1,6 @@
 /*
  * Name:        PlcInterfaceNode.cpp
- * Author:      Antigravity
+ * Author:      Deepak Rajasekaran
  * Date:        2026-06-29
  * Version:     1.0
  * Description: Implementation of the Modbus TCP PLC interface node. Maps byte offsets to registers.
