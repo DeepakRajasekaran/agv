@@ -14,6 +14,8 @@ read -r CHOICE
 
 # Source the AGV environment variables to get BUILD_MODE
 source ./agv_env.bash
+# Force host build mode for local development to avoid exec format errors
+export BUILD_MODE=host
 
 ensure_container_running() {
     if ! docker ps --format '{{.Names}}' | grep -Eq "^agv$"; then

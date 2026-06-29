@@ -58,7 +58,9 @@ PlcInterfaceNode::PlcInterfaceNode()
     assert(p_ctx != nullptr); // Precondition: context allocation must succeed
     
     int ret = modbus_set_response_timeout(p_ctx, 0, 500000);
-    assert(ret == 0); // Postcondition: timeout configuration must succeed
+    if (ret != 0) {
+        throw std::runtime_error("Failed to set Modbus response timeout");
+    }
 
     m_lastHeartbeatTime = this->now();
     
