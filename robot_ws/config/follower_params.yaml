@@ -7,3 +7,5 @@ path_follower_node:
     junction:
       turn_sequence: ["LEFT", "STRAIGHT", "RIGHT"]
       loop_sequence: true
+    safety:
+      max_frozen_steps: 500

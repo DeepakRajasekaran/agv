@@ -54,7 +54,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_wheelRadius(0.08),
       m_sensorOffsetX(0.48),
       m_gracePeriodMs(200),
-      m_maxFrozenSteps(50),
+      m_maxFrozenSteps(1000),
       m_trackDetectStableMs(1000),
       m_clampStraight(1.0),
       m_clampJunction(0.5),
@@ -174,6 +174,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     // ROS 2 Publishers
     m_pubCmdVel = this->create_publisher<geometry_msgs::msg::Twist>("/path_follower/cmd_vel", 10);
     m_pubControllerState = this->create_publisher<ControllerState>("/controller_state", 10);
+    m_pubDivergence = this->create_publisher<std_msgs::msg::Float32>("~/divergence", 10);
 
     // ROS 2 Services
     m_srvAutotune = this->create_service<std_srvs::srv::Trigger>(
@@ -434,6 +435,11 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
     }
     
+    // ponytail: publish computed track divergence to ROS 2 topic without overhead
+    std_msgs::msg::Float32 divergenceMsg;
+    divergenceMsg.data = static_cast<float>(divergence);
+    m_pubDivergence->publish(divergenceMsg);
+
     // Auto-reset selected track when junction clears
     if (divergence < m_junctionDivergenceThreshold && m_selectedTrackId != 0 && !m_tapeCross) {
         RCLCPP_INFO(this->get_logger(), "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");

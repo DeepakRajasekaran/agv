@@ -13,7 +13,7 @@
       wheel_radius: 0.08
     safety:
       grace_period_ms: 1000
-      max_frozen_steps: 50
+      max_frozen_steps: 1000
       track_detect_stable_ms: 1000
     junction:
       divergence_threshold: 0.035

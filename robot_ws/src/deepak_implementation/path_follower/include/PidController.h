@@ -51,6 +51,7 @@ private:
     // ROS 2 Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_pubCmdVel;
     rclcpp::Publisher<custom_interfaces::msg::ControllerState>::SharedPtr m_pubControllerState;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_pubDivergence;
 
     // Subscriber Callbacks
     void trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);

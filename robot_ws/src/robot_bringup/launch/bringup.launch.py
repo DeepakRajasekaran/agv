@@ -144,21 +144,20 @@ def launch_setup(context, *args, **kwargs):
                 ]
             ))
 
-        # 7. Mode-specific hardware launches
-        if mode == 'HARDWARE':
-            nodes.append(IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(os.path.join(driver_dir, 'launch', 'roboteq_driver.launch.py'))
-            ))
-            # Launch plc_interface
-            nodes.append(Node(
-                package='plc_interface',
-                executable='plc_interface_node',
-                output='screen',
-                parameters=[{
-                    'plc_ip': plc_ip_val,
-                    'plc_port': int(plc_port_val)
-                }]
-            ))
+
+        nodes.append(IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(driver_dir, 'launch', 'roboteq_driver.launch.py'))
+        ))
+        # Launch plc_interface
+        nodes.append(Node(
+            package='plc_interface',
+            executable='plc_interface_node',
+            output='screen',
+            parameters=[{
+                'plc_ip': plc_ip_val,
+                'plc_port': int(plc_port_val)
+            }]
+        ))
 
     elif stack_val == 'manasa':
         # Manasa's Stack
