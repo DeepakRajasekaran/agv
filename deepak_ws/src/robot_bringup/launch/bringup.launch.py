@@ -32,11 +32,23 @@ def generate_launch_description():
         default_value='1000',
         description='Required continuous track_detect duration before start/recovery, in ms'
     )
+    plc_ip_arg = DeclareLaunchArgument(
+        'plc_ip',
+        default_value='192.168.1.5',
+        description='IP address of the PLC'
+    )
+    plc_port_arg = DeclareLaunchArgument(
+        'plc_port',
+        default_value='502',
+        description='Port of the PLC'
+    )
     
     launch_path_follower = LaunchConfiguration('launch_path_follower')
     launch_nav_simulator = LaunchConfiguration('launch_nav_simulator')
     force_track_detect = LaunchConfiguration('force_track_detect')
     track_detect_stable_ms = LaunchConfiguration('track_detect_stable_ms')
+    plc_ip = LaunchConfiguration('plc_ip')
+    plc_port = LaunchConfiguration('plc_port')
 
     # Read Environment Variables
     mode = os.environ.get('MODE', 'HARDWARE').upper()
@@ -59,7 +71,9 @@ def generate_launch_description():
         launch_path_follower_arg,
         launch_nav_simulator_arg,
         force_track_detect_arg,
-        track_detect_stable_ms_arg
+        track_detect_stable_ms_arg,
+        plc_ip_arg,
+        plc_port_arg
     ]
 
     # 1. Robot State Publisher (Always runs)
@@ -175,6 +189,16 @@ def generate_launch_description():
         # Include roboteq_driver
         nodes.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(driver_dir, 'launch', 'roboteq_driver.launch.py'))
+        ))
+        # Launch plc_interface
+        nodes.append(Node(
+            package='plc_interface',
+            executable='plc_interface_node',
+            output='screen',
+            parameters=[{
+                'plc_ip': plc_ip,
+                'plc_port': ParameterValue(plc_port, value_type=int)
+            }]
         ))
     elif mode == 'SIM':
         if sim_tool == 'MUJOCO':

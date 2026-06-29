@@ -24,7 +24,7 @@ PlcInterfaceNode::PlcInterfaceNode()
       m_quickstopVal(0),
       m_lidarCmdVal(0)
 {
-    this->declare_parameter("plc_ip", "192.168.1.100");
+    this->declare_parameter("plc_ip", "192.168.1.5");
     this->declare_parameter("plc_port", 502);
 
     p_pubLidarFb = this->create_publisher<std_msgs::msg::Bool>("~/lidar_fb", 10);
