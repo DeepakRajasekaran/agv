@@ -1,5 +1,5 @@
 # Stage 1: The target sysroot (ARM64)
-FROM --platform=${TARGETPLATFORM:-linux/arm64} ros:jazzy-ros-base AS target_sysroot
+FROM --platform=linux/arm64 ros:jazzy-ros-base AS target_sysroot
 
 # Install dependencies needed for deployment on the target sysroot
 # QEMU can handle apt-get fine, it's only C++ compilation that is slow/crashes
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robot-state-publisher \
     ros-jazzy-twist-stamper \
     ros-jazzy-twist-mux \
+    libmodbus-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install BT separately to not invalidate the cache of the huge install above
@@ -27,7 +28,17 @@ RUN apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 1.5: Host Dev Image (Stops here, expects volume mounts)
-FROM target_sysroot AS host
+FROM --platform=$BUILDPLATFORM ros:jazzy-ros-base AS host
+
+# Install all the same dependencies but natively for the host architecture
+RUN apt-get update && apt-get install -y \
+    can-utils iproute2 ros-jazzy-hardware-interface ros-jazzy-pluginlib \
+    ros-jazzy-teleop-twist-keyboard ros-jazzy-turtlebot3-teleop ros-jazzy-rclcpp \
+    ros-jazzy-rclcpp-lifecycle ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+    ros-jazzy-xacro ros-jazzy-robot-state-publisher ros-jazzy-twist-stamper \
+    ros-jazzy-twist-mux ros-jazzy-behaviortree-cpp ros-jazzy-nav-msgs \
+    build-essential cmake git python3-colcon-common-extensions libmodbus-dev \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /agv
 
 # Add ROS setup to bashrc for interactive exec sessions

@@ -17,3 +17,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 # BOTH allows CMake to find locally-built ament/colcon packages (e.g. custom_interfaces)
 # in addition to sysroot packages
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
+
+# Point pkg-config to the sysroot so it finds libmodbus
+set(ENV{PKG_CONFIG_DIR} "")
+set(ENV{PKG_CONFIG_LIBDIR} "/sysroot/usr/lib/aarch64-linux-gnu/pkgconfig:/sysroot/usr/share/pkgconfig")
+set(ENV{PKG_CONFIG_SYSROOT_DIR} /sysroot)

@@ -40,11 +40,11 @@ case $CHOICE in
         ensure_container_running
         
         if [ "$WS_CHOICE" == "a" ]; then
-            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
+            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build"
         elif [ "$WS_CHOICE" == "b" ]; then
-            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/manasa_ws && colcon build"
+            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/manasa_ws && colcon build"
         else
-            docker exec -it agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && cd /agv/manasa_ws && colcon build"
+            docker exec agv bash -c "source /opt/ros/jazzy/setup.bash && cd /agv/deepak_ws && colcon build && cd /agv/manasa_ws && colcon build"
         fi
         echo "Build complete!"
         ;;
