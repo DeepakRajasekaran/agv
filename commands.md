@@ -64,6 +64,17 @@ Launches the simulator with simulated sensor feedback:
 ros2 launch robot_bringup bringup.launch.py stack:=deepak sim:=true
 ```
 
+To launch the simulator with a custom nominal speed (e.g. `1.2` m/s) using a ROS parameter override:
+```bash
+ros2 launch robot_bringup bringup.launch.py stack:=deepak sim:=true --ros-args -p nav_simulator:nominal_speed:=1.2
+```
+
+To dynamically tune the nominal speed at runtime without restarting:
+```bash
+ros2 param set /nav_simulator nominal_speed 1.5
+```
+
+
 ### Start Drivers Only (No Follower)
 Starts all robot motor drivers and sensors but leaves control to an external node:
 ```bash
