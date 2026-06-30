@@ -35,13 +35,18 @@ class NavSimulator(Node):
             
         self.declare_parameter('nominal_speed', float(default_speed))
         self.declare_parameter('track_detect_stable_ms', int(default_track_detect_stable_ms))
+        self.declare_parameter('test_sequence', [0, 1, 0, -1])  # Default dummy sequence
+        self.declare_parameter('sequence_looping', True)
+        
         self.nominal_speed = self.get_parameter('nominal_speed').value
         self.track_detect_stable_ms = int(self.get_parameter('track_detect_stable_ms').value)
+        self.test_sequence = self.get_parameter('test_sequence').value
+        self.sequence_looping = self.get_parameter('sequence_looping').value
         
         self.add_on_set_parameters_callback(self.parameters_callback)
         
         self.current_state = ControllerState.IDLE
-        self.junction_count = 0
+        self.event_index = 0
         self.pub_cmd_vel = self.create_publisher(Twist, '/nav/cmd_vel', 10)
         self.pub_track_detect = self.create_publisher(Bool, '/sensor/track_detect', 10)
         
@@ -77,6 +82,12 @@ class NavSimulator(Node):
                 self.track_detect_stable_ms = int(param.value)
                 self.get_logger().info(
                     f"Updated track_detect_stable_ms to {self.track_detect_stable_ms}")
+            elif param.name == 'test_sequence':
+                self.test_sequence = param.value
+                self.get_logger().info(f"Updated test_sequence to {self.test_sequence}")
+            elif param.name == 'sequence_looping':
+                self.sequence_looping = param.value
+                self.get_logger().info(f"Updated sequence_looping to {self.sequence_looping}")
         return SetParametersResult(successful=True)
         
     def update_track_detect(self, detected: bool):
@@ -130,10 +141,24 @@ class NavSimulator(Node):
         
         # Detect transition into JUNCTION_DETECTED
         if prev_state != ControllerState.JUNCTION_DETECTED and self.current_state == ControllerState.JUNCTION_DETECTED:
-            self.junction_count += 1
+            if not self.test_sequence:
+                self.get_logger().warn('Junction detected but test_sequence is empty!')
+                return
+                
+            if self.event_index >= len(self.test_sequence):
+                if self.sequence_looping:
+                    self.event_index = 0
+                    self.get_logger().info('Sequence looping back to start.')
+                else:
+                    self.get_logger().info('Test sequence completed. No further actions.')
+                    return
+                    
+            track_id = self.test_sequence[self.event_index]
+            self.event_index += 1
+            
             req = SelectTrack.Request()
-            self.get_logger().info(f'Junction #{self.junction_count} -> Calling service to track FORWARD (0)')
-            req.track_id = 0
+            self.get_logger().info(f'Junction Event {self.event_index}/{len(self.test_sequence)} -> Calling service to track ID: {track_id}')
+            req.track_id = track_id
                 
             if self.select_track_client.wait_for_service(timeout_sec=0.5):
                 self.select_track_client.call_async(req)
