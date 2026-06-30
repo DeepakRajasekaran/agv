@@ -252,7 +252,8 @@ public:
             BT::InputPort<double>("nominal_velocity"),
             BT::InputPort<double>("clamp_velocity"),
             BT::OutputPort<double>("safe_velocity"),
-            BT::OutputPort<int>("selected_track_id")
+            BT::OutputPort<int>("selected_track_id"),
+            BT::OutputPort<bool>("turn_active")
         };
     }
 
@@ -303,10 +304,11 @@ public:
         if (m_state != State::NONE) {
             setOutput("safe_velocity", clamp_vel);
             setOutput("selected_track_id", m_selectedTrackId);
+            setOutput("turn_active", true);
             return BT::NodeStatus::SUCCESS;
         }
 
-        setOutput("selected_track_id", 0);
+        setOutput("turn_active", false);
         return BT::NodeStatus::FAILURE;
     }
 

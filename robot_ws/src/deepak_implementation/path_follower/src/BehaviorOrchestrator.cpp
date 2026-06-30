@@ -201,15 +201,18 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     }
     outputs.target_error = computed_error;
 
-    // Auto-reset selected track when junction clears
-    // if (divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
-    //     RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
-    //     m_selectedTrackId = 0;
-    //     if (m_currentState == ControllerState::JUNCTION_DETECTED) {
-    //         forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
-    //         outputs.current_state = m_currentState;
-    //     }
-    // }
+    // Auto-reset selected track when junction clears based on divergence (for external navigation selections)
+    bool bt_turn_active = false;
+    (void)m_btTree.rootBlackboard()->get("turn_active", bt_turn_active);
+    
+    if (!bt_turn_active && divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
+        RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
+        m_selectedTrackId = 0;
+        if (m_currentState == ControllerState::JUNCTION_DETECTED) {
+            forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
+            outputs.current_state = m_currentState;
+        }
+    }
 
     // 4. Update Behavior Tree Variables
     m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
@@ -236,13 +239,21 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     bool in_junction = false;
     (void)m_btTree.rootBlackboard()->get("in_junction", in_junction);
 
-    int bt_selected_track_id = 0;
-    if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
-        if (bt_selected_track_id != m_selectedTrackId) {
-            m_selectedTrackId = bt_selected_track_id;
-            RCLCPP_INFO(m_logger, "Track selection updated by BT to: %d", m_selectedTrackId);
+    static bool prev_bt_turn_active = false;
+    
+    if (bt_turn_active) {
+        int bt_selected_track_id = 0;
+        if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
+            if (bt_selected_track_id != m_selectedTrackId) {
+                m_selectedTrackId = bt_selected_track_id;
+                RCLCPP_INFO(m_logger, "Track selection updated by BT to: %d", m_selectedTrackId);
+            }
         }
+    } else if (prev_bt_turn_active) {
+        m_selectedTrackId = 0;
+        RCLCPP_INFO(m_logger, "Turn exited. Cleared track selection to 0.");
     }
+    prev_bt_turn_active = bt_turn_active;
 
     // 5. Native Junction Logic (drift-based fallback) 
     // Disabled side-switching based on divergence (per ponytail-audit)
