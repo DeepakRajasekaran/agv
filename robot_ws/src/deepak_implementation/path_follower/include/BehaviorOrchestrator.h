@@ -23,6 +23,7 @@ struct BehaviorConfig {
     double btFallbackScale = 0.4;
     int lineLostGraceSteps = 10;
     int maxFrozenSteps = 5;
+    double exitBufferDurationS = 2.0;
 };
 
 struct SensorInputs {
@@ -92,6 +93,11 @@ private:
     double m_lastTrackPos;
     int m_frozenStepsCount;
     int m_lineLostCount;
+
+    // Behavior Exit Buffer State
+    bool m_wasInBehavior;
+    double m_lastBehaviorVelocity;
+    double m_behaviorExitTime;
 };
 
 } // namespace path_follower

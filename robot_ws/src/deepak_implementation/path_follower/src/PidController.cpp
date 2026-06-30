@@ -102,6 +102,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("behavior_tree.min_scale", bConfig.btMinScale);
     this->declare_parameter<double>("behavior_tree.error_threshold", bConfig.btErrorThreshold);
     this->declare_parameter<double>("behavior_tree.fallback_scale", bConfig.btFallbackScale);
+    this->declare_parameter<double>("behavior_tree.exit_buffer_s", bConfig.exitBufferDurationS);
 
     // Retrieve parameter values
     this->get_parameter("pid.kp", m_kp);
@@ -135,6 +136,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("behavior_tree.min_scale", bConfig.btMinScale);
     this->get_parameter("behavior_tree.error_threshold", bConfig.btErrorThreshold);
     this->get_parameter("behavior_tree.fallback_scale", bConfig.btFallbackScale);
+    this->get_parameter("behavior_tree.exit_buffer_s", bConfig.exitBufferDurationS);
     
     m_behaviorConfig = bConfig;
     m_behaviorOrchestrator = std::make_unique<BehaviorOrchestrator>(m_behaviorConfig, this->get_logger());
@@ -705,6 +707,7 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("behavior_tree.min_scale"): m_behaviorConfig.btMinScale = param.as_double(); break;
             case const_hash("behavior_tree.error_threshold"): m_behaviorConfig.btErrorThreshold = param.as_double(); break;
             case const_hash("behavior_tree.fallback_scale"): m_behaviorConfig.btFallbackScale = param.as_double(); break;
+            case const_hash("behavior_tree.exit_buffer_s"): m_behaviorConfig.exitBufferDurationS = param.as_double(); break;
             case const_hash("safety.acceleration_limit"): m_behaviorConfig.accelLimit = param.as_double(); break;
             case const_hash("safety.lidar_field_switching.thresholds"): m_behaviorConfig.fieldSwitchThresholds = param.as_double_array(); break;
             case const_hash("safety.lidar_field_switching.commands"): m_behaviorConfig.fieldSwitchCommands = param.as_integer_array(); break;

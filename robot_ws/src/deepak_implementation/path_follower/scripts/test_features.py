@@ -84,7 +84,7 @@ class FeatureTester(Node):
         self.get_logger().info("TEST 1 PASSED!")
 
         # Clear warning
-        self.spin_for(1.0)
+        self.spin_for(3.5) # 2.0s buffer + 1.0s accel
         self.get_logger().info(f"Output velocity after clearing warning: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 1.0) < 0.1, "Should recover to 1.0 m/s"
 
@@ -107,8 +107,8 @@ class FeatureTester(Node):
         self.get_logger().info(f"Speed immediately after recovery: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert self.last_follower_cmd.linear.x < 0.8, "Should not jump immediately to 1.0 (ramping check)"
         
-        self.spin_for(2.5)
-        self.get_logger().info(f"Speed after 2.5 seconds: {self.last_follower_cmd.linear.x:.3f} m/s")
+        self.spin_for(4.0) # 2.0s buffer + 2.0s accel
+        self.get_logger().info(f"Speed after 4.0 seconds: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 1.0) < 0.1, f"Should recover to 1.0 m/s, got {self.last_follower_cmd.linear.x}"
         assert False in self.quickstop_calls, "Quickstop trigger_quickstop(false) must be called"
         self.get_logger().info("TEST 2b PASSED!")
@@ -127,7 +127,7 @@ class FeatureTester(Node):
         # Exit marker
         self.spin_for(0.5, left_marker=True, right_marker=True)
         # Clear exit marker
-        self.spin_for(2.5)
+        self.spin_for(4.0) # 2.0s buffer + accel
         self.get_logger().info(f"Junction Exit Speed: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 1.0) < 0.1, "Should recover to nominal speed after exiting junction"
         self.get_logger().info("TEST 3 PASSED!")
@@ -145,7 +145,7 @@ class FeatureTester(Node):
 
         # Exit turn marker (any single marker)
         self.spin_for(0.5, left_marker=True, right_marker=False)
-        self.spin_for(2.5)
+        self.spin_for(4.0)
         self.get_logger().info(f"Turn Exit Speed: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 1.0) < 0.1, "Should recover to nominal speed after exiting turn"
         self.get_logger().info("TEST 4 PASSED!")

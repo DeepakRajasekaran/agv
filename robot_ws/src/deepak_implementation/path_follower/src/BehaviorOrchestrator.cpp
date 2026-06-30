@@ -21,7 +21,10 @@ BehaviorOrchestrator::BehaviorOrchestrator(const BehaviorConfig& config, rclcpp:
       m_estopActive(false),
       m_lastTrackPos(0.0),
       m_frozenStepsCount(0),
-      m_lineLostCount(0)
+      m_lineLostCount(0),
+      m_wasInBehavior(false),
+      m_lastBehaviorVelocity(0.0),
+      m_behaviorExitTime(0.0)
 {
     // Behavior Tree Initialization
     m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
@@ -293,6 +296,33 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         safe_velocity = 0.0;
         forceState(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
         outputs.current_state = m_currentState;
+    }
+
+    // 6.5 Behavior Exit Buffer Logic
+    double current_time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    bool in_behavior = (m_currentState == ControllerState::JUNCTION_DETECTED) || 
+                       bt_turn_active || 
+                       inputs.warning_breach || 
+                       inputs.protective_breach;
+
+    if (in_behavior) {
+        m_wasInBehavior = true;
+        m_lastBehaviorVelocity = std::abs(safe_velocity);
+    } else {
+        if (m_wasInBehavior) {
+            m_wasInBehavior = false;
+            m_behaviorExitTime = current_time;
+            RCLCPP_INFO(m_logger, "Exited behavior. Starting exit buffer (%.2fs) at velocity: %.3f", 
+                m_config.exitBufferDurationS, m_lastBehaviorVelocity);
+        }
+
+        // Apply buffer if we recently exited
+        if (current_time - m_behaviorExitTime < m_config.exitBufferDurationS) {
+            double sign = safe_velocity >= 0.0 ? 1.0 : -1.0;
+            if (std::abs(safe_velocity) > m_lastBehaviorVelocity) {
+                safe_velocity = sign * m_lastBehaviorVelocity;
+            }
+        }
     }
 
     // 7. Acceleration Limit
