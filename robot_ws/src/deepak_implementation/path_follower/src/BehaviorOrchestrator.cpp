@@ -96,31 +96,11 @@ void BehaviorOrchestrator::forceState(uint8_t state, const std::string& reason) 
 void BehaviorOrchestrator::evaluateSafetyFaults(const SensorInputs& inputs) {
     m_hasFault = false;
     m_faultType = "NONE";
-    m_frozenStepsCount = 0;
-    m_lineLostCount = 0;
     
     if (m_estopActive) {
         m_hasFault = true;
         m_faultType = "E_STOP";
         return;
-    }
-
-    // Check Sensor Dropout
-    double currentTrackPos = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
-    if (inputs.track_detect) {
-        if (std::abs(currentTrackPos - m_lastTrackPos) < 1e-7) {
-            m_frozenStepsCount++;
-        } else {
-            m_frozenStepsCount = 0;
-        }
-        m_lastTrackPos = currentTrackPos;
-    } else {
-        m_frozenStepsCount = 0;
-    }
-    
-    if (m_frozenStepsCount > m_config.maxFrozenSteps) {
-        m_hasFault = true;
-        m_faultType = "SENSOR_DROPOUT";
     }
 
     // Check Motor Saturation
