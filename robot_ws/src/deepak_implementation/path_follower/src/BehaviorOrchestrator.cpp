@@ -75,8 +75,11 @@ std::string BehaviorOrchestrator::stateToString(uint8_t state) const {
     switch(state) {
         case ControllerState::IDLE: return "IDLE";
         case ControllerState::INITIALIZE: return "INITIALIZE";
+        case ControllerState::FOLLOW_LINE: return "FOLLOW_LINE";
         case ControllerState::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
+        case ControllerState::READ_TAG: return "READ_TAG";
         case ControllerState::RESUME_TRACKING: return "RESUME_TRACKING";
+        case ControllerState::STOP: return "STOP";
         case ControllerState::ERROR: return "ERROR";
         default: return "UNKNOWN";
     }
@@ -189,6 +192,10 @@ void BehaviorOrchestrator::executeVelocityClamps(const SensorInputs& inputs, Beh
     if (m_currentState == ControllerState::RESUME_TRACKING) {
         safe_velocity = std::clamp(safe_velocity, -m_config.clampStraight, m_config.clampStraight);
         forceState(ControllerState::FOLLOW_LINE, "RESUMED");
+        outputs.current_state = m_currentState;
+    } else if (m_currentState == ControllerState::READ_TAG) {
+        safe_velocity = 0.0;
+        forceState(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
         outputs.current_state = m_currentState;
     }
 
