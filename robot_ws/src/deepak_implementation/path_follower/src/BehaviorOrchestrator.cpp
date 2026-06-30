@@ -10,12 +10,18 @@ using custom_interfaces::msg::ControllerState;
 BehaviorOrchestrator::BehaviorOrchestrator(const BehaviorConfig& config, rclcpp::Logger logger)
     : m_config(config),
       m_logger(logger),
-      m_currentState(ControllerState::INITIALIZE),
+      m_currentState(ControllerState::IDLE),
       m_selectedTrackId(0),
       m_currentPublishedLinearVel(0.0),
       m_lastQuickstopRequest(false),
       m_lastLidarCmdPublished(1),
-      m_logCounter(0)
+      m_logCounter(0),
+      m_hasFault(false),
+      m_faultType("NONE"),
+      m_estopActive(false),
+      m_lastTrackPos(0.0),
+      m_frozenStepsCount(0),
+      m_lineLostCount(0)
 {
     // Behavior Tree Initialization
     m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
@@ -91,13 +97,68 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         outputs.quickstop_state = inputs.protective_breach;
     }
 
+    m_hasFault = false;
+    m_faultType = "NONE";
+    m_frozenStepsCount = 0;
+    m_lineLostCount = 0;
+    // Don't reset estop state here as it's externally injected
+
+    // Update Internal Safety/Fault State
+    if (m_estopActive) {
+        m_hasFault = true;
+        m_faultType = "E_STOP";
+    } else {
+        // Check Sensor Dropout
+        double currentTrackPos = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
+        if (inputs.track_detect) {
+            if (std::abs(currentTrackPos - m_lastTrackPos) < 1e-7) {
+                m_frozenStepsCount++;
+            } else {
+                m_frozenStepsCount = 0;
+            }
+            m_lastTrackPos = currentTrackPos;
+        } else {
+            m_frozenStepsCount = 0;
+        }
+        
+        if (m_frozenStepsCount > m_config.maxFrozenSteps) {
+            m_hasFault = true;
+            m_faultType = "SENSOR_DROPOUT";
+        }
+
+        // Check Line Lost
+        if (!inputs.track_detect) {
+            m_lineLostCount++;
+        } else {
+            m_lineLostCount = 0;
+        }
+
+        if (m_lineLostCount > m_config.lineLostGraceSteps) {
+            m_hasFault = true;
+            m_faultType = "LINE_LOST";
+        }
+
+        // Check Motor Saturation
+        if (std::abs(inputs.left_rpm) > inputs.max_rpm || std::abs(inputs.right_rpm) > inputs.max_rpm) {
+            m_hasFault = true;
+            m_faultType = "MOTOR_SATURATION";
+        }
+    }
+
+    // Assign Fault State to Outputs
+    outputs.has_fault = m_hasFault;
+    outputs.fault_type = m_faultType;
+
+    // 1. Fault Overrides
+    if (m_hasFault && m_currentState != ControllerState::ERROR && m_currentState != ControllerState::IDLE) {
+        forceState(ControllerState::ERROR, "FAULT_DETECTED");
+    }
+
     // 2. State transitions based on safety
-    if (m_currentState == ControllerState::STOP && !inputs.protective_breach && !inputs.has_fault) {
+    if (m_currentState == ControllerState::STOP && !inputs.protective_breach && !m_hasFault) {
         forceState(ControllerState::FOLLOW_LINE, "PROTECTIVE_FIELD_CLEARED");
     } else if (inputs.protective_breach && m_currentState != ControllerState::STOP && m_currentState != ControllerState::ERROR) {
         forceState(ControllerState::STOP, "PROTECTIVE_FIELD_BREACH");
-    } else if (inputs.has_fault && m_currentState != ControllerState::ERROR && m_currentState != ControllerState::IDLE) {
-        forceState(ControllerState::ERROR, "FAULT_DETECTED");
     }
     
     outputs.current_state = m_currentState;
@@ -107,7 +168,7 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         outputs.linear_velocity = 0.0;
         
         double divergence = std::abs(inputs.left_track_pos - inputs.right_track_pos);
-        (void)divergence;
+        outputs.divergence = divergence;
         if (m_selectedTrackId == 1) {
             outputs.target_error = inputs.left_track_pos;
         } else if (m_selectedTrackId == 2) {
@@ -123,9 +184,9 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         return outputs;
     }
 
-    // 3. Track Divergence and Error Calculation
     double computed_error = 0.0;
     double divergence = std::abs(inputs.left_track_pos - inputs.right_track_pos);
+    outputs.divergence = divergence;
     
     if (m_currentState == ControllerState::JUNCTION_DETECTED || m_currentState == ControllerState::FOLLOW_LINE) {
         if (m_selectedTrackId == 1) {
@@ -141,14 +202,14 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     outputs.target_error = computed_error;
 
     // Auto-reset selected track when junction clears
-    if (divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
-        RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
-        m_selectedTrackId = 0;
-        if (m_currentState == ControllerState::JUNCTION_DETECTED) {
-            forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
-            outputs.current_state = m_currentState;
-        }
-    }
+    // if (divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
+    //     RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
+    //     m_selectedTrackId = 0;
+    //     if (m_currentState == ControllerState::JUNCTION_DETECTED) {
+    //         forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
+    //         outputs.current_state = m_currentState;
+    //     }
+    // }
 
     // 4. Update Behavior Tree Variables
     m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
@@ -183,15 +244,12 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         }
     }
 
-    // 5. Native Junction Logic (drift-based fallback)
+    // 5. Native Junction Logic (drift-based fallback) 
+    // Disabled side-switching based on divergence (per ponytail-audit)
     if (m_currentState == ControllerState::FOLLOW_LINE) {
-        if (divergence > m_config.junctionDivergenceThreshold || inputs.tape_cross) {
-            forceState(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
-            if (computed_error < -0.02) {
-                m_selectedTrackId = 2; // Follow Right
-            } else if (computed_error > 0.02) {
-                m_selectedTrackId = 1; // Follow Left
-            }
+        if (inputs.tape_cross) { // Kept tape cross to trigger junction if needed
+            forceState(ControllerState::JUNCTION_DETECTED, "TAPE_CROSS");
+            // Do NOT assign m_selectedTrackId randomly anymore. Higher level systems must command it.
             outputs.current_state = m_currentState;
         }
     }
@@ -258,6 +316,30 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     m_logCounter++;
 
     return outputs;
+}
+
+void BehaviorOrchestrator::injectEStop(bool active) {
+    m_estopActive = active;
+    if (active) {
+        m_hasFault = true;
+        m_faultType = "E_STOP";
+    }
+}
+
+void BehaviorOrchestrator::checkTimeout(const std::chrono::steady_clock::time_point& lastUpdateTime) {
+    if (m_estopActive) {
+        m_hasFault = true;
+        m_faultType = "E_STOP";
+        return;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdateTime).count();
+
+    if (duration > 500) {  // 500 ms timeout
+        m_hasFault = true;
+        m_faultType = "TIMEOUT";
+    }
 }
 
 } // namespace path_follower

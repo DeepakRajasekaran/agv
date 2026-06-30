@@ -24,8 +24,6 @@
 #include <vector>
 #include <chrono>
 
-
-#include "FaultMonitor.h"
 #include "BehaviorOrchestrator.h"
 
 namespace path_follower {
@@ -148,8 +146,6 @@ private:
     double m_lastErrorForZc;
     std::chrono::steady_clock::time_point m_lastZeroCrossingTime;
     bool m_hasCrossedZero;
-
-    std::unique_ptr<FaultMonitor> p_faultMonitor;
     std::unique_ptr<BehaviorOrchestrator> m_behaviorOrchestrator;
     BehaviorConfig m_behaviorConfig;
 

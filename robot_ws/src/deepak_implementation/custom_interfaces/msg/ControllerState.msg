@@ -10,3 +10,6 @@ uint8 ERROR = 8
 
 # Current state
 uint8 state
+
+# Computed divergence for external use
+float32 divergence

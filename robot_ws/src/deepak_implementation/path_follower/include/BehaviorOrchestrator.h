@@ -21,6 +21,8 @@ struct BehaviorConfig {
     double btMinScale = 0.2;
     double btErrorThreshold = 0.08;
     double btFallbackScale = 0.4;
+    int lineLostGraceSteps = 10;
+    int maxFrozenSteps = 5;
 };
 
 struct SensorInputs {
@@ -34,7 +36,9 @@ struct SensorInputs {
     bool protective_breach = false;
     bool warning_breach = false;
     double nav_cmd_linear_x = 0.0;
-    bool has_fault = false;
+    double left_rpm = 0.0;
+    double right_rpm = 0.0;
+    double max_rpm = 0.0;
 };
 
 struct BehaviorOutputs {
@@ -44,6 +48,9 @@ struct BehaviorOutputs {
     uint16_t lidar_cmd = 1;
     bool trigger_quickstop_edge = false;
     bool quickstop_state = false;
+    double divergence = 0.0;
+    bool has_fault = false;
+    std::string fault_type = "NONE";
 };
 
 class BehaviorOrchestrator {
@@ -58,6 +65,10 @@ public:
     void forceState(uint8_t state, const std::string& reason);
     int getSelectedTrackId() const { return m_selectedTrackId; }
     void setSelectedTrackId(int id) { m_selectedTrackId = id; }
+    
+    // Safety injections
+    void injectEStop(bool active);
+    void checkTimeout(const std::chrono::steady_clock::time_point& lastUpdateTime);
 
 private:
     std::string stateToString(uint8_t state) const;
@@ -73,6 +84,14 @@ private:
     bool m_lastQuickstopRequest;
     uint16_t m_lastLidarCmdPublished;
     int m_logCounter;
+
+    // Folded Fault Monitor State
+    bool m_hasFault;
+    std::string m_faultType;
+    bool m_estopActive;
+    double m_lastTrackPos;
+    int m_frozenStepsCount;
+    int m_lineLostCount;
 };
 
 } // namespace path_follower

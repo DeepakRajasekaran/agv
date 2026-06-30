@@ -149,8 +149,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
     m_trackDetectTrueStartTime = m_lastSensorUpdateTime;
 
-    // Instantiate Safety Monitor
-    p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
     m_behaviorOrchestrator->forceState(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
@@ -370,7 +368,13 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     inputs.protective_breach = m_protectiveBreach;
     inputs.warning_breach = m_warningBreach;
     inputs.nav_cmd_linear_x = m_cmdLinearX;
-    inputs.has_fault = p_faultMonitor->hasFault();
+    
+    // Pass previous cycle RPMs for motor saturation check
+    static double last_rpm_l = 0.0;
+    static double last_rpm_r = 0.0;
+    inputs.left_rpm = last_rpm_l;
+    inputs.right_rpm = last_rpm_r;
+    inputs.max_rpm = m_maxRpm;
 
     BehaviorOutputs outputs = m_behaviorOrchestrator->update(inputs);
 
@@ -436,17 +440,20 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double v_r = m_cmdLinearX + (pidAngularVel * m_wheelBase / 2.0);
     double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
+    
+    // Store for next cycle's fault check
+    last_rpm_l = rpm_l;
+    last_rpm_r = rpm_r;
 
-    p_faultMonitor->update(outputs.target_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
-    if (p_faultMonitor->hasFault()) {
+    if (outputs.has_fault) {
         if (outputs.current_state != ControllerState::IDLE) {
-            handleFault(p_faultMonitor->getFaultType());
+            handleFault(outputs.fault_type);
             return;
         }
     }
 
     if (outputs.current_state == ControllerState::IDLE) {
-        if (m_trackDetect && !p_faultMonitor->hasFault()) {
+        if (m_trackDetect && !outputs.has_fault) {
             publishVelocity(outputs.linear_velocity, pidAngularVel);
         } else {
             publishVelocity(outputs.linear_velocity, m_cmdAngularZ);
@@ -547,7 +554,6 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
         }
 
         // p_stateMachine->reset(); (removed)
-        p_faultMonitor->reset();
         m_behaviorOrchestrator->forceState(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
         publishControllerState();
         
@@ -578,10 +584,7 @@ void PidController::safetyCheckCallback()
     if (!m_firstMessageReceived) {
         return;
     }
-    p_faultMonitor->checkTimeout(m_lastSensorUpdateTime);
-    if (p_faultMonitor->hasFault()) {
-        handleFault(p_faultMonitor->getFaultType());
-    }
+    m_behaviorOrchestrator->checkTimeout(m_lastSensorUpdateTime);
 }
 
 void PidController::publishVelocity(double linearVel, double angularVel)
@@ -603,6 +606,11 @@ void PidController::publishControllerState()
 {
     ControllerState msg;
     msg.state = m_behaviorOrchestrator->getCurrentState();
+    
+    // We get the divergence from the orchestrator's last output, or we can just compute it here.
+    // It's already published on the divergence topic above, but let's also put it in the msg.
+    msg.divergence = static_cast<float>(std::abs(m_leftTrackPos - m_rightTrackPos));
+    
     m_pubControllerState->publish(msg);
 }
 
@@ -616,9 +624,7 @@ void PidController::handleFault(const std::string& faultType)
         m_cmdAngularZ = 0.0;
         publishVelocity(0.0, 0.0);
         
-        // We use a hardcoded state string here just for logging since we don't have the string map anymore
-        std::string faultLog = p_faultMonitor->getFaultLog("ERROR");
-        RCLCPP_ERROR(this->get_logger(), "[SAFETY_FAULT] %s", faultLog.c_str());
+        RCLCPP_ERROR(this->get_logger(), "[SAFETY_FAULT] Type: %s | STATE: ERROR", faultType.c_str());
     }
 }
 
@@ -674,12 +680,11 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
             case const_hash("safety.grace_period_ms"): 
                 m_gracePeriodMs = static_cast<int>(param.as_int()); 
-                // Re-initialize Fault Monitor with new grace steps (ms / 20ms)
-                p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
+                m_behaviorConfig.lineLostGraceSteps = m_gracePeriodMs / 20;
                 break;
             case const_hash("safety.max_frozen_steps"): 
                 m_maxFrozenSteps = static_cast<int>(param.as_int()); 
-                p_faultMonitor->setMaxFrozenSteps(m_maxFrozenSteps);
+                m_behaviorConfig.maxFrozenSteps = m_maxFrozenSteps;
                 break;
             case const_hash("safety.track_detect_stable_ms"): {
                 int requestedStableMs = static_cast<int>(param.as_int());
