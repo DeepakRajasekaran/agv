@@ -99,6 +99,7 @@ private:
     void handleQuickstopEdge(bool trigger_edge, bool quickstop_state);
     void publishDiagnostics(const BehaviorOutputs& outputs, uint8_t preState);
     void executeControlOutputs(const BehaviorOutputs& outputs, double dt);
+    void debounceSensors();
 
     double computeSteering(double error, double dt);
 
@@ -122,6 +123,12 @@ private:
     double m_wheelRadius;
     double m_sensorOffsetX;
 
+    // Gain Scheduling
+    bool m_gainScheduleEnabled;
+    double m_gainBaseSpeed;
+    double m_gainMinScale;
+    double m_gainMaxScale;
+
     // Safety Parameters
     int m_gracePeriodMs;
     int m_maxFrozenSteps;
@@ -142,6 +149,14 @@ private:
     bool m_rightMarker;
     bool m_protectiveBreach;
     bool m_warningBreach;
+
+    // Debouncing State
+    int m_markerDebounceSteps;
+    int m_leftMarkerCount;
+    int m_rightMarkerCount;
+    bool m_debouncedLeftMarker;
+    bool m_debouncedRightMarker;
+
     double m_leftTrackPos;
     double m_rightTrackPos;
     double m_lastPidAngularVel;
@@ -160,7 +175,7 @@ private:
     rcl_interfaces::msg::SetParametersResult onParameterChange(const std::vector<rclcpp::Parameter>& parameters);
 
     // Logging throttle helper
-    int m_logCounter;
+    // int m_logCounter; (Removed during ponytail-audit)
 };
 
 } // namespace path_follower

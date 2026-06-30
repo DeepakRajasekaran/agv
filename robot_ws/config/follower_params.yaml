@@ -4,6 +4,11 @@ path_follower_node:
       kp: 1.5
       ki: 0.02
       kd: 0.12
+      gain_schedule:
+        enabled: true
+        base_speed: 1.0
+        min_scale: 0.5
+        max_scale: 2.0
     velocity_clamps:
       straight: 1.0
       junction: 0.5
@@ -15,6 +20,8 @@ path_follower_node:
       lidar_field_switching:
         thresholds: [0.3, 0.7]
         commands: [1, 2, 3]
+    sensors:
+      marker_debounce_steps: 3
     behavior_tree:
       exit_buffer_s: 2.0
       enable_recovery: true

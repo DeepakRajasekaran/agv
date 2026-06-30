@@ -30,18 +30,22 @@ using custom_interfaces::msg::ControllerState;
 
 PidController::PidController(const rclcpp::NodeOptions& options)
     : Node("path_follower_node", options),
-      m_kp(1.5),
-      m_ki(0.02),
-      m_kd(0.12),
+      m_kp(1.0),
+      m_ki(0.0),
+      m_kd(0.0),
       m_windupLimit(0.5),
       m_maxOutput(1.5),
       m_maxRpm(150.0),
-      m_wheelBase(0.512),
-      m_wheelRadius(0.08),
-      m_sensorOffsetX(0.48),
+      m_wheelBase(0.5),
+      m_wheelRadius(0.1),
+      m_sensorOffsetX(0.3),
+      m_gainScheduleEnabled(false),
+      m_gainBaseSpeed(1.0),
+      m_gainMinScale(0.5),
+      m_gainMaxScale(2.0),
       m_gracePeriodMs(200),
-      m_maxFrozenSteps(1000),
-      m_trackDetectStableMs(1000),
+      m_maxFrozenSteps(10),
+      m_trackDetectStableMs(0),
       m_integralError(0.0),
       m_prevError(0.0),
       m_cmdLinearX(0.0),
@@ -51,13 +55,23 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_trackDetect(false),
       m_trackDetectStableTimerActive(false),
       m_tapeCross(false),
+      m_leftMarker(false),
+      m_rightMarker(false),
+      m_protectiveBreach(false),
+      m_warningBreach(false),
+      m_markerDebounceSteps(3),
+      m_leftMarkerCount(0),
+      m_rightMarkerCount(0),
+      m_debouncedLeftMarker(false),
+      m_debouncedRightMarker(false),
       m_leftTrackPos(0.0),
       m_rightTrackPos(0.0),
       m_lastPidAngularVel(0.0),
       m_lastErrorForZc(0.0),
+      m_lastZeroCrossingTime(std::chrono::steady_clock::now()),
       m_hasCrossedZero(false),
-      m_firstMessageReceived(false),
-      m_logCounter(0)
+      m_behaviorOrchestrator(std::make_unique<BehaviorOrchestrator>(m_behaviorConfig, this->get_logger())),
+      m_firstMessageReceived(false)
 {
     // Declare ROS 2 Parameters with defaults
     this->declare_parameter<double>("pid.kp", m_kp);
@@ -371,6 +385,30 @@ void PidController::publishDiagnostics(const BehaviorOutputs& outputs, uint8_t p
     m_pubLidarCmd->publish(cmdMsg);
 }
 
+void PidController::debounceSensors() {
+    if (m_leftMarker) {
+        m_leftMarkerCount++;
+        if (m_leftMarkerCount >= m_markerDebounceSteps) {
+            m_debouncedLeftMarker = true;
+            m_leftMarkerCount = m_markerDebounceSteps; // Prevent overflow
+        }
+    } else {
+        m_leftMarkerCount = 0;
+        m_debouncedLeftMarker = false;
+    }
+
+    if (m_rightMarker) {
+        m_rightMarkerCount++;
+        if (m_rightMarkerCount >= m_markerDebounceSteps) {
+            m_debouncedRightMarker = true;
+            m_rightMarkerCount = m_markerDebounceSteps;
+        }
+    } else {
+        m_rightMarkerCount = 0;
+        m_debouncedRightMarker = false;
+    }
+}
+
 void PidController::executeControlOutputs(const BehaviorOutputs& outputs, double dt) {
     if (outputs.current_state == ControllerState::STOP || outputs.current_state == ControllerState::ERROR ||
         outputs.current_state == ControllerState::INITIALIZE || outputs.current_state == ControllerState::READ_TAG) {
@@ -429,14 +467,16 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
 
     uint8_t preState = m_behaviorOrchestrator->getCurrentState();
 
+    debounceSensors();
+
     SensorInputs inputs;
     inputs.dt = dt;
     inputs.left_track_pos = m_leftTrackPos;
     inputs.right_track_pos = m_rightTrackPos;
     inputs.track_detect = m_trackDetect;
     inputs.tape_cross = m_tapeCross;
-    inputs.left_marker = m_leftMarker;
-    inputs.right_marker = m_rightMarker;
+    inputs.left_marker = m_debouncedLeftMarker;
+    inputs.right_marker = m_debouncedRightMarker;
     inputs.protective_breach = m_protectiveBreach;
     inputs.warning_breach = m_warningBreach;
     inputs.nav_cmd_linear_x = m_cmdLinearX;
@@ -659,6 +699,10 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
         else if (name == "pid.kd") m_kd = param.as_double();
         else if (name == "pid.windup_limit") m_windupLimit = param.as_double();
         else if (name == "pid.max_output") m_maxOutput = param.as_double();
+        else if (name == "pid.gain_schedule.enabled") m_gainScheduleEnabled = param.as_bool();
+        else if (name == "pid.gain_schedule.base_speed") m_gainBaseSpeed = param.as_double();
+        else if (name == "pid.gain_schedule.min_scale") m_gainMinScale = param.as_double();
+        else if (name == "pid.gain_schedule.max_scale") m_gainMaxScale = param.as_double();
         else if (name == "robot.max_rpm") m_maxRpm = param.as_double();
         else if (name == "robot.wheel_base") m_wheelBase = param.as_double();
         else if (name == "robot.wheel_radius") m_wheelRadius = param.as_double();
@@ -693,6 +737,7 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
         else if (name == "safety.acceleration_limit") m_behaviorConfig.accelLimit = param.as_double();
         else if (name == "safety.lidar_field_switching.thresholds") m_behaviorConfig.fieldSwitchThresholds = param.as_double_array();
         else if (name == "safety.lidar_field_switching.commands") m_behaviorConfig.fieldSwitchCommands = param.as_integer_array();
+        else if (name == "sensors.marker_debounce_steps") m_markerDebounceSteps = static_cast<int>(param.as_int());
     }
     m_behaviorOrchestrator->setConfig(m_behaviorConfig);
     return result;
