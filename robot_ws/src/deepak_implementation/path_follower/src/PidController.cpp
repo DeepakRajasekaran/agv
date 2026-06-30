@@ -99,10 +99,18 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     // Initialize defaults to prevent garbage memory values
     m_clampStraight = 1.0;
     m_clampJunction = 0.5;
+    m_clampMarkerJunction = 0.3;
+    m_clampTurnJunction = 0.4;
+    m_accelLimit = 0.5;
     m_junctionDivergenceThreshold = 0.035;
 
     this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
     this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
+    this->declare_parameter<double>("velocity_clamps.marker_junction", m_clampMarkerJunction);
+    this->declare_parameter<double>("velocity_clamps.turn_junction", m_clampTurnJunction);
+    this->declare_parameter<double>("safety.acceleration_limit", m_accelLimit);
+    this->declare_parameter<std::vector<double>>("safety.lidar_field_switching.thresholds", std::vector<double>{0.3, 0.7});
+    this->declare_parameter<std::vector<int64_t>>("safety.lidar_field_switching.commands", std::vector<int64_t>{1, 2, 3});
 
     this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
     
@@ -133,11 +141,26 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     
     this->get_parameter("velocity_clamps.straight", m_clampStraight);
     this->get_parameter("velocity_clamps.junction", m_clampJunction);
+    this->get_parameter("velocity_clamps.marker_junction", m_clampMarkerJunction);
+    this->get_parameter("velocity_clamps.turn_junction", m_clampTurnJunction);
+    this->get_parameter("safety.acceleration_limit", m_accelLimit);
+    this->get_parameter("safety.lidar_field_switching.thresholds", m_fieldSwitchThresholds);
+    this->get_parameter("safety.lidar_field_switching.commands", m_fieldSwitchCommands);
+
     this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
     this->get_parameter("behavior_tree.error_scaling_max_dist", m_btErrorScalingMaxDist);
     this->get_parameter("behavior_tree.min_scale", m_btMinScale);
     this->get_parameter("behavior_tree.error_threshold", m_btErrorThreshold);
     this->get_parameter("behavior_tree.fallback_scale", m_btFallbackScale);
+
+    // Initial state setup
+    m_leftMarker = false;
+    m_rightMarker = false;
+    m_protectiveBreach = false;
+    m_warningBreach = false;
+    m_lastQuickstopRequest = false;
+    m_lastLidarCmdPublished = 0;
+    m_currentPublishedLinearVel = 0.0;
 
     // Initial time points
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
@@ -171,10 +194,20 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_subTapeCross = this->create_subscription<std_msgs::msg::Bool>(
         tape_cross_topic, 10, std::bind(&PidController::tapeCrossCallback, this, std::placeholders::_1));
 
+    m_subLeftMarker = this->create_subscription<std_msgs::msg::Bool>(
+        "/sensor/left_marker", 10, std::bind(&PidController::leftMarkerCallback, this, std::placeholders::_1));
+    m_subRightMarker = this->create_subscription<std_msgs::msg::Bool>(
+        "/sensor/right_marker", 10, std::bind(&PidController::rightMarkerCallback, this, std::placeholders::_1));
+    m_subProtectiveBreach = this->create_subscription<std_msgs::msg::Bool>(
+        "/plc_interface/lidar_protective_breach_fb", 10, std::bind(&PidController::protectiveBreachCallback, this, std::placeholders::_1));
+    m_subWarningBreach = this->create_subscription<std_msgs::msg::Bool>(
+        "/plc_interface/lidar_warning_breach_fb", 10, std::bind(&PidController::warningBreachCallback, this, std::placeholders::_1));
+
     // ROS 2 Publishers
     m_pubCmdVel = this->create_publisher<geometry_msgs::msg::Twist>("/path_follower/cmd_vel", 10);
     m_pubControllerState = this->create_publisher<ControllerState>("/controller_state", 10);
     m_pubDivergence = this->create_publisher<std_msgs::msg::Float32>("~/divergence", 10);
+    m_pubLidarCmd = this->create_publisher<std_msgs::msg::UInt16>("/plc_interface/lidar_cmd", 10);
 
     // ROS 2 Services
     m_srvAutotune = this->create_service<std_srvs::srv::Trigger>(
@@ -188,6 +221,8 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         
     m_srvSelectTrack = this->create_service<custom_interfaces::srv::SelectTrack>(
         "~/select_track", std::bind(&PidController::selectTrackCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+    m_cliQuickstop = this->create_client<std_srvs::srv::SetBool>("/plc_interface/trigger_quickstop");
 
     // Safety timeout check timer (50Hz = 20ms)
     m_safetyTimer = this->create_wall_timer(
@@ -203,11 +238,17 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_btFactory.registerNodeType<ReduceVelocity>("ReduceVelocity");
     m_btFactory.registerNodeType<SetSafeVelocity>("SetSafeVelocity");
     m_btFactory.registerNodeType<SetNominalVelocity>("SetNominalVelocity");
+    m_btFactory.registerNodeType<JunctionManager>("JunctionManager");
+    m_btFactory.registerNodeType<TurnManager>("TurnManager");
+    m_btFactory.registerNodeType<SafetyManager>("SafetyManager");
 
     const std::string bt_xml = R"(
 <root BTCPP_format="4">
   <BehaviorTree>
     <Fallback>
+      <SafetyManager protective_breach="{protective_breach}" warning_breach="{warning_breach}" nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" trigger_quickstop="{trigger_quickstop}" />
+      <JunctionManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_junction_vel}" safe_velocity="{safe_vel}" in_junction="{in_junction}" />
+      <TurnManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_turn_vel}" safe_velocity="{safe_vel}" selected_track_id="{selected_track_id}" />
       <Sequence>
         <IsErrorHigh error="{current_error}" threshold="{error_threshold}" last_high_time="{last_high_time}" />
         <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" error_scaling_max_dist="{error_scaling_max_dist}" min_scale="{min_scale}" safe_velocity="{safe_vel}" />
@@ -389,6 +430,33 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         dt = 0.02; // Nominal 50Hz
     }
 
+    // Automatic transition based on protective field breach
+    if (m_currentState == ControllerState::STOP && !m_protectiveBreach) {
+        transitionTo(ControllerState::FOLLOW_LINE, "PROTECTIVE_FIELD_CLEARED");
+    } else if (m_protectiveBreach && m_currentState != ControllerState::STOP && m_currentState != ControllerState::ERROR) {
+        transitionTo(ControllerState::STOP, "PROTECTIVE_FIELD_BREACH");
+    }
+
+    // Call quickstop service client on protective breach edge changes
+    if (m_protectiveBreach != m_lastQuickstopRequest) {
+        m_lastQuickstopRequest = m_protectiveBreach;
+        if (m_cliQuickstop->wait_for_service(std::chrono::milliseconds(10))) {
+            auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
+            request->data = m_protectiveBreach;
+            m_cliQuickstop->async_send_request(request,
+                [this, target_state = m_protectiveBreach](rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture future) {
+                    try {
+                        auto response = future.get();
+                        RCLCPP_INFO(this->get_logger(), "Quickstop service call (data=%d) success: %s", target_state, response->message.c_str());
+                    } catch (const std::exception& e) {
+                        RCLCPP_ERROR(this->get_logger(), "Quickstop service call failed: %s", e.what());
+                    }
+                });
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Quickstop service not available!");
+        }
+    }
+
     uint8_t currentState = m_currentState;
     
     // Safety states (Enforce zero velocity)
@@ -496,6 +564,14 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     m_btTree.rootBlackboard()->set("min_scale", m_btMinScale);
     m_btTree.rootBlackboard()->set("error_threshold", m_btErrorThreshold);
     m_btTree.rootBlackboard()->set("fallback_scale", m_btFallbackScale);
+
+    // Set new Behavior Tree input variables
+    m_btTree.rootBlackboard()->set("left_marker", m_leftMarker);
+    m_btTree.rootBlackboard()->set("right_marker", m_rightMarker);
+    m_btTree.rootBlackboard()->set("protective_breach", m_protectiveBreach);
+    m_btTree.rootBlackboard()->set("warning_breach", m_warningBreach);
+    m_btTree.rootBlackboard()->set("clamp_junction_vel", m_clampMarkerJunction);
+    m_btTree.rootBlackboard()->set("clamp_turn_vel", m_clampTurnJunction);
     
     BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
     
@@ -504,13 +580,71 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         safe_velocity = m_cmdLinearX; // fallback if not set
     }
 
+    // Retrieve safety outputs from Behavior Tree blackboard
+    bool trigger_quickstop = false;
+    (void)m_btTree.rootBlackboard()->get("trigger_quickstop", trigger_quickstop);
+
+    bool in_junction = false;
+    (void)m_btTree.rootBlackboard()->get("in_junction", in_junction);
+
+    int bt_selected_track_id = 0;
+    if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
+        if (bt_selected_track_id != m_selectedTrackId) {
+            m_selectedTrackId = bt_selected_track_id;
+            RCLCPP_INFO(this->get_logger(), "Track selection updated by BT to: %d", m_selectedTrackId);
+        }
+    }
+
+    // Transition to/from junction mode dynamically based on BT status
+    if (in_junction) {
+        if (currentState != ControllerState::JUNCTION_DETECTED) {
+            transitionTo(ControllerState::JUNCTION_DETECTED, "BT_JUNCTION_START");
+            currentState = m_currentState;
+            publishControllerState();
+        }
+    } else if (currentState == ControllerState::JUNCTION_DETECTED && !in_junction && m_selectedTrackId == 0) {
+        transitionTo(ControllerState::FOLLOW_LINE, "BT_JUNCTION_END");
+        currentState = m_currentState;
+        publishControllerState();
+    }
+
     if (m_logCounter % 20 == 0 && std::abs(m_cmdLinearX - safe_velocity) > 0.01) {
         RCLCPP_INFO(this->get_logger(), 
             "[BT Status: %s] Error High: %.3f -> Scaled Vel: %.3f (Nominal: %.3f)", 
             BT::toStr(bt_status).c_str(), std::abs(computed_error), safe_velocity, m_cmdLinearX);
     }
 
-    double linearVel = safe_velocity;
+    // Apply smooth linear velocity ramping (acceleration limit)
+    double target_linear_vel = safe_velocity;
+    double max_step = m_accelLimit * dt;
+    if (target_linear_vel > m_currentPublishedLinearVel) {
+        m_currentPublishedLinearVel = std::min(m_currentPublishedLinearVel + max_step, target_linear_vel);
+    } else {
+        if (target_linear_vel == 0.0) {
+            m_currentPublishedLinearVel = 0.0;
+        } else {
+            m_currentPublishedLinearVel = std::max(m_currentPublishedLinearVel - max_step, target_linear_vel);
+        }
+    }
+    double linearVel = m_currentPublishedLinearVel;
+
+    // Dynamically switch safety field command based on current velocity
+    uint16_t desiredLidarCmd = 1; // Default fallback to safest field (0.5m)
+    if (m_fieldSwitchThresholds.size() + 1 == m_fieldSwitchCommands.size()) {
+        double abs_speed = std::abs(linearVel);
+        size_t idx = 0;
+        while (idx < m_fieldSwitchThresholds.size() && abs_speed > m_fieldSwitchThresholds[idx]) {
+            idx++;
+        }
+        desiredLidarCmd = static_cast<uint16_t>(m_fieldSwitchCommands[idx]);
+    }
+    if (desiredLidarCmd != m_lastLidarCmdPublished) {
+        m_lastLidarCmdPublished = desiredLidarCmd;
+        std_msgs::msg::UInt16 cmdMsg;
+        cmdMsg.data = desiredLidarCmd;
+        m_pubLidarCmd->publish(cmdMsg);
+        RCLCPP_INFO(this->get_logger(), "Switched lidar safety field to command %d (Speed: %.3f)", desiredLidarCmd, linearVel);
+    }
 
     // State Management
     switch (currentState) {
@@ -607,6 +741,46 @@ void PidController::leftTrackPosCallback(const std_msgs::msg::Float32::SharedPtr
 void PidController::rightTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
     m_rightTrackPos = static_cast<double>(msg->data);
+}
+
+/**
+ * @brief  Callback for the left tape marker detection status.
+ * @param  msg Pointer to the std_msgs::msg::Bool message.
+ */
+void PidController::leftMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    assert(msg != nullptr); // Precondition
+    m_leftMarker = msg->data;
+}
+
+/**
+ * @brief  Callback for the right tape marker detection status.
+ * @param  msg Pointer to the std_msgs::msg::Bool message.
+ */
+void PidController::rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    assert(msg != nullptr); // Precondition
+    m_rightMarker = msg->data;
+}
+
+/**
+ * @brief  Callback for the protective field breach status.
+ * @param  msg Pointer to the std_msgs::msg::Bool message.
+ */
+void PidController::protectiveBreachCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    assert(msg != nullptr); // Precondition
+    m_protectiveBreach = msg->data;
+}
+
+/**
+ * @brief  Callback for the warning field breach status.
+ * @param  msg Pointer to the std_msgs::msg::Bool message.
+ */
+void PidController::warningBreachCallback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    assert(msg != nullptr); // Precondition
+    m_warningBreach = msg->data;
 }
 
 void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
@@ -773,11 +947,16 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
             }
             case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
             case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
+            case const_hash("velocity_clamps.marker_junction"): m_clampMarkerJunction = param.as_double(); break;
+            case const_hash("velocity_clamps.turn_junction"): m_clampTurnJunction = param.as_double(); break;
             case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
             case const_hash("behavior_tree.error_scaling_max_dist"): m_btErrorScalingMaxDist = param.as_double(); break;
             case const_hash("behavior_tree.min_scale"): m_btMinScale = param.as_double(); break;
             case const_hash("behavior_tree.error_threshold"): m_btErrorThreshold = param.as_double(); break;
             case const_hash("behavior_tree.fallback_scale"): m_btFallbackScale = param.as_double(); break;
+            case const_hash("safety.acceleration_limit"): m_accelLimit = param.as_double(); break;
+            case const_hash("safety.lidar_field_switching.thresholds"): m_fieldSwitchThresholds = param.as_double_array(); break;
+            case const_hash("safety.lidar_field_switching.commands"): m_fieldSwitchCommands = param.as_integer_array(); break;
             default: break;
         }
     }

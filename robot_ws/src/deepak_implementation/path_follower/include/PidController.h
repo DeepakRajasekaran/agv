@@ -17,6 +17,8 @@
 #include <custom_interfaces/msg/controller_state.hpp>
 #include <custom_interfaces/srv/select_track.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <std_srvs/srv/set_bool.hpp>
+#include <std_msgs/msg/u_int16.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -47,11 +49,16 @@ private:
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr m_subRightTrackPos;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subTapeCross;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_subCmdVel;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subLeftMarker;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subRightMarker;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subProtectiveBreach;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr m_subWarningBreach;
 
     // ROS 2 Publishers
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr m_pubCmdVel;
     rclcpp::Publisher<custom_interfaces::msg::ControllerState>::SharedPtr m_pubControllerState;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_pubDivergence;
+    rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr m_pubLidarCmd;
 
     // Subscriber Callbacks
     void trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
@@ -60,6 +67,10 @@ private:
     void rightTrackPosCallback(const std_msgs::msg::Float32::SharedPtr msg);
     void tapeCrossCallback(const std_msgs::msg::Bool::SharedPtr msg);
     void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
+    void leftMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    void rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    void protectiveBreachCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    void warningBreachCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
     // ROS 2 Services (Controller)
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr m_srvAutotune;
@@ -81,6 +92,8 @@ private:
     rclcpp::Service<custom_interfaces::srv::SelectTrack>::SharedPtr m_srvSelectTrack;
     void selectTrackCallback(const std::shared_ptr<custom_interfaces::srv::SelectTrack::Request> request,
                              std::shared_ptr<custom_interfaces::srv::SelectTrack::Response> response);
+
+    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr m_cliQuickstop;
 
     // Track Selection State
     int m_selectedTrackId = 0; // 0=AVG, 1=LEFT, 2=RIGHT
@@ -121,6 +134,8 @@ private:
     // Velocity & Junction Clamps
     double m_clampStraight;
     double m_clampJunction;
+    double m_clampMarkerJunction;
+    double m_clampTurnJunction;
     double m_junctionDivergenceThreshold;
 
     // Behavior Tree Params
@@ -128,6 +143,11 @@ private:
     double m_btMinScale;
     double m_btErrorThreshold;
     double m_btFallbackScale;
+
+    // Safety and switching parameters
+    double m_accelLimit;
+    std::vector<double> m_fieldSwitchThresholds;
+    std::vector<int64_t> m_fieldSwitchCommands;
 
     // Control Loop State
     double m_integralError;
@@ -140,9 +160,16 @@ private:
     bool m_trackDetect;
     bool m_trackDetectStableTimerActive;
     bool m_tapeCross;
+    bool m_leftMarker;
+    bool m_rightMarker;
+    bool m_protectiveBreach;
+    bool m_warningBreach;
+    bool m_lastQuickstopRequest;
+    uint16_t m_lastLidarCmdPublished;
     double m_leftTrackPos;
     double m_rightTrackPos;
     double m_lastPidAngularVel;
+    double m_currentPublishedLinearVel;
 
     // Response time estimator
     double m_lastErrorForZc;
