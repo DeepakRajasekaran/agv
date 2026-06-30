@@ -157,6 +157,80 @@ ros2 service call /plc_interface/trigger_quickstop std_srvs/srv/SetBool "{data: 
 ```
 
 Reset the Quickstop safety routine (sends command `0` to register 108):
-```bash
 ros2 service call /plc_interface/trigger_quickstop std_srvs/srv/SetBool "{data: false}"
+```
+
+---
+
+## 6. Path Follower Services & State (Deepak Implementation)
+
+### Monitoring
+```bash
+# See the current orchestrator state (IDLE, FOLLOW_LINE, JUNCTION_DETECTED, TURN, ERROR, etc.)
+ros2 topic echo /controller_state
+
+# Monitor cross-track divergence (distance between left/right tracks)
+ros2 topic echo /path_follower/divergence
+
+# See the final velocity output being sent to the motor driver
+ros2 topic echo /path_follower/cmd_vel
+```
+
+### Services
+```bash
+# Start tracking
+ros2 service call /path_follower/start std_srvs/srv/Trigger
+
+# Stop tracking
+ros2 service call /path_follower/stop std_srvs/srv/Trigger
+
+# Force track selection at junction (0=avg, 1=left, 2=right)
+ros2 service call /path_follower/select_track custom_interfaces/srv/SelectTrack "{track_id: 1}"
+
+# Trigger an auto-tune sequence (resets Kp, Ki, Kd to hardcoded baseline)
+ros2 service call /path_follower/autotune std_srvs/srv/Trigger
+
+# Save current parameters to the persistent agv_config/follower_params.yaml file
+ros2 service call /path_follower/save_tuning std_srvs/srv/Trigger
+```
+
+### Live Parameter Tuning
+```bash
+# PID Tuning
+ros2 param set /path_follower_node pid.kp 1.5
+ros2 param set /path_follower_node pid.ki 0.05
+ros2 param set /path_follower_node pid.kd 0.2
+
+# Velocity Clamping (Speed Limits)
+ros2 param set /path_follower_node turn.clamp_straight 1.2
+ros2 param set /path_follower_node turn.clamp_turn 0.4
+ros2 param set /path_follower_node turn.clamp_junction 0.25
+
+# Behavior Adjustments
+ros2 param set /path_follower_node behavior_tree.enable_recovery false
+ros2 param set /path_follower_node behavior_tree.exit_buffer_s 2.0
+```
+
+---
+
+## 7. Additional Hardware Interfaces
+
+### Magnetic Guidance Sensor (MGS)
+```bash
+# Force the sensor hardware to lock onto specific tape
+ros2 service call /mgs_driver/follow_left std_srvs/srv/Trigger
+ros2 service call /mgs_driver/follow_right std_srvs/srv/Trigger
+ros2 service call /mgs_driver/clear_follow std_srvs/srv/Trigger
+```
+
+### Motor Driver Fault Management
+```bash
+# Reset Hardware Faults
+ros2 service call /roboteq_driver/reset_faults std_srvs/srv/Trigger
+
+# Hardware Emergency Stop / Quickstop
+ros2 service call /roboteq_driver/set_estop std_srvs/srv/Trigger
+ros2 service call /roboteq_driver/reset_estop std_srvs/srv/Trigger
+ros2 service call /roboteq_driver/set_quickstop std_srvs/srv/Trigger
+ros2 service call /roboteq_driver/reset_quickstop std_srvs/srv/Trigger
 ```
