@@ -17,3 +17,5 @@ path_follower_node:
         commands: [1, 2, 3]
     behavior_tree:
       exit_buffer_s: 2.0
+      enable_recovery: true
+      recovery_duration_s: 1.0

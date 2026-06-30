@@ -22,21 +22,7 @@
 
 using namespace std::chrono_literals;
 
-namespace {
-    // FNV-1a constexpr hash for string switch/case statements
-    constexpr uint32_t const_hash(const char* str) {
-        uint32_t h = 2166136261u;
-        for (int i = 0; str[i] != '\0'; ++i) {
-            h ^= static_cast<uint32_t>(str[i]);
-            h *= 16777619u;
-        }
-        return h;
-    }
 
-    uint32_t runtime_hash(const std::string& str) {
-        return const_hash(str.c_str());
-    }
-}
 
 namespace path_follower {
 
@@ -85,6 +71,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<double>("robot.wheel_radius", m_wheelRadius);
     this->declare_parameter<double>("robot.sensor_offset_x", m_sensorOffsetX);
     
+    this->declare_parameter("behavior_tree.line_lost_grace_steps", 10);
+    this->declare_parameter("behavior_tree.max_frozen_steps", 5);
+    this->declare_parameter("behavior_tree.enable_recovery", true);
+    this->declare_parameter("behavior_tree.recovery_duration_s", 1.0);
     this->declare_parameter<int>("safety.grace_period_ms", m_gracePeriodMs);
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<int>("safety.track_detect_stable_ms", m_trackDetectStableMs);
@@ -114,6 +104,10 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->get_parameter("robot.wheel_base", m_wheelBase);
     this->get_parameter("robot.wheel_radius", m_wheelRadius);
     this->get_parameter("robot.sensor_offset_x", m_sensorOffsetX);
+    this->get_parameter("behavior_tree.line_lost_grace_steps", bConfig.lineLostGraceSteps);
+    this->get_parameter("behavior_tree.max_frozen_steps", bConfig.maxFrozenSteps);
+    this->get_parameter("behavior_tree.enable_recovery", bConfig.enableRecovery);
+    this->get_parameter("behavior_tree.recovery_duration_s", bConfig.recoveryDurationS);
     this->get_parameter("safety.grace_period_ms", m_gracePeriodMs);
     this->get_parameter("safety.max_frozen_steps", m_maxFrozenSteps);
     this->get_parameter("safety.track_detect_stable_ms", m_trackDetectStableMs);
@@ -344,6 +338,82 @@ void PidController::selectTrackCallback(const std::shared_ptr<custom_interfaces:
     }
 }
 
+void PidController::handleQuickstopEdge(bool trigger_edge, bool quickstop_state) {
+    if (!trigger_edge) return;
+    if (m_cliQuickstop->wait_for_service(std::chrono::milliseconds(10))) {
+        auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
+        request->data = quickstop_state;
+        m_cliQuickstop->async_send_request(request,
+            [this, target_state = quickstop_state](rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture future) {
+                try {
+                    auto response = future.get();
+                    RCLCPP_INFO(this->get_logger(), "Quickstop service call (data=%d) success: %s", target_state, response->message.c_str());
+                } catch (const std::exception& e) {
+                    RCLCPP_ERROR(this->get_logger(), "Quickstop service call failed: %s", e.what());
+                }
+            });
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Quickstop service not available!");
+    }
+}
+
+void PidController::publishDiagnostics(const BehaviorOutputs& outputs, uint8_t preState) {
+    if (outputs.current_state != preState) {
+        publishControllerState();
+    }
+    double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
+    std_msgs::msg::Float32 divergenceMsg;
+    divergenceMsg.data = static_cast<float>(divergence);
+    m_pubDivergence->publish(divergenceMsg);
+
+    std_msgs::msg::UInt16 cmdMsg;
+    cmdMsg.data = outputs.lidar_cmd;
+    m_pubLidarCmd->publish(cmdMsg);
+}
+
+void PidController::executeControlOutputs(const BehaviorOutputs& outputs, double dt) {
+    if (outputs.current_state == ControllerState::STOP || outputs.current_state == ControllerState::ERROR ||
+        outputs.current_state == ControllerState::INITIALIZE || outputs.current_state == ControllerState::READ_TAG) {
+        m_integralError = 0.0;
+        m_prevError = 0.0;
+        publishVelocity(0.0, 0.0);
+        return;
+    }
+
+    double pidAngularVel = 0.0;
+    static bool was_lost = false;
+
+    if (m_trackDetect) {
+        if (was_lost) {
+            m_prevError = std::atan2(outputs.target_error, m_sensorOffsetX);
+            was_lost = false;
+        }
+        pidAngularVel = computeSteering(outputs.target_error, dt);
+        m_lastPidAngularVel = pidAngularVel;
+    } else {
+        pidAngularVel = m_lastPidAngularVel;
+        m_integralError = 0.0;
+        was_lost = true;
+    }
+
+    if (outputs.has_fault) {
+        if (outputs.current_state != ControllerState::IDLE) {
+            handleFault(outputs.fault_type);
+            return;
+        }
+    }
+
+    if (outputs.current_state == ControllerState::IDLE) {
+        if (m_trackDetect && !outputs.has_fault) {
+            publishVelocity(outputs.linear_velocity, pidAngularVel);
+        } else {
+            publishVelocity(outputs.linear_velocity, m_cmdAngularZ);
+        }
+    } else {
+        publishVelocity(outputs.linear_velocity, pidAngularVel);
+    }
+}
+
 void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg)
 {
     m_firstMessageReceived = true;
@@ -352,7 +422,7 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     auto now = std::chrono::steady_clock::now();
     double dt = std::chrono::duration<double>(now - m_lastSensorUpdateTime).count();
     m_lastSensorUpdateTime = now;
-    
+
     if (dt <= 0.0 || dt > 1.0) {
         dt = 0.02; // Nominal 50Hz
     }
@@ -371,98 +441,18 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     inputs.warning_breach = m_warningBreach;
     inputs.nav_cmd_linear_x = m_cmdLinearX;
     
-    // Pass previous cycle RPMs for motor saturation check
-    static double last_rpm_l = 0.0;
-    static double last_rpm_r = 0.0;
-    inputs.left_rpm = last_rpm_l;
-    inputs.right_rpm = last_rpm_r;
+    // Extrapolate RPMs for Motor Saturation fault logic
+    double v_l = m_cmdLinearX - (m_lastPidAngularVel * m_wheelBase / 2.0);
+    double v_r = m_cmdLinearX + (m_lastPidAngularVel * m_wheelBase / 2.0);
+    inputs.left_rpm = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
+    inputs.right_rpm = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     inputs.max_rpm = m_maxRpm;
 
     BehaviorOutputs outputs = m_behaviorOrchestrator->update(inputs);
 
-    if (outputs.trigger_quickstop_edge) {
-        if (m_cliQuickstop->wait_for_service(std::chrono::milliseconds(10))) {
-            auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
-            request->data = outputs.quickstop_state;
-            m_cliQuickstop->async_send_request(request,
-                [this, target_state = outputs.quickstop_state](rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture future) {
-                    try {
-                        auto response = future.get();
-                        RCLCPP_INFO(this->get_logger(), "Quickstop service call (data=%d) success: %s", target_state, response->message.c_str());
-                    } catch (const std::exception& e) {
-                        RCLCPP_ERROR(this->get_logger(), "Quickstop service call failed: %s", e.what());
-                    }
-                });
-        } else {
-            RCLCPP_WARN(this->get_logger(), "Quickstop service not available!");
-        }
-    }
-
-    if (outputs.current_state != preState) {
-        publishControllerState();
-    }
-
-    double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-    std_msgs::msg::Float32 divergenceMsg;
-    divergenceMsg.data = static_cast<float>(divergence);
-    m_pubDivergence->publish(divergenceMsg);
-
-    std_msgs::msg::UInt16 cmdMsg;
-    cmdMsg.data = outputs.lidar_cmd;
-    m_pubLidarCmd->publish(cmdMsg);
-
-    if (outputs.current_state == ControllerState::STOP || 
-        outputs.current_state == ControllerState::ERROR || 
-        outputs.current_state == ControllerState::INITIALIZE || 
-        outputs.current_state == ControllerState::READ_TAG) 
-    {
-        m_integralError = 0.0;
-        m_prevError = 0.0;
-        publishVelocity(0.0, 0.0);
-        return;
-    }
-
-    double pidAngularVel = 0.0;
-    static bool was_lost = false;
-    
-    if (m_trackDetect) {
-        if (was_lost) {
-            m_prevError = std::atan2(outputs.target_error, m_sensorOffsetX);
-            was_lost = false;
-        }
-        pidAngularVel = computeSteering(outputs.target_error, dt);
-        m_lastPidAngularVel = pidAngularVel;
-    } else {
-        pidAngularVel = m_lastPidAngularVel;
-        m_integralError = 0.0;
-        was_lost = true;
-    }
-
-    double v_l = m_cmdLinearX - (pidAngularVel * m_wheelBase / 2.0);
-    double v_r = m_cmdLinearX + (pidAngularVel * m_wheelBase / 2.0);
-    double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
-    double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
-    
-    // Store for next cycle's fault check
-    last_rpm_l = rpm_l;
-    last_rpm_r = rpm_r;
-
-    if (outputs.has_fault) {
-        if (outputs.current_state != ControllerState::IDLE) {
-            handleFault(outputs.fault_type);
-            return;
-        }
-    }
-
-    if (outputs.current_state == ControllerState::IDLE) {
-        if (m_trackDetect && !outputs.has_fault) {
-            publishVelocity(outputs.linear_velocity, pidAngularVel);
-        } else {
-            publishVelocity(outputs.linear_velocity, m_cmdAngularZ);
-        }
-    } else {
-        publishVelocity(outputs.linear_velocity, pidAngularVel);
-    }
+    handleQuickstopEdge(outputs.trigger_quickstop_edge, outputs.quickstop_state);
+    publishDiagnostics(outputs, preState);
+    executeControlOutputs(outputs, dt);
 }
 
 void PidController::trackDetectCallback(const std_msgs::msg::Bool::SharedPtr msg)
@@ -591,13 +581,6 @@ void PidController::safetyCheckCallback()
 
 void PidController::publishVelocity(double linearVel, double angularVel)
 {
-    if (std::abs(linearVel) <= 1e-4 && 
-        m_behaviorOrchestrator->getCurrentState() != ControllerState::IDLE &&
-        m_behaviorOrchestrator->getCurrentState() != ControllerState::STOP) {
-        // If we are tracking but linear velocity is zero, do not allow turn-in-place from PID
-        angularVel = 0.0;
-    }
-
     geometry_msgs::msg::Twist twistMsg;
     twistMsg.linear.x = linearVel;
     twistMsg.angular.z = angularVel;
@@ -670,49 +653,46 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
     for (const auto& param : parameters) {
-        switch (runtime_hash(param.get_name())) {
-            case const_hash("pid.kp"): m_kp = param.as_double(); break;
-            case const_hash("pid.ki"): m_ki = param.as_double(); break;
-            case const_hash("pid.kd"): m_kd = param.as_double(); break;
-            case const_hash("pid.windup_limit"): m_windupLimit = param.as_double(); break;
-            case const_hash("pid.max_output"): m_maxOutput = param.as_double(); break;
-            case const_hash("robot.max_rpm"): m_maxRpm = param.as_double(); break;
-            case const_hash("robot.wheel_base"): m_wheelBase = param.as_double(); break;
-            case const_hash("robot.wheel_radius"): m_wheelRadius = param.as_double(); break;
-            case const_hash("robot.sensor_offset_x"): m_sensorOffsetX = param.as_double(); break;
-            case const_hash("safety.grace_period_ms"): 
-                m_gracePeriodMs = static_cast<int>(param.as_int()); 
-                m_behaviorConfig.lineLostGraceSteps = m_gracePeriodMs / 20;
-                break;
-            case const_hash("safety.max_frozen_steps"): 
-                m_maxFrozenSteps = static_cast<int>(param.as_int()); 
-                m_behaviorConfig.maxFrozenSteps = m_maxFrozenSteps;
-                break;
-            case const_hash("safety.track_detect_stable_ms"): {
-                int requestedStableMs = static_cast<int>(param.as_int());
-                if (requestedStableMs < 0) {
-                    result.successful = false;
-                    result.reason = "safety.track_detect_stable_ms must be >= 0";
-                    return result;
-                }
-                m_trackDetectStableMs = requestedStableMs;
-                break;
-            }
-            case const_hash("velocity_clamps.straight"): m_behaviorConfig.clampStraight = param.as_double(); break;
-            case const_hash("velocity_clamps.junction"): m_behaviorConfig.clampJunction = param.as_double(); break;
-            case const_hash("velocity_clamps.marker_junction"): m_behaviorConfig.clampMarkerJunction = param.as_double(); break;
-            case const_hash("velocity_clamps.turn_junction"): m_behaviorConfig.clampTurnJunction = param.as_double(); break;
-            case const_hash("junction.divergence_threshold"): m_behaviorConfig.junctionDivergenceThreshold = param.as_double(); break;
-            case const_hash("behavior_tree.error_scaling_max_dist"): m_behaviorConfig.btErrorScalingMaxDist = param.as_double(); break;
-            case const_hash("behavior_tree.min_scale"): m_behaviorConfig.btMinScale = param.as_double(); break;
-            case const_hash("behavior_tree.error_threshold"): m_behaviorConfig.btErrorThreshold = param.as_double(); break;
-            case const_hash("behavior_tree.fallback_scale"): m_behaviorConfig.btFallbackScale = param.as_double(); break;
-            case const_hash("behavior_tree.exit_buffer_s"): m_behaviorConfig.exitBufferDurationS = param.as_double(); break;
-            case const_hash("safety.acceleration_limit"): m_behaviorConfig.accelLimit = param.as_double(); break;
-            case const_hash("safety.lidar_field_switching.thresholds"): m_behaviorConfig.fieldSwitchThresholds = param.as_double_array(); break;
-            case const_hash("safety.lidar_field_switching.commands"): m_behaviorConfig.fieldSwitchCommands = param.as_integer_array(); break;
-            default: break;
+        const std::string& name = param.get_name();
+        if (name == "pid.kp") m_kp = param.as_double();
+        else if (name == "pid.ki") m_ki = param.as_double();
+        else if (name == "pid.kd") m_kd = param.as_double();
+        else if (name == "pid.windup_limit") m_windupLimit = param.as_double();
+        else if (name == "pid.max_output") m_maxOutput = param.as_double();
+        else if (name == "robot.max_rpm") m_maxRpm = param.as_double();
+        else if (name == "robot.wheel_base") m_wheelBase = param.as_double();
+        else if (name == "robot.wheel_radius") m_wheelRadius = param.as_double();
+        else if (name == "robot.sensor_offset_x") m_sensorOffsetX = param.as_double();
+        else if (name == "safety.grace_period_ms") {
+            m_gracePeriodMs = static_cast<int>(param.as_int()); 
+            m_behaviorConfig.lineLostGraceSteps = m_gracePeriodMs / 20;
         }
+        else if (name == "safety.max_frozen_steps") {
+            m_maxFrozenSteps = static_cast<int>(param.as_int()); 
+            m_behaviorConfig.maxFrozenSteps = m_maxFrozenSteps;
+        }
+        else if (name == "safety.track_detect_stable_ms") {
+            int requestedStableMs = static_cast<int>(param.as_int());
+            if (requestedStableMs < 0) {
+                result.successful = false;
+                result.reason = "safety.track_detect_stable_ms must be >= 0";
+                return result;
+            }
+            m_trackDetectStableMs = requestedStableMs;
+        }
+        else if (name == "velocity_clamps.straight") m_behaviorConfig.clampStraight = param.as_double();
+        else if (name == "velocity_clamps.junction") m_behaviorConfig.clampJunction = param.as_double();
+        else if (name == "velocity_clamps.marker_junction") m_behaviorConfig.clampMarkerJunction = param.as_double();
+        else if (name == "velocity_clamps.turn_junction") m_behaviorConfig.clampTurnJunction = param.as_double();
+        else if (name == "junction.divergence_threshold") m_behaviorConfig.junctionDivergenceThreshold = param.as_double();
+        else if (name == "behavior_tree.error_scaling_max_dist") m_behaviorConfig.btErrorScalingMaxDist = param.as_double();
+        else if (name == "behavior_tree.min_scale") m_behaviorConfig.btMinScale = param.as_double();
+        else if (name == "behavior_tree.error_threshold") m_behaviorConfig.btErrorThreshold = param.as_double();
+        else if (name == "behavior_tree.fallback_scale") m_behaviorConfig.btFallbackScale = param.as_double();
+        else if (name == "behavior_tree.exit_buffer_s") m_behaviorConfig.exitBufferDurationS = param.as_double();
+        else if (name == "safety.acceleration_limit") m_behaviorConfig.accelLimit = param.as_double();
+        else if (name == "safety.lidar_field_switching.thresholds") m_behaviorConfig.fieldSwitchThresholds = param.as_double_array();
+        else if (name == "safety.lidar_field_switching.commands") m_behaviorConfig.fieldSwitchCommands = param.as_integer_array();
     }
     m_behaviorOrchestrator->setConfig(m_behaviorConfig);
     return result;

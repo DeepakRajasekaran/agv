@@ -24,6 +24,8 @@ struct BehaviorConfig {
     int lineLostGraceSteps = 10;
     int maxFrozenSteps = 5;
     double exitBufferDurationS = 2.0;
+    bool enableRecovery = true;
+    double recoveryDurationS = 1.0;
 };
 
 struct SensorInputs {
@@ -98,6 +100,20 @@ private:
     bool m_wasInBehavior;
     double m_lastBehaviorVelocity;
     double m_behaviorExitTime;
+    
+    // Tape Cross State
+    double m_lastValidError;
+    
+    // Mild Recovery State
+    bool m_inRecovery;
+    double m_recoveryStartTime;
+    double m_largestAngularError;
+
+    // Helper functions to break down monolithic update()
+    void evaluateSafetyFaults(const SensorInputs& inputs);
+    void updateRecoveryMechanism(const SensorInputs& inputs, double current_time, bool in_behavior);
+    void executeBehaviorTree(const SensorInputs& inputs, double computed_error);
+    void executeVelocityClamps(const SensorInputs& inputs, BehaviorOutputs& outputs, double safe_velocity, bool bt_turn_active, double current_time);
 };
 
 } // namespace path_follower

@@ -285,7 +285,8 @@ public:
                 break;
 
             case State::TRANSITION:
-                if ((left && !m_prevLeftMarker) || (right && !m_prevRightMarker)) {
+                if ((m_selectedTrackId == 1 && left && !m_prevLeftMarker) || 
+                    (m_selectedTrackId == 2 && right && !m_prevRightMarker)) {
                     m_state = State::EXIT;
                 }
                 break;

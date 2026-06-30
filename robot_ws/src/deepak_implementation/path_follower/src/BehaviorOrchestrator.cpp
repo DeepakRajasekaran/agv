@@ -24,7 +24,11 @@ BehaviorOrchestrator::BehaviorOrchestrator(const BehaviorConfig& config, rclcpp:
       m_lineLostCount(0),
       m_wasInBehavior(false),
       m_lastBehaviorVelocity(0.0),
-      m_behaviorExitTime(0.0)
+      m_behaviorExitTime(0.0),
+      m_lastValidError(0.0),
+      m_inRecovery(false),
+      m_recoveryStartTime(0.0),
+      m_largestAngularError(0.0)
 {
     // Behavior Tree Initialization
     m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
@@ -89,48 +93,64 @@ void BehaviorOrchestrator::forceState(uint8_t state, const std::string& reason) 
     }
 }
 
-BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
-    BehaviorOutputs outputs;
-    outputs.current_state = m_currentState;
-    
-    // 1. Check Protective Breach edges for Quickstop Service
-    if (inputs.protective_breach != m_lastQuickstopRequest) {
-        m_lastQuickstopRequest = inputs.protective_breach;
-        outputs.trigger_quickstop_edge = true;
-        outputs.quickstop_state = inputs.protective_breach;
-    }
-
+void BehaviorOrchestrator::evaluateSafetyFaults(const SensorInputs& inputs) {
     m_hasFault = false;
     m_faultType = "NONE";
     m_frozenStepsCount = 0;
     m_lineLostCount = 0;
-    // Don't reset estop state here as it's externally injected
-
-    // Update Internal Safety/Fault State
+    
     if (m_estopActive) {
         m_hasFault = true;
         m_faultType = "E_STOP";
-    } else {
-        // Check Sensor Dropout
-        double currentTrackPos = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
-        if (inputs.track_detect) {
-            if (std::abs(currentTrackPos - m_lastTrackPos) < 1e-7) {
-                m_frozenStepsCount++;
-            } else {
-                m_frozenStepsCount = 0;
-            }
-            m_lastTrackPos = currentTrackPos;
+        return;
+    }
+
+    // Check Sensor Dropout
+    double currentTrackPos = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
+    if (inputs.track_detect) {
+        if (std::abs(currentTrackPos - m_lastTrackPos) < 1e-7) {
+            m_frozenStepsCount++;
         } else {
             m_frozenStepsCount = 0;
         }
-        
-        if (m_frozenStepsCount > m_config.maxFrozenSteps) {
-            m_hasFault = true;
-            m_faultType = "SENSOR_DROPOUT";
-        }
+        m_lastTrackPos = currentTrackPos;
+    } else {
+        m_frozenStepsCount = 0;
+    }
+    
+    if (m_frozenStepsCount > m_config.maxFrozenSteps) {
+        m_hasFault = true;
+        m_faultType = "SENSOR_DROPOUT";
+    }
 
-        // Check Line Lost
-        if (!inputs.track_detect) {
+    // Check Motor Saturation
+    if (std::abs(inputs.left_rpm) > inputs.max_rpm || std::abs(inputs.right_rpm) > inputs.max_rpm) {
+        m_hasFault = true;
+        m_faultType = "MOTOR_SATURATION";
+    }
+}
+
+void BehaviorOrchestrator::updateRecoveryMechanism(const SensorInputs& inputs, double current_time, bool in_behavior) {
+    bool line_lost = !inputs.track_detect;
+    bool tape_cross_interference = inputs.tape_cross;
+    
+    if (in_behavior && m_config.enableRecovery && (line_lost || tape_cross_interference)) {
+        if (!m_inRecovery) {
+            m_inRecovery = true;
+            m_recoveryStartTime = current_time;
+            RCLCPP_WARN(m_logger, "Mild Recovery Triggered (Duration: %.2fs) | Last Error: %.3f", 
+                        m_config.recoveryDurationS, m_largestAngularError);
+        }
+        
+        if (current_time - m_recoveryStartTime > m_config.recoveryDurationS) {
+            m_hasFault = true;
+            m_faultType = "RECOVERY_FAILED";
+        }
+        m_lineLostCount = 0; 
+    } else {
+        m_inRecovery = false;
+        
+        if (line_lost) {
             m_lineLostCount++;
         } else {
             m_lineLostCount = 0;
@@ -140,84 +160,10 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
             m_hasFault = true;
             m_faultType = "LINE_LOST";
         }
-
-        // Check Motor Saturation
-        if (std::abs(inputs.left_rpm) > inputs.max_rpm || std::abs(inputs.right_rpm) > inputs.max_rpm) {
-            m_hasFault = true;
-            m_faultType = "MOTOR_SATURATION";
-        }
     }
+}
 
-    // Assign Fault State to Outputs
-    outputs.has_fault = m_hasFault;
-    outputs.fault_type = m_faultType;
-
-    // 1. Fault Overrides
-    if (m_hasFault && m_currentState != ControllerState::ERROR && m_currentState != ControllerState::IDLE) {
-        forceState(ControllerState::ERROR, "FAULT_DETECTED");
-    }
-
-    // 2. State transitions based on safety
-    if (m_currentState == ControllerState::STOP && !inputs.protective_breach && !m_hasFault) {
-        forceState(ControllerState::FOLLOW_LINE, "PROTECTIVE_FIELD_CLEARED");
-    } else if (inputs.protective_breach && m_currentState != ControllerState::STOP && m_currentState != ControllerState::ERROR) {
-        forceState(ControllerState::STOP, "PROTECTIVE_FIELD_BREACH");
-    }
-    
-    outputs.current_state = m_currentState;
-
-    if (m_currentState == ControllerState::STOP || m_currentState == ControllerState::ERROR || m_currentState == ControllerState::INITIALIZE) {
-        m_currentPublishedLinearVel = 0.0;
-        outputs.linear_velocity = 0.0;
-        
-        double divergence = std::abs(inputs.left_track_pos - inputs.right_track_pos);
-        outputs.divergence = divergence;
-        if (m_selectedTrackId == 1) {
-            outputs.target_error = inputs.left_track_pos;
-        } else if (m_selectedTrackId == 2) {
-            outputs.target_error = inputs.right_track_pos;
-        } else {
-            outputs.target_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
-        }
-
-        if (m_logCounter++ % 100 == 0) {
-            RCLCPP_INFO(m_logger,
-                "State: %s | Enforcing 0.0 vel", stateToString(m_currentState).c_str());
-        }
-        return outputs;
-    }
-
-    double computed_error = 0.0;
-    double divergence = std::abs(inputs.left_track_pos - inputs.right_track_pos);
-    outputs.divergence = divergence;
-    
-    if (m_currentState == ControllerState::JUNCTION_DETECTED || m_currentState == ControllerState::FOLLOW_LINE) {
-        if (m_selectedTrackId == 1) {
-            computed_error = inputs.left_track_pos;
-        } else if (m_selectedTrackId == 2) {
-            computed_error = inputs.right_track_pos;
-        } else {
-            computed_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
-        }
-    } else {
-        computed_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
-    }
-    outputs.target_error = computed_error;
-
-    // Auto-reset selected track when junction clears based on divergence (for external navigation selections)
-    bool bt_turn_active = false;
-    (void)m_btTree.rootBlackboard()->get("turn_active", bt_turn_active);
-    
-    if (!bt_turn_active && divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
-        RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
-        m_selectedTrackId = 0;
-        if (m_currentState == ControllerState::JUNCTION_DETECTED) {
-            forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
-            outputs.current_state = m_currentState;
-        }
-    }
-
-    // 4. Update Behavior Tree Variables
+void BehaviorOrchestrator::executeBehaviorTree(const SensorInputs& inputs, double computed_error) {
     m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
     m_btTree.rootBlackboard()->set("nominal_vel", inputs.nav_cmd_linear_x);
     m_btTree.rootBlackboard()->set("error_scaling_max_dist", m_config.btErrorScalingMaxDist);
@@ -233,58 +179,13 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     
     BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
     (void)bt_status;
-    
-    double safe_velocity = inputs.nav_cmd_linear_x;
-    if (!m_btTree.rootBlackboard()->get("safe_vel", safe_velocity)) {
-        safe_velocity = inputs.nav_cmd_linear_x;
-    }
+}
 
-    bool in_junction = false;
-    (void)m_btTree.rootBlackboard()->get("in_junction", in_junction);
-
-    static bool prev_bt_turn_active = false;
-    
-    if (bt_turn_active) {
-        int bt_selected_track_id = 0;
-        if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
-            if (bt_selected_track_id != m_selectedTrackId) {
-                m_selectedTrackId = bt_selected_track_id;
-                RCLCPP_INFO(m_logger, "Track selection updated by BT to: %d", m_selectedTrackId);
-            }
-        }
-    } else if (prev_bt_turn_active) {
-        m_selectedTrackId = 0;
-        RCLCPP_INFO(m_logger, "Turn exited. Cleared track selection to 0.");
-    }
-    prev_bt_turn_active = bt_turn_active;
-
-    // 5. Native Junction Logic (drift-based fallback) 
-    // Disabled side-switching based on divergence (per ponytail-audit)
-    if (m_currentState == ControllerState::FOLLOW_LINE) {
-        if (inputs.tape_cross) { // Kept tape cross to trigger junction if needed
-            forceState(ControllerState::JUNCTION_DETECTED, "TAPE_CROSS");
-            // Do NOT assign m_selectedTrackId randomly anymore. Higher level systems must command it.
-            outputs.current_state = m_currentState;
-        }
-    }
-
-    // BT Junction transition overriding
-    if (in_junction) {
-        if (m_currentState != ControllerState::JUNCTION_DETECTED) {
-            forceState(ControllerState::JUNCTION_DETECTED, "BT_JUNCTION_START");
-            outputs.current_state = m_currentState;
-        }
-    } else if (m_currentState == ControllerState::JUNCTION_DETECTED && !in_junction && m_selectedTrackId == 0) {
-        forceState(ControllerState::FOLLOW_LINE, "BT_JUNCTION_END");
-        outputs.current_state = m_currentState;
-    }
-
-    // 6. Hard State-Based Clamping
+void BehaviorOrchestrator::executeVelocityClamps(const SensorInputs& inputs, BehaviorOutputs& outputs, double safe_velocity, bool bt_turn_active, double current_time) {
+    // Hard State-Based Clamping
     if (m_currentState == ControllerState::FOLLOW_LINE) {
         safe_velocity = std::clamp(safe_velocity, -m_config.clampStraight, m_config.clampStraight);
     } else if (m_currentState == ControllerState::JUNCTION_DETECTED) {
-        // Only apply the generic junction clamp if the BT didn't already enforce a stricter marker clamp.
-        // But since BT sets safe_velocity, we just make sure it doesn't exceed clampJunction.
         safe_velocity = std::clamp(safe_velocity, -m_config.clampJunction, m_config.clampJunction);
     }
     
@@ -298,8 +199,7 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         outputs.current_state = m_currentState;
     }
 
-    // 6.5 Behavior Exit Buffer Logic
-    double current_time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    // Exit Buffer
     bool in_behavior = (m_currentState == ControllerState::JUNCTION_DETECTED) || 
                        bt_turn_active || 
                        inputs.warning_breach || 
@@ -316,7 +216,6 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
                 m_config.exitBufferDurationS, m_lastBehaviorVelocity);
         }
 
-        // Apply buffer if we recently exited
         if (current_time - m_behaviorExitTime < m_config.exitBufferDurationS) {
             double sign = safe_velocity >= 0.0 ? 1.0 : -1.0;
             if (std::abs(safe_velocity) > m_lastBehaviorVelocity) {
@@ -325,7 +224,7 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         }
     }
 
-    // 7. Acceleration Limit
+    // Acceleration Limit
     double max_step = m_config.accelLimit * inputs.dt;
     if (safe_velocity > m_currentPublishedLinearVel) {
         m_currentPublishedLinearVel = std::min(m_currentPublishedLinearVel + max_step, safe_velocity);
@@ -338,7 +237,7 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
     }
     outputs.linear_velocity = m_currentPublishedLinearVel;
 
-    // 8. Field Switching
+    // Field Switching
     uint16_t desiredLidarCmd = 1;
     if (m_config.fieldSwitchThresholds.size() + 1 == m_config.fieldSwitchCommands.size()) {
         double abs_speed = std::abs(outputs.linear_velocity);
@@ -353,8 +252,143 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
         RCLCPP_INFO(m_logger, "Switched lidar safety field to command %d (Speed: %.3f)", desiredLidarCmd, outputs.linear_velocity);
     }
     outputs.lidar_cmd = m_lastLidarCmdPublished;
+}
 
-    m_logCounter++;
+BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
+    BehaviorOutputs outputs;
+    outputs.current_state = m_currentState;
+    
+    // Quickstop Service Edge Check
+    if (inputs.protective_breach != m_lastQuickstopRequest) {
+        m_lastQuickstopRequest = inputs.protective_breach;
+        outputs.trigger_quickstop_edge = true;
+        outputs.quickstop_state = inputs.protective_breach;
+    }
+
+    evaluateSafetyFaults(inputs);
+
+    double current_time = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    bool bt_turn_active = false;
+    (void)m_btTree.rootBlackboard()->get("turn_active", bt_turn_active);
+    bool in_behavior = (m_currentState == ControllerState::JUNCTION_DETECTED) || bt_turn_active;
+
+    if (!m_hasFault) {
+        updateRecoveryMechanism(inputs, current_time, in_behavior);
+    }
+
+    outputs.has_fault = m_hasFault;
+    outputs.fault_type = m_faultType;
+
+    if (m_hasFault && m_currentState != ControllerState::ERROR && m_currentState != ControllerState::IDLE) {
+        forceState(ControllerState::ERROR, "FAULT_DETECTED");
+    }
+
+    if (m_currentState == ControllerState::STOP && !inputs.protective_breach && !m_hasFault) {
+        forceState(ControllerState::FOLLOW_LINE, "PROTECTIVE_FIELD_CLEARED");
+    } else if (inputs.protective_breach && m_currentState != ControllerState::STOP && m_currentState != ControllerState::ERROR) {
+        forceState(ControllerState::STOP, "PROTECTIVE_FIELD_BREACH");
+    }
+    
+    outputs.current_state = m_currentState;
+    outputs.divergence = std::abs(inputs.left_track_pos - inputs.right_track_pos);
+    
+    if (m_inRecovery && !m_hasFault) {
+        outputs.linear_velocity = 0.0;
+        m_currentPublishedLinearVel = 0.0;
+        outputs.target_error = m_largestAngularError;
+        static rclcpp::Clock clock;
+        RCLCPP_INFO_THROTTLE(m_logger, clock, 1000, "State: RECOVERY | Vel: 0.0 | Yaw Error: %.3f", m_largestAngularError);
+        return outputs;
+    }
+
+    if (m_currentState == ControllerState::STOP || m_currentState == ControllerState::ERROR || m_currentState == ControllerState::INITIALIZE) {
+        m_currentPublishedLinearVel = 0.0;
+        outputs.linear_velocity = 0.0;
+        
+        if (m_selectedTrackId == 1) {
+            outputs.target_error = inputs.left_track_pos;
+        } else if (m_selectedTrackId == 2) {
+            outputs.target_error = inputs.right_track_pos;
+        } else {
+            outputs.target_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
+        }
+        static rclcpp::Clock clock2;
+        RCLCPP_INFO_THROTTLE(m_logger, clock2, 2000, "State: %s | Enforcing 0.0 vel", stateToString(m_currentState).c_str());
+        return outputs;
+    }
+
+    double computed_error = 0.0;
+    
+    if (inputs.tape_cross) {
+        computed_error = m_lastValidError;
+        static rclcpp::Clock clock;
+        RCLCPP_INFO_THROTTLE(m_logger, clock, 1000, "Tape cross detected. Freezing computed error to %.3f", computed_error);
+    } else {
+        if (m_currentState == ControllerState::JUNCTION_DETECTED || m_currentState == ControllerState::FOLLOW_LINE) {
+            if (m_selectedTrackId == 1) computed_error = inputs.left_track_pos;
+            else if (m_selectedTrackId == 2) computed_error = inputs.right_track_pos;
+            else computed_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
+        } else {
+            computed_error = (inputs.left_track_pos + inputs.right_track_pos) / 2.0;
+        }
+        m_lastValidError = computed_error;
+    }
+    outputs.target_error = computed_error;
+
+    bool tracking_active = (m_currentState == ControllerState::JUNCTION_DETECTED) || bt_turn_active;
+    if (tracking_active) {
+        if (std::abs(outputs.target_error) > std::abs(m_largestAngularError)) {
+            m_largestAngularError = outputs.target_error;
+        }
+    } else {
+        m_largestAngularError = 0.0;
+    }
+    
+    if (!bt_turn_active && outputs.divergence < m_config.junctionDivergenceThreshold && m_selectedTrackId != 0 && !inputs.tape_cross) {
+        RCLCPP_INFO(m_logger, "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
+        m_selectedTrackId = 0;
+        if (m_currentState == ControllerState::JUNCTION_DETECTED) {
+            forceState(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
+            outputs.current_state = m_currentState;
+        }
+    }
+
+    executeBehaviorTree(inputs, computed_error);
+    
+    double safe_velocity = inputs.nav_cmd_linear_x;
+    if (!m_btTree.rootBlackboard()->get("safe_vel", safe_velocity)) {
+        safe_velocity = inputs.nav_cmd_linear_x;
+    }
+
+    bool in_junction = false;
+    (void)m_btTree.rootBlackboard()->get("in_junction", in_junction);
+    static bool prev_bt_turn_active = false;
+    
+    if (bt_turn_active) {
+        int bt_selected_track_id = 0;
+        if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
+            if (bt_selected_track_id != m_selectedTrackId) {
+                m_selectedTrackId = bt_selected_track_id;
+                RCLCPP_INFO(m_logger, "Track selection updated by BT to: %d", m_selectedTrackId);
+            }
+        }
+    } else if (prev_bt_turn_active) {
+        m_selectedTrackId = 0;
+        RCLCPP_INFO(m_logger, "Turn exited. Cleared track selection to 0.");
+    }
+    prev_bt_turn_active = bt_turn_active;
+
+    if (in_junction) {
+        if (m_currentState != ControllerState::JUNCTION_DETECTED) {
+            forceState(ControllerState::JUNCTION_DETECTED, "BT_JUNCTION_START");
+            outputs.current_state = m_currentState;
+        }
+    } else if (m_currentState == ControllerState::JUNCTION_DETECTED && !in_junction && m_selectedTrackId == 0) {
+        forceState(ControllerState::FOLLOW_LINE, "BT_JUNCTION_END");
+        outputs.current_state = m_currentState;
+    }
+
+    executeVelocityClamps(inputs, outputs, safe_velocity, bt_turn_active, current_time);
 
     return outputs;
 }

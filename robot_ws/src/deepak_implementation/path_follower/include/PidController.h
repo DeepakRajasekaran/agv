@@ -96,6 +96,10 @@ private:
     void safetyCheckCallback();
 
     // PID Internal Logic
+    void handleQuickstopEdge(bool trigger_edge, bool quickstop_state);
+    void publishDiagnostics(const BehaviorOutputs& outputs, uint8_t preState);
+    void executeControlOutputs(const BehaviorOutputs& outputs, double dt);
+
     double computeSteering(double error, double dt);
 
     // Helper functions

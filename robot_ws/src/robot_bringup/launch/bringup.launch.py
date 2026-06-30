@@ -117,8 +117,8 @@ def launch_setup(context, *args, **kwargs):
         # 6. Path Follower Node
         if follower_val == 'true':
             path_follower_params = []
-            if os.path.exists('/agv_config/follower_params.yaml'):
-                path_follower_params.append('/agv_config/follower_params.yaml')
+            if os.path.exists('/agv/robot_ws/config/follower_params.yaml'):
+                path_follower_params.append('/agv/robot_ws/config/follower_params.yaml')
             path_follower_params.append({
                 'safety.track_detect_stable_ms': int(track_detect_stable_ms_val)
             })
