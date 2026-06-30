@@ -411,7 +411,7 @@ void PidController::debounceSensors() {
 
 void PidController::executeControlOutputs(const BehaviorOutputs& outputs, double dt) {
     if (outputs.current_state == ControllerState::STOP || outputs.current_state == ControllerState::ERROR ||
-        outputs.current_state == ControllerState::INITIALIZE || outputs.current_state == ControllerState::READ_TAG) {
+        outputs.current_state == ControllerState::INITIALIZE) {
         m_integralError = 0.0;
         m_prevError = 0.0;
         publishVelocity(0.0, 0.0);
