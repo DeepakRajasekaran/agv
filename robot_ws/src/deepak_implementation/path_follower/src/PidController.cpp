@@ -96,8 +96,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     BehaviorConfig bConfig;
     this->declare_parameter<double>("velocity_clamps.straight", bConfig.clampStraight);
     this->declare_parameter<double>("velocity_clamps.junction", bConfig.clampJunction);
-    this->declare_parameter<double>("velocity_clamps.marker_junction", bConfig.clampMarkerJunction);
-    this->declare_parameter<double>("velocity_clamps.turn_junction", bConfig.clampTurnJunction);
+    this->declare_parameter<double>("velocity_clamps.turn", bConfig.clampTurn);
     this->declare_parameter<double>("safety.acceleration_limit", bConfig.accelLimit);
     this->declare_parameter<std::vector<double>>("safety.lidar_field_switching.thresholds", bConfig.fieldSwitchThresholds);
     this->declare_parameter<std::vector<int64_t>>("safety.lidar_field_switching.commands", bConfig.fieldSwitchCommands);
@@ -134,8 +133,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     
     this->get_parameter("velocity_clamps.straight", bConfig.clampStraight);
     this->get_parameter("velocity_clamps.junction", bConfig.clampJunction);
-    this->get_parameter("velocity_clamps.marker_junction", bConfig.clampMarkerJunction);
-    this->get_parameter("velocity_clamps.turn_junction", bConfig.clampTurnJunction);
+    this->get_parameter("velocity_clamps.turn", bConfig.clampTurn);
     this->get_parameter("safety.acceleration_limit", bConfig.accelLimit);
     this->get_parameter("safety.lidar_field_switching.thresholds", bConfig.fieldSwitchThresholds);
     this->get_parameter("safety.lidar_field_switching.commands", bConfig.fieldSwitchCommands);
@@ -726,8 +724,7 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
         }
         else if (name == "velocity_clamps.straight") m_behaviorConfig.clampStraight = param.as_double();
         else if (name == "velocity_clamps.junction") m_behaviorConfig.clampJunction = param.as_double();
-        else if (name == "velocity_clamps.marker_junction") m_behaviorConfig.clampMarkerJunction = param.as_double();
-        else if (name == "velocity_clamps.turn_junction") m_behaviorConfig.clampTurnJunction = param.as_double();
+        else if (name == "velocity_clamps.turn") m_behaviorConfig.clampTurn = param.as_double();
         else if (name == "junction.divergence_threshold") m_behaviorConfig.junctionDivergenceThreshold = param.as_double();
         else if (name == "behavior_tree.error_scaling_max_dist") m_behaviorConfig.btErrorScalingMaxDist = param.as_double();
         else if (name == "behavior_tree.min_scale") m_behaviorConfig.btMinScale = param.as_double();

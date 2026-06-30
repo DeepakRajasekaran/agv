@@ -11,8 +11,7 @@ namespace path_follower {
 struct BehaviorConfig {
     double clampStraight = 1.0;
     double clampJunction = 0.5;
-    double clampMarkerJunction = 0.3;
-    double clampTurnJunction = 0.4;
+    double clampTurn = 0.4;
     double accelLimit = 0.5;
     double junctionDivergenceThreshold = 0.035;
     std::vector<double> fieldSwitchThresholds = {0.3, 0.7};

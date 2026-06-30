@@ -12,8 +12,7 @@ path_follower_node:
     velocity_clamps:
       straight: 1.2
       junction: 0.25
-      marker_junction: 0.3
-      turn_junction: 0.4
+      turn: 0.4
     safety:
       max_frozen_steps: 500
       acceleration_limit: 0.5
@@ -25,4 +24,4 @@ path_follower_node:
     behavior_tree:
       exit_buffer_s: 2.0
       enable_recovery: true
-      recovery_duration_s: 1.0
+      recovery_duration_s: 3.0

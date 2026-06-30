@@ -174,8 +174,8 @@ void BehaviorOrchestrator::executeBehaviorTree(const SensorInputs& inputs, doubl
     m_btTree.rootBlackboard()->set("right_marker", inputs.right_marker);
     m_btTree.rootBlackboard()->set("protective_breach", inputs.protective_breach);
     m_btTree.rootBlackboard()->set("warning_breach", inputs.warning_breach);
-    m_btTree.rootBlackboard()->set("clamp_junction_vel", m_config.clampMarkerJunction);
-    m_btTree.rootBlackboard()->set("clamp_turn_vel", m_config.clampTurnJunction);
+    m_btTree.rootBlackboard()->set("clamp_junction_vel", m_config.clampJunction);
+    m_btTree.rootBlackboard()->set("clamp_turn_vel", m_config.clampTurn);
     
     BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
     (void)bt_status;
@@ -183,10 +183,8 @@ void BehaviorOrchestrator::executeBehaviorTree(const SensorInputs& inputs, doubl
 
 void BehaviorOrchestrator::executeVelocityClamps(const SensorInputs& inputs, BehaviorOutputs& outputs, double safe_velocity, bool bt_turn_active, double current_time) {
     // Hard State-Based Clamping
-    if (m_currentState == ControllerState::FOLLOW_LINE) {
+    if (m_currentState == ControllerState::FOLLOW_LINE || m_currentState == ControllerState::JUNCTION_DETECTED) {
         safe_velocity = std::clamp(safe_velocity, -m_config.clampStraight, m_config.clampStraight);
-    } else if (m_currentState == ControllerState::JUNCTION_DETECTED) {
-        safe_velocity = std::clamp(safe_velocity, -m_config.clampJunction, m_config.clampJunction);
     }
     
     if (m_currentState == ControllerState::RESUME_TRACKING) {
@@ -383,7 +381,7 @@ BehaviorOutputs BehaviorOrchestrator::update(const SensorInputs& inputs) {
             forceState(ControllerState::JUNCTION_DETECTED, "BT_JUNCTION_START");
             outputs.current_state = m_currentState;
         }
-    } else if (m_currentState == ControllerState::JUNCTION_DETECTED && !in_junction && m_selectedTrackId == 0) {
+    } else if (m_currentState == ControllerState::JUNCTION_DETECTED && !in_junction) {
         forceState(ControllerState::FOLLOW_LINE, "BT_JUNCTION_END");
         outputs.current_state = m_currentState;
     }
