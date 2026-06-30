@@ -46,7 +46,7 @@ BehaviorOrchestrator::BehaviorOrchestrator(const BehaviorConfig& config, rclcpp:
     <Fallback>
       <SafetyManager protective_breach="{protective_breach}" warning_breach="{warning_breach}" nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" trigger_quickstop="{trigger_quickstop}" />
       <JunctionManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_junction_vel}" safe_velocity="{safe_vel}" in_junction="{in_junction}" />
-      <TurnManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_turn_vel}" safe_velocity="{safe_vel}" selected_track_id="{selected_track_id}" />
+      <TurnManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_turn_vel}" safe_velocity="{safe_vel}" selected_track_id="{selected_track_id}" turn_active="{turn_active}" />
       <Sequence>
         <IsErrorHigh error="{current_error}" threshold="{error_threshold}" last_high_time="{last_high_time}" />
         <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" error_scaling_max_dist="{error_scaling_max_dist}" min_scale="{min_scale}" safe_velocity="{safe_vel}" />

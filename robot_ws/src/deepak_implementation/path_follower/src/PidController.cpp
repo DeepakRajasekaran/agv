@@ -435,6 +435,7 @@ void PidController::executeControlOutputs(const BehaviorOutputs& outputs, double
     if (outputs.has_fault) {
         if (outputs.current_state != ControllerState::IDLE) {
             handleFault(outputs.fault_type);
+            publishVelocity(0.0, 0.0);
             return;
         }
     }
