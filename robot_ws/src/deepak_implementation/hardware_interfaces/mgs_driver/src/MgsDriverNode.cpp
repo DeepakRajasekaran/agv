@@ -344,9 +344,7 @@ void MgsDriverNode::processTpdo1(const struct can_frame & frame)
   
   bool left_marker = (flags & 0x0004) != 0;
   bool right_marker = (flags & 0x0008) != 0;
-  bool sensor_failure = (flags & 0x0040) != 0;
-
-  // Convert mm to meters for ROS standard
+  // Bit 6 (0x0040) is ignored as it represents polarity or multi-track in this config, not a failure.
   std_msgs::msg::Float32 msg_track_pos;
   msg_track_pos.data = static_cast<float>(selected_track) / 1000.0f;
   p_pubTrackPos->publish(msg_track_pos);
@@ -376,9 +374,8 @@ void MgsDriverNode::processTpdo1(const struct can_frame & frame)
   umsg.data = flags;
   p_pubStatus->publish(umsg);
 
-  if (sensor_failure) {
-    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "MGS1600 Sensor Failure Flag Set!");
-  }
+  // Bit 6 (0x0040) is not a sensor failure in our configuration.
+  // It may indicate polarity or multi-track states, which we ignore.
 }
 
 }  // namespace mgs_driver
