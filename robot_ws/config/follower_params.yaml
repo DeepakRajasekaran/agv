@@ -4,8 +4,14 @@ path_follower_node:
       kp: 1.5
       ki: 0.02
       kd: 0.12
-    junction:
-      turn_sequence: ["LEFT", "STRAIGHT", "RIGHT"]
-      loop_sequence: true
+    velocity_clamps:
+      straight: 1.0
+      junction: 0.5
+      marker_junction: 0.3
+      turn_junction: 0.4
     safety:
       max_frozen_steps: 500
+      acceleration_limit: 0.5
+      lidar_field_switching:
+        thresholds: [0.3, 0.7]
+        commands: [1, 2, 3]

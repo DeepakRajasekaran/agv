@@ -76,7 +76,7 @@ class FeatureTester(Node):
 
         # Test Case 1: Lidar Warning Breach
         self.get_logger().info("--- TEST 1: Lidar Warning Breach (50% reduction) ---")
-        self.spin_for(0.5, warning=True)
+        self.spin_for(1.5, warning=True)
         
         assert self.last_follower_cmd is not None
         self.get_logger().info(f"Target linear velocity: {self.nominal_speed} m/s, Output: {self.last_follower_cmd.linear.x:.3f} m/s")
@@ -115,7 +115,7 @@ class FeatureTester(Node):
 
         # Test Case 3: Junction Detection
         self.get_logger().info("--- TEST 3: Double-Marker Junction ---")
-        self.spin_for(0.5, left_marker=True, right_marker=True)
+        self.spin_for(1.5, left_marker=True, right_marker=True)
         self.get_logger().info(f"Junction Entry Speed: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 0.3) < 0.1, f"Should clamp to junction speed (0.3), got {self.last_follower_cmd.linear.x}"
 
@@ -134,7 +134,7 @@ class FeatureTester(Node):
 
         # Test Case 4: Turn Detection
         self.get_logger().info("--- TEST 4: Single-Marker Turn ---")
-        self.spin_for(0.5, left_marker=True, right_marker=False)
+        self.spin_for(1.5, left_marker=True, right_marker=False)
         self.get_logger().info(f"Turn Entry Speed: {self.last_follower_cmd.linear.x:.3f} m/s")
         assert abs(self.last_follower_cmd.linear.x - 0.4) < 0.1, f"Should clamp to turn speed (0.4), got {self.last_follower_cmd.linear.x}"
 

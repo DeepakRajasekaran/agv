@@ -56,13 +56,6 @@ PidController::PidController(const rclcpp::NodeOptions& options)
       m_gracePeriodMs(200),
       m_maxFrozenSteps(1000),
       m_trackDetectStableMs(1000),
-      m_clampStraight(1.0),
-      m_clampJunction(0.5),
-      m_junctionDivergenceThreshold(0.035),
-      m_btErrorScalingMaxDist(0.15),
-      m_btMinScale(0.2),
-      m_btErrorThreshold(0.08),
-      m_btFallbackScale(0.4),
       m_integralError(0.0),
       m_prevError(0.0),
       m_cmdLinearX(0.0),
@@ -96,28 +89,19 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     this->declare_parameter<int>("safety.max_frozen_steps", m_maxFrozenSteps);
     this->declare_parameter<int>("safety.track_detect_stable_ms", m_trackDetectStableMs);
     
-    // Initialize defaults to prevent garbage memory values
-    m_clampStraight = 1.0;
-    m_clampJunction = 0.5;
-    m_clampMarkerJunction = 0.3;
-    m_clampTurnJunction = 0.4;
-    m_accelLimit = 0.5;
-    m_junctionDivergenceThreshold = 0.035;
-
-    this->declare_parameter<double>("velocity_clamps.straight", m_clampStraight);
-    this->declare_parameter<double>("velocity_clamps.junction", m_clampJunction);
-    this->declare_parameter<double>("velocity_clamps.marker_junction", m_clampMarkerJunction);
-    this->declare_parameter<double>("velocity_clamps.turn_junction", m_clampTurnJunction);
-    this->declare_parameter<double>("safety.acceleration_limit", m_accelLimit);
-    this->declare_parameter<std::vector<double>>("safety.lidar_field_switching.thresholds", std::vector<double>{0.3, 0.7});
-    this->declare_parameter<std::vector<int64_t>>("safety.lidar_field_switching.commands", std::vector<int64_t>{1, 2, 3});
-
-    this->declare_parameter<double>("junction.divergence_threshold", m_junctionDivergenceThreshold);
-    
-    this->declare_parameter<double>("behavior_tree.error_scaling_max_dist", m_btErrorScalingMaxDist);
-    this->declare_parameter<double>("behavior_tree.min_scale", m_btMinScale);
-    this->declare_parameter<double>("behavior_tree.error_threshold", m_btErrorThreshold);
-    this->declare_parameter<double>("behavior_tree.fallback_scale", m_btFallbackScale);
+    BehaviorConfig bConfig;
+    this->declare_parameter<double>("velocity_clamps.straight", bConfig.clampStraight);
+    this->declare_parameter<double>("velocity_clamps.junction", bConfig.clampJunction);
+    this->declare_parameter<double>("velocity_clamps.marker_junction", bConfig.clampMarkerJunction);
+    this->declare_parameter<double>("velocity_clamps.turn_junction", bConfig.clampTurnJunction);
+    this->declare_parameter<double>("safety.acceleration_limit", bConfig.accelLimit);
+    this->declare_parameter<std::vector<double>>("safety.lidar_field_switching.thresholds", bConfig.fieldSwitchThresholds);
+    this->declare_parameter<std::vector<int64_t>>("safety.lidar_field_switching.commands", bConfig.fieldSwitchCommands);
+    this->declare_parameter<double>("junction.divergence_threshold", bConfig.junctionDivergenceThreshold);
+    this->declare_parameter<double>("behavior_tree.error_scaling_max_dist", bConfig.btErrorScalingMaxDist);
+    this->declare_parameter<double>("behavior_tree.min_scale", bConfig.btMinScale);
+    this->declare_parameter<double>("behavior_tree.error_threshold", bConfig.btErrorThreshold);
+    this->declare_parameter<double>("behavior_tree.fallback_scale", bConfig.btFallbackScale);
 
     // Retrieve parameter values
     this->get_parameter("pid.kp", m_kp);
@@ -139,28 +123,27 @@ PidController::PidController(const rclcpp::NodeOptions& options)
         m_trackDetectStableMs = 1000;
     }
     
-    this->get_parameter("velocity_clamps.straight", m_clampStraight);
-    this->get_parameter("velocity_clamps.junction", m_clampJunction);
-    this->get_parameter("velocity_clamps.marker_junction", m_clampMarkerJunction);
-    this->get_parameter("velocity_clamps.turn_junction", m_clampTurnJunction);
-    this->get_parameter("safety.acceleration_limit", m_accelLimit);
-    this->get_parameter("safety.lidar_field_switching.thresholds", m_fieldSwitchThresholds);
-    this->get_parameter("safety.lidar_field_switching.commands", m_fieldSwitchCommands);
-
-    this->get_parameter("junction.divergence_threshold", m_junctionDivergenceThreshold);
-    this->get_parameter("behavior_tree.error_scaling_max_dist", m_btErrorScalingMaxDist);
-    this->get_parameter("behavior_tree.min_scale", m_btMinScale);
-    this->get_parameter("behavior_tree.error_threshold", m_btErrorThreshold);
-    this->get_parameter("behavior_tree.fallback_scale", m_btFallbackScale);
+    this->get_parameter("velocity_clamps.straight", bConfig.clampStraight);
+    this->get_parameter("velocity_clamps.junction", bConfig.clampJunction);
+    this->get_parameter("velocity_clamps.marker_junction", bConfig.clampMarkerJunction);
+    this->get_parameter("velocity_clamps.turn_junction", bConfig.clampTurnJunction);
+    this->get_parameter("safety.acceleration_limit", bConfig.accelLimit);
+    this->get_parameter("safety.lidar_field_switching.thresholds", bConfig.fieldSwitchThresholds);
+    this->get_parameter("safety.lidar_field_switching.commands", bConfig.fieldSwitchCommands);
+    this->get_parameter("junction.divergence_threshold", bConfig.junctionDivergenceThreshold);
+    this->get_parameter("behavior_tree.error_scaling_max_dist", bConfig.btErrorScalingMaxDist);
+    this->get_parameter("behavior_tree.min_scale", bConfig.btMinScale);
+    this->get_parameter("behavior_tree.error_threshold", bConfig.btErrorThreshold);
+    this->get_parameter("behavior_tree.fallback_scale", bConfig.btFallbackScale);
+    
+    m_behaviorConfig = bConfig;
+    m_behaviorOrchestrator = std::make_unique<BehaviorOrchestrator>(m_behaviorConfig, this->get_logger());
 
     // Initial state setup
     m_leftMarker = false;
     m_rightMarker = false;
     m_protectiveBreach = false;
     m_warningBreach = false;
-    m_lastQuickstopRequest = false;
-    m_lastLidarCmdPublished = 0;
-    m_currentPublishedLinearVel = 0.0;
 
     // Initial time points
     m_lastSensorUpdateTime = std::chrono::steady_clock::now();
@@ -168,7 +151,7 @@ PidController::PidController(const rclcpp::NodeOptions& options)
 
     // Instantiate Safety Monitor
     p_faultMonitor = std::make_unique<FaultMonitor>(m_gracePeriodMs / 20, m_maxFrozenSteps);
-    transitionTo(ControllerState::INITIALIZE, "NODE_START");
+    m_behaviorOrchestrator->forceState(ControllerState::INITIALIZE, "NODE_START");
 
     // Parameterize input topics
     std::string track_pos_topic = this->declare_parameter("topics.track_position", "/sensor/track_position");
@@ -232,48 +215,14 @@ PidController::PidController(const rclcpp::NodeOptions& options)
     m_callbackHandle = this->add_on_set_parameters_callback(
         std::bind(&PidController::onParameterChange, this, std::placeholders::_1));
 
-    // Behavior Tree Initialization
-    m_btFactory.registerNodeType<IsErrorHigh>("IsErrorHigh");
-    m_btFactory.registerNodeType<IsErrorStable>("IsErrorStable");
-    m_btFactory.registerNodeType<ReduceVelocity>("ReduceVelocity");
-    m_btFactory.registerNodeType<SetSafeVelocity>("SetSafeVelocity");
-    m_btFactory.registerNodeType<SetNominalVelocity>("SetNominalVelocity");
-    m_btFactory.registerNodeType<JunctionManager>("JunctionManager");
-    m_btFactory.registerNodeType<TurnManager>("TurnManager");
-    m_btFactory.registerNodeType<SafetyManager>("SafetyManager");
-
-    const std::string bt_xml = R"(
-<root BTCPP_format="4">
-  <BehaviorTree>
-    <Fallback>
-      <SafetyManager protective_breach="{protective_breach}" warning_breach="{warning_breach}" nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" trigger_quickstop="{trigger_quickstop}" />
-      <JunctionManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_junction_vel}" safe_velocity="{safe_vel}" in_junction="{in_junction}" />
-      <TurnManager left_marker="{left_marker}" right_marker="{right_marker}" nominal_velocity="{nominal_vel}" clamp_velocity="{clamp_turn_vel}" safe_velocity="{safe_vel}" selected_track_id="{selected_track_id}" />
-      <Sequence>
-        <IsErrorHigh error="{current_error}" threshold="{error_threshold}" last_high_time="{last_high_time}" />
-        <ReduceVelocity nominal_velocity="{nominal_vel}" current_error="{current_error}" error_scaling_max_dist="{error_scaling_max_dist}" min_scale="{min_scale}" safe_velocity="{safe_vel}" />
-      </Sequence>
-      <Sequence>
-        <IsErrorStable last_high_time="{last_high_time}" duration="3.0" />
-        <SetNominalVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" />
-      </Sequence>
-      <SetSafeVelocity nominal_velocity="{nominal_vel}" safe_velocity="{safe_vel}" scale="{fallback_scale}" />
-    </Fallback>
-  </BehaviorTree>
-</root>
-)";
-    m_btTree = m_btFactory.createTreeFromText(bt_xml);
-    
-    auto now = std::chrono::steady_clock::now().time_since_epoch();
-    double start_time = std::chrono::duration<double>(now).count();
-    m_btTree.rootBlackboard()->set("last_high_time", start_time);
+    // Behavior Tree is now managed by BehaviorOrchestrator
 
     // Move to initial state
     if (autostart) {
         RCLCPP_WARN(this->get_logger(),
             "Autostart requested, but stable track detection is required before tracking starts.");
     }
-    transitionTo(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
+    m_behaviorOrchestrator->forceState(ControllerState::IDLE, "INITIALIZATION_COMPLETE");
     RCLCPP_INFO(this->get_logger(), "Path Follower running in IDLE. Call ~/start to begin tracking.");
     publishControllerState();
 }
@@ -282,27 +231,6 @@ PidController::~PidController()
 {
 }
 
-std::string PidController::stateToString(uint8_t state) const {
-    switch(state) {
-        case ControllerState::IDLE: return "IDLE";
-        case ControllerState::INITIALIZE: return "INITIALIZE";
-        case ControllerState::FOLLOW_LINE: return "FOLLOW_LINE";
-        case ControllerState::JUNCTION_DETECTED: return "JUNCTION_DETECTED";
-        case ControllerState::READ_TAG: return "READ_TAG";
-        case ControllerState::RESUME_TRACKING: return "RESUME_TRACKING";
-        case ControllerState::STOP: return "STOP";
-        case ControllerState::ERROR: return "ERROR";
-        default: return "UNKNOWN";
-    }
-}
-
-void PidController::transitionTo(uint8_t newState, const std::string& trigger) {
-    if (m_currentState != newState) {
-        RCLCPP_INFO(this->get_logger(), "[STATE] %s -> %s (Trigger: %s)", 
-            stateToString(m_currentState).c_str(), stateToString(newState).c_str(), trigger.c_str());
-        m_currentState = newState;
-    }
-}
 
 void PidController::stopRobot()
 {
@@ -405,10 +333,10 @@ void PidController::selectTrackCallback(const std::shared_ptr<custom_interfaces:
                                       std::shared_ptr<custom_interfaces::srv::SelectTrack::Response> response)
 {
     if (request->track_id >= 0 && request->track_id <= 2) {
-        m_selectedTrackId = request->track_id;
+        m_behaviorOrchestrator->setSelectedTrackId(request->track_id);
         response->success = true;
-        response->message = "Track selected successfully: " + std::to_string(m_selectedTrackId);
-        RCLCPP_INFO(this->get_logger(), "Selected Track updated to: %d", m_selectedTrackId);
+        response->message = "Track selected successfully: " + std::to_string(request->track_id);
+        RCLCPP_INFO(this->get_logger(), "Selected Track updated to: %d", request->track_id);
     } else {
         response->success = false;
         response->message = "Invalid track_id. Must be 0 (AVG), 1 (LEFT), or 2 (RIGHT).";
@@ -425,26 +353,33 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
     double dt = std::chrono::duration<double>(now - m_lastSensorUpdateTime).count();
     m_lastSensorUpdateTime = now;
     
-    // Fallback if this is the very first message or if there was a massive freeze
     if (dt <= 0.0 || dt > 1.0) {
         dt = 0.02; // Nominal 50Hz
     }
 
-    // Automatic transition based on protective field breach
-    if (m_currentState == ControllerState::STOP && !m_protectiveBreach) {
-        transitionTo(ControllerState::FOLLOW_LINE, "PROTECTIVE_FIELD_CLEARED");
-    } else if (m_protectiveBreach && m_currentState != ControllerState::STOP && m_currentState != ControllerState::ERROR) {
-        transitionTo(ControllerState::STOP, "PROTECTIVE_FIELD_BREACH");
-    }
+    uint8_t preState = m_behaviorOrchestrator->getCurrentState();
 
-    // Call quickstop service client on protective breach edge changes
-    if (m_protectiveBreach != m_lastQuickstopRequest) {
-        m_lastQuickstopRequest = m_protectiveBreach;
+    SensorInputs inputs;
+    inputs.dt = dt;
+    inputs.left_track_pos = m_leftTrackPos;
+    inputs.right_track_pos = m_rightTrackPos;
+    inputs.track_detect = m_trackDetect;
+    inputs.tape_cross = m_tapeCross;
+    inputs.left_marker = m_leftMarker;
+    inputs.right_marker = m_rightMarker;
+    inputs.protective_breach = m_protectiveBreach;
+    inputs.warning_breach = m_warningBreach;
+    inputs.nav_cmd_linear_x = m_cmdLinearX;
+    inputs.has_fault = p_faultMonitor->hasFault();
+
+    BehaviorOutputs outputs = m_behaviorOrchestrator->update(inputs);
+
+    if (outputs.trigger_quickstop_edge) {
         if (m_cliQuickstop->wait_for_service(std::chrono::milliseconds(10))) {
             auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
-            request->data = m_protectiveBreach;
+            request->data = outputs.quickstop_state;
             m_cliQuickstop->async_send_request(request,
-                [this, target_state = m_protectiveBreach](rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture future) {
+                [this, target_state = outputs.quickstop_state](rclcpp::Client<std_srvs::srv::SetBool>::SharedFuture future) {
                     try {
                         auto response = future.get();
                         RCLCPP_INFO(this->get_logger(), "Quickstop service call (data=%d) success: %s", target_state, response->message.c_str());
@@ -457,257 +392,67 @@ void PidController::trackPosCallback(const std_msgs::msg::Float32::SharedPtr msg
         }
     }
 
-    uint8_t currentState = m_currentState;
-    
-    // Safety states (Enforce zero velocity)
-    if (currentState == ControllerState::STOP || 
-        currentState == ControllerState::ERROR) 
-    {
-        m_integralError = 0.0;
-        m_prevError = 0.0;
-        publishVelocity(0.0, 0.0);
-        
-        if (m_logCounter++ % 100 == 0) {
-            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                "State: %s | Enforcing 0.0 vel", stateToString(m_currentState).c_str());
-        }
-        return;
-    }
-    
-    // Inactive states (Remain silent to allow twist_mux to fallback to other inputs like teleop)
-    if (currentState == ControllerState::INITIALIZE) 
-    {
-        m_integralError = 0.0;
-        m_prevError = 0.0;
-        // DO NOT publish anything. Let twist_mux handle priorities.
-        
-        if (m_logCounter++ % 100 == 0) {
-            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                "State: %s | Controller inactive (silent)", stateToString(m_currentState).c_str());
-        }
-        return;
+    if (outputs.current_state != preState) {
+        publishControllerState();
     }
 
-    double computed_error = 0.0;
     double divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-    
-    if (currentState == ControllerState::JUNCTION_DETECTED || currentState == ControllerState::FOLLOW_LINE) {
-        if (m_selectedTrackId == 1) {
-            computed_error = m_leftTrackPos;
-        } else if (m_selectedTrackId == 2) {
-            computed_error = m_rightTrackPos;
-        } else {
-            computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
-        }
-    } else {
-        computed_error = (m_leftTrackPos + m_rightTrackPos) / 2.0;
-    }
-    
-    // ponytail: publish computed track divergence to ROS 2 topic without overhead
     std_msgs::msg::Float32 divergenceMsg;
     divergenceMsg.data = static_cast<float>(divergence);
     m_pubDivergence->publish(divergenceMsg);
 
-    // Auto-reset selected track when junction clears
-    if (divergence < m_junctionDivergenceThreshold && m_selectedTrackId != 0 && !m_tapeCross) {
-        RCLCPP_INFO(this->get_logger(), "Junction divergence cleared. Resetting track_id to 0 (AVERAGE).");
-        m_selectedTrackId = 0;
-        
-        if (currentState == ControllerState::JUNCTION_DETECTED) {
-            transitionTo(ControllerState::FOLLOW_LINE, "JUNCTION_CLEARED");
-            publishControllerState();
-        }
+    std_msgs::msg::UInt16 cmdMsg;
+    cmdMsg.data = outputs.lidar_cmd;
+    m_pubLidarCmd->publish(cmdMsg);
+
+    if (outputs.current_state == ControllerState::STOP || 
+        outputs.current_state == ControllerState::ERROR || 
+        outputs.current_state == ControllerState::INITIALIZE || 
+        outputs.current_state == ControllerState::READ_TAG) 
+    {
+        m_integralError = 0.0;
+        m_prevError = 0.0;
+        publishVelocity(0.0, 0.0);
+        return;
     }
 
-    static bool was_lost = false;
     double pidAngularVel = 0.0;
+    static bool was_lost = false;
+    
     if (m_trackDetect) {
         if (was_lost) {
-            // First frame seeing the track again. Preset previous error to current 
-            // so the Derivative term is exactly 0.0 for this frame, eliminating the swing!
-            m_prevError = std::atan2(computed_error, m_sensorOffsetX);
+            m_prevError = std::atan2(outputs.target_error, m_sensorOffsetX);
             was_lost = false;
         }
-        pidAngularVel = computeSteering(computed_error, dt);
+        pidAngularVel = computeSteering(outputs.target_error, dt);
         m_lastPidAngularVel = pidAngularVel;
     } else {
-        // Track lost (grace period active).
-        // Command the last known angular velocity to maintain the turning arc across the gap.
         pidAngularVel = m_lastPidAngularVel;
-        
         m_integralError = 0.0;
         was_lost = true;
     }
 
-
-    // Inverse kinematics for fault monitor saturation checking
     double v_l = m_cmdLinearX - (pidAngularVel * m_wheelBase / 2.0);
     double v_r = m_cmdLinearX + (pidAngularVel * m_wheelBase / 2.0);
     double rpm_l = (v_l / m_wheelRadius) * 60.0 / (2.0 * M_PI);
     double rpm_r = (v_r / m_wheelRadius) * 60.0 / (2.0 * M_PI);
 
-    // Pass the computed_error to the fault monitor.
-    // We cannot use msg->data directly because the driver sets it to exactly 0.0 when DLC < 8,
-    // which triggers a false positive 'FROZEN_SENSOR / SENSOR_DROPOUT' fault.
-    p_faultMonitor->update(computed_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
+    p_faultMonitor->update(outputs.target_error, m_trackDetect, rpm_l, rpm_r, m_maxRpm);
     if (p_faultMonitor->hasFault()) {
-        if (currentState != ControllerState::IDLE) {
+        if (outputs.current_state != ControllerState::IDLE) {
             handleFault(p_faultMonitor->getFaultType());
             return;
         }
     }
 
-    // Tick Behavior Tree to dynamically compute safe velocity based on track error
-    m_btTree.rootBlackboard()->set("current_error", std::abs(computed_error));
-    m_btTree.rootBlackboard()->set("nominal_vel", m_cmdLinearX);
-    m_btTree.rootBlackboard()->set("error_scaling_max_dist", m_btErrorScalingMaxDist);
-    m_btTree.rootBlackboard()->set("min_scale", m_btMinScale);
-    m_btTree.rootBlackboard()->set("error_threshold", m_btErrorThreshold);
-    m_btTree.rootBlackboard()->set("fallback_scale", m_btFallbackScale);
-
-    // Set new Behavior Tree input variables
-    m_btTree.rootBlackboard()->set("left_marker", m_leftMarker);
-    m_btTree.rootBlackboard()->set("right_marker", m_rightMarker);
-    m_btTree.rootBlackboard()->set("protective_breach", m_protectiveBreach);
-    m_btTree.rootBlackboard()->set("warning_breach", m_warningBreach);
-    m_btTree.rootBlackboard()->set("clamp_junction_vel", m_clampMarkerJunction);
-    m_btTree.rootBlackboard()->set("clamp_turn_vel", m_clampTurnJunction);
-    
-    BT::NodeStatus bt_status = m_btTree.tickExactlyOnce();
-    
-    double safe_velocity = m_cmdLinearX;
-    if (!m_btTree.rootBlackboard()->get("safe_vel", safe_velocity)) {
-        safe_velocity = m_cmdLinearX; // fallback if not set
-    }
-
-    // Retrieve safety outputs from Behavior Tree blackboard
-    bool trigger_quickstop = false;
-    (void)m_btTree.rootBlackboard()->get("trigger_quickstop", trigger_quickstop);
-
-    bool in_junction = false;
-    (void)m_btTree.rootBlackboard()->get("in_junction", in_junction);
-
-    int bt_selected_track_id = 0;
-    if (m_btTree.rootBlackboard()->get("selected_track_id", bt_selected_track_id)) {
-        if (bt_selected_track_id != m_selectedTrackId) {
-            m_selectedTrackId = bt_selected_track_id;
-            RCLCPP_INFO(this->get_logger(), "Track selection updated by BT to: %d", m_selectedTrackId);
-        }
-    }
-
-    // Transition to/from junction mode dynamically based on BT status
-    if (in_junction) {
-        if (currentState != ControllerState::JUNCTION_DETECTED) {
-            transitionTo(ControllerState::JUNCTION_DETECTED, "BT_JUNCTION_START");
-            currentState = m_currentState;
-            publishControllerState();
-        }
-    } else if (currentState == ControllerState::JUNCTION_DETECTED && !in_junction && m_selectedTrackId == 0) {
-        transitionTo(ControllerState::FOLLOW_LINE, "BT_JUNCTION_END");
-        currentState = m_currentState;
-        publishControllerState();
-    }
-
-    if (m_logCounter % 20 == 0 && std::abs(m_cmdLinearX - safe_velocity) > 0.01) {
-        RCLCPP_INFO(this->get_logger(), 
-            "[BT Status: %s] Error High: %.3f -> Scaled Vel: %.3f (Nominal: %.3f)", 
-            BT::toStr(bt_status).c_str(), std::abs(computed_error), safe_velocity, m_cmdLinearX);
-    }
-
-    // Apply smooth linear velocity ramping (acceleration limit)
-    double target_linear_vel = safe_velocity;
-    double max_step = m_accelLimit * dt;
-    if (target_linear_vel > m_currentPublishedLinearVel) {
-        m_currentPublishedLinearVel = std::min(m_currentPublishedLinearVel + max_step, target_linear_vel);
-    } else {
-        if (target_linear_vel == 0.0) {
-            m_currentPublishedLinearVel = 0.0;
+    if (outputs.current_state == ControllerState::IDLE) {
+        if (m_trackDetect && !p_faultMonitor->hasFault()) {
+            publishVelocity(outputs.linear_velocity, pidAngularVel);
         } else {
-            m_currentPublishedLinearVel = std::max(m_currentPublishedLinearVel - max_step, target_linear_vel);
+            publishVelocity(outputs.linear_velocity, m_cmdAngularZ);
         }
-    }
-    double linearVel = m_currentPublishedLinearVel;
-
-    // Dynamically switch safety field command based on current velocity
-    uint16_t desiredLidarCmd = 1; // Default fallback to safest field (0.5m)
-    if (m_fieldSwitchThresholds.size() + 1 == m_fieldSwitchCommands.size()) {
-        double abs_speed = std::abs(linearVel);
-        size_t idx = 0;
-        while (idx < m_fieldSwitchThresholds.size() && abs_speed > m_fieldSwitchThresholds[idx]) {
-            idx++;
-        }
-        desiredLidarCmd = static_cast<uint16_t>(m_fieldSwitchCommands[idx]);
-    }
-    if (desiredLidarCmd != m_lastLidarCmdPublished) {
-        m_lastLidarCmdPublished = desiredLidarCmd;
-        std_msgs::msg::UInt16 cmdMsg;
-        cmdMsg.data = desiredLidarCmd;
-        m_pubLidarCmd->publish(cmdMsg);
-        RCLCPP_INFO(this->get_logger(), "Switched lidar safety field to command %d (Speed: %.3f)", desiredLidarCmd, linearVel);
-    }
-
-    // State Management
-    switch (currentState) {
-        case ControllerState::IDLE: {
-            // Yaw correction runs in idle, allowing guided teleop or compass-like auto-alignment
-            // If track is lost in IDLE, gracefully pass through manual angular Z instead of PID
-            if (m_trackDetect && !p_faultMonitor->hasFault()) {
-                publishVelocity(linearVel, pidAngularVel);
-            } else {
-                publishVelocity(linearVel, m_cmdAngularZ);
-            }
-            break;
-        }
-
-        case ControllerState::FOLLOW_LINE: {
-            linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
-
-            divergence = std::abs(m_leftTrackPos - m_rightTrackPos);
-            if (divergence > m_junctionDivergenceThreshold || m_tapeCross) {
-                transitionTo(ControllerState::JUNCTION_DETECTED, "DIVERGENCE_OR_CROSS");
-                // Native junction manager: track drift selection
-                if (computed_error < -0.02) {
-                    m_selectedTrackId = 2; // Follow Right
-                } else if (computed_error > 0.02) {
-                    m_selectedTrackId = 1; // Follow Left
-                }
-                publishControllerState();
-            }
-            publishVelocity(linearVel, pidAngularVel);
-            break;
-        }
-
-        case ControllerState::JUNCTION_DETECTED: {
-            // PID continues to control steering, but using the selected track
-            linearVel = std::clamp(linearVel, -m_clampJunction, m_clampJunction);
-            publishVelocity(linearVel, pidAngularVel);
-            break;
-        }
-
-        case ControllerState::READ_TAG: {
-            // Stub for future RFID/Tag integration
-            publishVelocity(0.0, 0.0);
-            transitionTo(ControllerState::FOLLOW_LINE, "TAG_READ_STUB");
-            publishControllerState();
-            break;
-        }
-
-        case ControllerState::RESUME_TRACKING: {
-            linearVel = std::clamp(linearVel, -m_clampStraight, m_clampStraight);
-            publishVelocity(linearVel, pidAngularVel);
-            transitionTo(ControllerState::FOLLOW_LINE, "RESUMED");
-            publishControllerState();
-            break;
-        }
-
-        default:
-            break;
-    }
-
-    if (m_logCounter++ % 10 == 0) {
-        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-            "State: %s | Err: %.3f | Steer: %.3f", 
-            stateToString(m_currentState).c_str(), computed_error, pidAngularVel);
+    } else {
+        publishVelocity(outputs.linear_velocity, pidAngularVel);
     }
 }
 
@@ -787,7 +532,7 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
                                   std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    uint8_t currentState = m_currentState;
+    uint8_t currentState = m_behaviorOrchestrator->getCurrentState();
     
     if (currentState == ControllerState::IDLE || currentState == ControllerState::STOP || currentState == ControllerState::ERROR) {
         if (!isTrackDetectStable()) {
@@ -803,7 +548,7 @@ void PidController::startCallback(const std::shared_ptr<std_srvs::srv::Trigger::
 
         // p_stateMachine->reset(); (removed)
         p_faultMonitor->reset();
-        transitionTo(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
+        m_behaviorOrchestrator->forceState(ControllerState::FOLLOW_LINE, "START_SERVICE_CALLED");
         publishControllerState();
         
         response->success = true;
@@ -818,7 +563,7 @@ void PidController::stopCallback(const std::shared_ptr<std_srvs::srv::Trigger::R
                                  std::shared_ptr<std_srvs::srv::Trigger::Response> response)
 {
     (void)request;
-    transitionTo(ControllerState::STOP, "STOP_SERVICE_CALLED");
+    m_behaviorOrchestrator->forceState(ControllerState::STOP, "STOP_SERVICE_CALLED");
     publishControllerState();
     m_cmdLinearX = 0.0;
     m_cmdAngularZ = 0.0;
@@ -842,8 +587,8 @@ void PidController::safetyCheckCallback()
 void PidController::publishVelocity(double linearVel, double angularVel)
 {
     if (std::abs(linearVel) <= 1e-4 && 
-        m_currentState != ControllerState::IDLE &&
-        m_currentState != ControllerState::STOP) {
+        m_behaviorOrchestrator->getCurrentState() != ControllerState::IDLE &&
+        m_behaviorOrchestrator->getCurrentState() != ControllerState::STOP) {
         // If we are tracking but linear velocity is zero, do not allow turn-in-place from PID
         angularVel = 0.0;
     }
@@ -857,21 +602,22 @@ void PidController::publishVelocity(double linearVel, double angularVel)
 void PidController::publishControllerState()
 {
     ControllerState msg;
-    msg.state = m_currentState;
+    msg.state = m_behaviorOrchestrator->getCurrentState();
     m_pubControllerState->publish(msg);
 }
 
 void PidController::handleFault(const std::string& faultType)
 {
-    uint8_t currentState = m_currentState;
+    uint8_t currentState = m_behaviorOrchestrator->getCurrentState();
     if (currentState != ControllerState::ERROR) {
-        transitionTo(ControllerState::ERROR, "FAULT_" + faultType);
+        m_behaviorOrchestrator->forceState(ControllerState::ERROR, "FAULT_" + faultType);
         publishControllerState();
         m_cmdLinearX = 0.0;
         m_cmdAngularZ = 0.0;
         publishVelocity(0.0, 0.0);
         
-        std::string faultLog = p_faultMonitor->getFaultLog(stateToString(m_currentState));
+        // We use a hardcoded state string here just for logging since we don't have the string map anymore
+        std::string faultLog = p_faultMonitor->getFaultLog("ERROR");
         RCLCPP_ERROR(this->get_logger(), "[SAFETY_FAULT] %s", faultLog.c_str());
     }
 }
@@ -945,21 +691,22 @@ rcl_interfaces::msg::SetParametersResult PidController::onParameterChange(const 
                 m_trackDetectStableMs = requestedStableMs;
                 break;
             }
-            case const_hash("velocity_clamps.straight"): m_clampStraight = param.as_double(); break;
-            case const_hash("velocity_clamps.junction"): m_clampJunction = param.as_double(); break;
-            case const_hash("velocity_clamps.marker_junction"): m_clampMarkerJunction = param.as_double(); break;
-            case const_hash("velocity_clamps.turn_junction"): m_clampTurnJunction = param.as_double(); break;
-            case const_hash("junction.divergence_threshold"): m_junctionDivergenceThreshold = param.as_double(); break;
-            case const_hash("behavior_tree.error_scaling_max_dist"): m_btErrorScalingMaxDist = param.as_double(); break;
-            case const_hash("behavior_tree.min_scale"): m_btMinScale = param.as_double(); break;
-            case const_hash("behavior_tree.error_threshold"): m_btErrorThreshold = param.as_double(); break;
-            case const_hash("behavior_tree.fallback_scale"): m_btFallbackScale = param.as_double(); break;
-            case const_hash("safety.acceleration_limit"): m_accelLimit = param.as_double(); break;
-            case const_hash("safety.lidar_field_switching.thresholds"): m_fieldSwitchThresholds = param.as_double_array(); break;
-            case const_hash("safety.lidar_field_switching.commands"): m_fieldSwitchCommands = param.as_integer_array(); break;
+            case const_hash("velocity_clamps.straight"): m_behaviorConfig.clampStraight = param.as_double(); break;
+            case const_hash("velocity_clamps.junction"): m_behaviorConfig.clampJunction = param.as_double(); break;
+            case const_hash("velocity_clamps.marker_junction"): m_behaviorConfig.clampMarkerJunction = param.as_double(); break;
+            case const_hash("velocity_clamps.turn_junction"): m_behaviorConfig.clampTurnJunction = param.as_double(); break;
+            case const_hash("junction.divergence_threshold"): m_behaviorConfig.junctionDivergenceThreshold = param.as_double(); break;
+            case const_hash("behavior_tree.error_scaling_max_dist"): m_behaviorConfig.btErrorScalingMaxDist = param.as_double(); break;
+            case const_hash("behavior_tree.min_scale"): m_behaviorConfig.btMinScale = param.as_double(); break;
+            case const_hash("behavior_tree.error_threshold"): m_behaviorConfig.btErrorThreshold = param.as_double(); break;
+            case const_hash("behavior_tree.fallback_scale"): m_behaviorConfig.btFallbackScale = param.as_double(); break;
+            case const_hash("safety.acceleration_limit"): m_behaviorConfig.accelLimit = param.as_double(); break;
+            case const_hash("safety.lidar_field_switching.thresholds"): m_behaviorConfig.fieldSwitchThresholds = param.as_double_array(); break;
+            case const_hash("safety.lidar_field_switching.commands"): m_behaviorConfig.fieldSwitchCommands = param.as_integer_array(); break;
             default: break;
         }
     }
+    m_behaviorOrchestrator->setConfig(m_behaviorConfig);
     return result;
 }
 

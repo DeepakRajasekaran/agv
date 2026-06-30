@@ -214,7 +214,6 @@ public:
                 }
                 break;
         }
-
         m_prevMarkersActive = markers_active;
 
         if (m_state != State::NONE) {

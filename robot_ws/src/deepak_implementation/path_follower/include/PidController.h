@@ -26,8 +26,7 @@
 
 
 #include "FaultMonitor.h"
-#include "behavior_nodes.h"
-#include <behaviortree_cpp/bt_factory.h>
+#include "BehaviorOrchestrator.h"
 
 namespace path_follower {
 
@@ -94,11 +93,6 @@ private:
                              std::shared_ptr<custom_interfaces::srv::SelectTrack::Response> response);
 
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr m_cliQuickstop;
-
-    // Track Selection State
-    int m_selectedTrackId = 0; // 0=AVG, 1=LEFT, 2=RIGHT
-
-
     // Timer for safety monitor timeout check (50Hz)
     rclcpp::TimerBase::SharedPtr m_safetyTimer;
     void safetyCheckCallback();
@@ -131,24 +125,6 @@ private:
     int m_maxFrozenSteps;
     int m_trackDetectStableMs;
 
-    // Velocity & Junction Clamps
-    double m_clampStraight;
-    double m_clampJunction;
-    double m_clampMarkerJunction;
-    double m_clampTurnJunction;
-    double m_junctionDivergenceThreshold;
-
-    // Behavior Tree Params
-    double m_btErrorScalingMaxDist;
-    double m_btMinScale;
-    double m_btErrorThreshold;
-    double m_btFallbackScale;
-
-    // Safety and switching parameters
-    double m_accelLimit;
-    std::vector<double> m_fieldSwitchThresholds;
-    std::vector<int64_t> m_fieldSwitchCommands;
-
     // Control Loop State
     double m_integralError;
     double m_prevError;
@@ -164,27 +140,18 @@ private:
     bool m_rightMarker;
     bool m_protectiveBreach;
     bool m_warningBreach;
-    bool m_lastQuickstopRequest;
-    uint16_t m_lastLidarCmdPublished;
     double m_leftTrackPos;
     double m_rightTrackPos;
     double m_lastPidAngularVel;
-    double m_currentPublishedLinearVel;
 
     // Response time estimator
     double m_lastErrorForZc;
     std::chrono::steady_clock::time_point m_lastZeroCrossingTime;
     bool m_hasCrossedZero;
 
-    // State machine logic
-    uint8_t m_currentState;
-    std::string stateToString(uint8_t state) const;
-    void transitionTo(uint8_t newState, const std::string& trigger);
     std::unique_ptr<FaultMonitor> p_faultMonitor;
-
-    // Behavior Tree
-    BT::BehaviorTreeFactory m_btFactory;
-    BT::Tree m_btTree;
+    std::unique_ptr<BehaviorOrchestrator> m_behaviorOrchestrator;
+    BehaviorConfig m_behaviorConfig;
 
     bool m_firstMessageReceived;
 

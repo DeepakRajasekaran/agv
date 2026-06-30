@@ -31,8 +31,8 @@ include_directories(
 
 add_executable(path_follower_node
   src/PidController.cpp
-
   src/FaultMonitor.cpp
+  src/BehaviorOrchestrator.cpp
 )
 
 ament_target_dependencies(path_follower_node
