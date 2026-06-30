@@ -184,7 +184,9 @@ public:
                   getInput("right_marker", right) &&
                   getInput("nominal_velocity", nominal_vel) && 
                   getInput("clamp_velocity", clamp_vel);
-        assert(ok); // precondition
+        if (!ok) {
+            return BT::NodeStatus::FAILURE;
+        }
 
         bool markers_active = (left && right);
 
@@ -267,7 +269,9 @@ public:
                   getInput("right_marker", right) &&
                   getInput("nominal_velocity", nominal_vel) && 
                   getInput("clamp_velocity", clamp_vel);
-        assert(ok); // precondition
+        if (!ok) {
+            return BT::NodeStatus::FAILURE;
+        }
 
         // State Machine logic
         switch (m_state) {
@@ -352,7 +356,9 @@ public:
         bool ok = getInput("protective_breach", protective) && 
                   getInput("warning_breach", warning) && 
                   getInput("nominal_velocity", nominal_vel);
-        assert(ok); // precondition
+        if (!ok) {
+            return BT::NodeStatus::FAILURE;
+        }
 
         if (protective) {
             setOutput("safe_velocity", 0.0);

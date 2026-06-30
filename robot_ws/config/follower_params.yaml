@@ -10,8 +10,8 @@ path_follower_node:
         min_scale: 0.5
         max_scale: 2.0
     velocity_clamps:
-      straight: 1.0
-      junction: 0.5
+      straight: 1.2
+      junction: 0.25
       marker_junction: 0.3
       turn_junction: 0.4
     safety:

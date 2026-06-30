@@ -35,7 +35,7 @@ class NavSimulator(Node):
             
         self.declare_parameter('nominal_speed', float(default_speed))
         self.declare_parameter('track_detect_stable_ms', int(default_track_detect_stable_ms))
-        self.declare_parameter('test_sequence', [0, 1, 0, -1])  # Default dummy sequence
+        self.declare_parameter('test_sequence', [0, 2, 0, 1])  # 0=AVG, 1=LEFT, 2=RIGHT
         self.declare_parameter('sequence_looping', True)
         
         self.nominal_speed = self.get_parameter('nominal_speed').value
