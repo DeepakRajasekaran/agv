@@ -27,7 +27,8 @@ PlcInterfaceNode::PlcInterfaceNode()
     this->declare_parameter("plc_ip", "192.168.1.5");
     this->declare_parameter("plc_port", 502);
 
-    p_pubLidarFb = this->create_publisher<std_msgs::msg::Bool>("~/lidar_fb", 10);
+    p_pubLidarProtectiveBreachFb = this->create_publisher<std_msgs::msg::Bool>("~/lidar_protective_breach_fb", 10);
+    p_pubLidarWarningBreachFb = this->create_publisher<std_msgs::msg::Bool>("~/lidar_warning_breach_fb", 10);
     p_pubEstopFb = this->create_publisher<std_msgs::msg::Bool>("~/estop_fb", 10);
     
     p_subLidarCmd = this->create_subscription<std_msgs::msg::UInt16>(
@@ -132,11 +133,14 @@ void PlcInterfaceNode::readFromPlc() {
         RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "COMM_LOST: PLC heartbeat frozen!");
     }
 
-    std_msgs::msg::Bool lidarMsg, estopMsg;
-    lidarMsg.data = (readRegs[14] & 0x01) != 0; 
+    std_msgs::msg::Bool lidarProtectiveBreachMsg, lidarWarningBreachMsg, estopMsg;
+    lidarProtectiveBreachMsg.data = (readRegs[14] & 0x01) != 0; 
+    // ponytail: warning is on bit 1 (WarningFieldBreach) of register 14 (byte 28)
+    lidarWarningBreachMsg.data = (readRegs[14] & 0x02) != 0; 
     estopMsg.data = (readRegs[17] & 0x01) != 0; 
     
-    p_pubLidarFb->publish(lidarMsg);
+    p_pubLidarProtectiveBreachFb->publish(lidarProtectiveBreachMsg);
+    p_pubLidarWarningBreachFb->publish(lidarWarningBreachMsg);
     p_pubEstopFb->publish(estopMsg);
 
     writeToPlc(readRegs);

@@ -148,16 +148,6 @@ def launch_setup(context, *args, **kwargs):
         nodes.append(IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(driver_dir, 'launch', 'roboteq_driver.launch.py'))
         ))
-        # Launch plc_interface
-        nodes.append(Node(
-            package='plc_interface',
-            executable='plc_interface_node',
-            output='screen',
-            parameters=[{
-                'plc_ip': plc_ip_val,
-                'plc_port': int(plc_port_val)
-            }]
-        ))
 
     elif stack_val == 'manasa':
         # Manasa's Stack
@@ -188,6 +178,17 @@ def launch_setup(context, *args, **kwargs):
             nodes.append(IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(line_follower_dir, 'launch', 'line_follower.launch.py'))
             ))
+
+    # ponytail: Launch plc_interface unconditionally as it is common for both stacks
+    nodes.append(Node(
+        package='plc_interface',
+        executable='plc_interface_node',
+        output='screen',
+        parameters=[{
+            'plc_ip': plc_ip_val,
+            'plc_port': int(plc_port_val)
+        }]
+    ))
 
     return nodes
 

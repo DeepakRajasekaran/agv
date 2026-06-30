@@ -27,7 +27,8 @@ private:
     void writeToPlc(const uint16_t* readRegs);
 
     // ROS 2 Pointers
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr p_pubLidarFb;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr p_pubLidarProtectiveBreachFb;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr p_pubLidarWarningBreachFb;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr p_pubEstopFb;
     rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr p_subLidarCmd;
     rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr p_srvQuickstop;
