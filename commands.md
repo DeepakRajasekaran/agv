@@ -132,11 +132,31 @@ Modify parameters at runtime (without restarting nodes):
 ros2 param set /plc_interface plc_ip "192.168.1.10"
 ```
 
+Tune Manasa's Line Follower dynamically:
+```bash
+ros2 param set /line_follower auto_linear_velocity 0.4
+ros2 param set /line_follower turn_linear_velocity 0.2
+ros2 param set /line_follower marker_sync_window_ms 50.0
+ros2 param set /line_follower marker_debounce_ms 40.0
+ros2 param set /line_follower pid.p 3.5
+ros2 param set /line_follower pid.d 0.08
+```
+
 ### Monitoring Topics
 Watch raw feedback from the MGS1600 tape sensor:
 ```bash
 ros2 topic echo /sensor/track_detect
 ros2 topic echo /mgs_driver/mgs_error
+```
+
+Watch Navigation State (Manasa's Stack):
+```bash
+ros2 topic echo /navigation/state
+```
+
+Watch Line Follower PID Metrics (Manasa's Stack):
+```bash
+ros2 topic echo /line_follower/pid_state
 ```
 
 Watch PLC inputs/outputs:

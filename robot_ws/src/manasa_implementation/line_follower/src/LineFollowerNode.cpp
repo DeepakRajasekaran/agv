@@ -1,17 +1,35 @@
 /*
 Name: LineFollowerNode.cpp
 Author: Manasa
-Date: 2026-06-26
-Version: 3.0
-Description: PID line follower.
-  - DISABLED (IDLE/STOP/pre-start): robot fully stopped (0,0). No motion until /navigation/start.
-  - ENABLED + track lost: one all-stop, then FULL teleop pass-through for manual recovery.
-  - ENABLED + on track: conditional error source + PID yaw + auto-linear cruise.
-      diff<35 & a marker  → error = marker_side_track
-      diff>=35 & a marker → error = marker_side_track (junction)
-      neither marker      → error = midpoint(left,right) (smooth)
-  - cmd.linear.x  = (abs(error) > 15) ? turn_linear_velocity : auto_linear_velocity
-  - cmd.angular.z = pid_correction + teleop.angular.z
+Date: 2026-06-30
+Version: 4.0
+Description: PID line follower with FOLLOW_LINE / TURN / JUNCTION sub-machine.
+
+  DISABLED (pre-start / IDLE)      : robot fully stopped (0,0).
+  ENABLED + track lost             : one all-stop, then teleop pass-through.
+  ENABLED + on track               : 3-state navigation sub-machine ↓
+
+    FOLLOW_LINE (default)
+      error = midpoint(left_track, right_track)
+      linear = auto_linear_velocity
+      BOTH markers (rising, debounced)              -> JUNCTION
+      ONE  marker  (rising, debounced, sync-window)  -> TURN
+
+    JUNCTION  (interlocks out TURN)
+      counter++ on entry; odd -> follow LEFT track, even -> follow RIGHT track
+      error = left_track or right_track per counter
+      linear = turn_linear_velocity
+      BOTH markers (rising) again                    -> FOLLOW_LINE (exit)
+
+    TURN  (interlocks out JUNCTION)
+      error = drift-dominant track ( larger |left|,|right| )
+      linear = turn_linear_velocity
+      EITHER marker (rising) again                    -> FOLLOW_LINE (exit)
+
+  Marker pipeline: raw -> per-side debounce -> edge detect -> sync window.
+  Sub-state string published on /navigation/state
+  (FOLLOW_LINE | TURN_DETECTED | TURN | TURN_EXITED |
+   JUNCTION_DETECTED | JUNCTION | JUNCTION_EXITED | IDLE).
 */
 
 #include "line_follower/LineFollowerNode.h"
@@ -26,7 +44,13 @@ LineFollowerNode::LineFollowerNode()
   m_trackDetected(false), m_leftTrackMm(0.0), m_rightTrackMm(0.0),
   m_leftMarker(false), m_rightMarker(false),
   m_prevTrackDetected(true),
-  m_peakError(0.0), m_settledTime(0.0), m_wasSettled(true)
+  m_peakError(0.0), m_settledTime(0.0), m_wasSettled(true),
+  m_navState(NavSubState::FOLLOW_LINE),
+  m_junctionCount(0), m_junctionFollowLeft(false),
+  m_leftMarkerDeb(false), m_rightMarkerDeb(false),
+  m_leftMarkerCand(false), m_rightMarkerCand(false),
+  m_prevBoth(false), m_prevAny(false), m_prevSingle(false),
+  m_singlePending(false)
 {
   this->declare_parameter<std::string>("teleop_input_topic", "/teleop_cmd_vel");
   this->declare_parameter<std::string>("corrected_output_topic", "/cmd_vel");
@@ -45,12 +69,15 @@ LineFollowerNode::LineFollowerNode()
   this->declare_parameter<double>("sensor_offset_m", 0.30);
   this->declare_parameter<double>("wheel_base", 0.512);
 
-  // ── new params ──
-  this->declare_parameter<double>("auto_linear_velocity", 0.0);  // cruise; set via param
-  this->declare_parameter<double>("turn_linear_velocity", 0.02); // decelerated cruise
+  this->declare_parameter<double>("auto_linear_velocity", 0.0);  // straight cruise
+  this->declare_parameter<double>("turn_linear_velocity", 0.02); // turn/junction velocity
   this->declare_parameter<double>("max_linear_velocity", 0.5);
   this->declare_parameter<double>("max_angular_velocity", 1.0);
   this->declare_parameter<double>("divergence_limit_mm", 35.0);
+
+  // ── marker pipeline tunables ──
+  this->declare_parameter<double>("marker_debounce_ms", 40.0);
+  this->declare_parameter<double>("marker_sync_window_ms", 50.0);
 
   std::string teleopIn, teleopOut, trackIn;
   this->get_parameter("teleop_input_topic", teleopIn);
@@ -74,11 +101,19 @@ LineFollowerNode::LineFollowerNode()
   this->get_parameter("max_linear_velocity", m_maxLinear);
   this->get_parameter("max_angular_velocity", m_maxAngularVel);
   this->get_parameter("divergence_limit_mm", m_divergenceLimit);
+  this->get_parameter("marker_debounce_ms", m_markerDebounceMs);
+  this->get_parameter("marker_sync_window_ms", m_markerSyncWindowMs);
 
   m_pid.init(p, i, d, i_min, i_max);
 
-  m_cmdVelPub = this->create_publisher<geometry_msgs::msg::Twist>(teleopOut, 10);
+  // Marker timestamps need a valid clock value
+  m_leftMarkerSince    = this->now();
+  m_rightMarkerSince   = this->now();
+  m_singlePendingStart = this->now();
+
+  m_cmdVelPub   = this->create_publisher<geometry_msgs::msg::Twist>(teleopOut, 10);
   m_pidStatePub = this->create_publisher<std_msgs::msg::Float64MultiArray>("/line_follower/pid_state", 10);
+  m_navStatePub = this->create_publisher<std_msgs::msg::String>("/navigation/state", 10);
 
   m_teleopSub = this->create_subscription<geometry_msgs::msg::Twist>(
     teleopIn, 10, std::bind(&LineFollowerNode::teleopCallback, this, std::placeholders::_1));
@@ -106,8 +141,11 @@ LineFollowerNode::LineFollowerNode()
     std::bind(&LineFollowerNode::paramCallback, this, std::placeholders::_1));
 
   RCLCPP_INFO(this->get_logger(),
-              "Line follower ready | PID: %s | offset: %.2fm | auto_lin: %.3f | turn_lin: %.3f | div_limit: %.0fmm",
-              m_pidEnabled ? "ON" : "OFF", m_sensorOffsetM, m_autoLinearVel, m_turnLinearVel, m_divergenceLimit);
+              "Line follower ready | PID:%s | offset:%.2fm | auto:%.3f turn:%.3f | "
+              "debounce:%.0fms sync:%.0fms",
+              m_pidEnabled ? "ON" : "OFF", m_sensorOffsetM,
+              m_autoLinearVel, m_turnLinearVel,
+              m_markerDebounceMs, m_markerSyncWindowMs);
 }
 
 LineFollowerNode::~LineFollowerNode() {}
@@ -155,39 +193,64 @@ void LineFollowerNode::rightMarkerCallback(const std_msgs::msg::Bool::SharedPtr 
   m_rightMarker = msg->data;
 }
 
+void LineFollowerNode::enterJunction()
+{
+  m_navState = NavSubState::JUNCTION;
+  m_junctionCount++;                                  // count detections only
+  m_junctionFollowLeft = (m_junctionCount % 2 != 0);  // odd -> LEFT, even -> RIGHT
+  m_singlePending = false;
+  RCLCPP_INFO(this->get_logger(),
+              "JUNCTION #%d DETECTED -> follow %s track",
+              m_junctionCount, m_junctionFollowLeft ? "LEFT" : "RIGHT");
+}
+
+void LineFollowerNode::resetNavStateMachine()
+{
+  m_navState = NavSubState::FOLLOW_LINE;
+  m_junctionCount = 0;                 // counter reset on disable
+  m_junctionFollowLeft = false;
+  m_singlePending = false;
+  m_leftMarkerDeb = m_rightMarkerDeb = false;
+  m_leftMarkerCand = m_rightMarkerCand = false;
+  m_prevBoth = m_prevAny = m_prevSingle = false;
+}
+
 void LineFollowerNode::controlLoop()
 {
   double teleopLinX, teleopAngZ, leftMm, rightMm, autoLinear, turnLinear;
-  bool enabled, trackDetected, leftMarker, rightMarker;
+  bool enabled, trackDetected, leftMarkerRaw, rightMarkerRaw;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
-    teleopLinX    = m_teleopLinearX;
-    teleopAngZ    = m_teleopAngularZ;
-    enabled       = m_pidEnabled;
-    trackDetected = m_trackDetected;
-    leftMm        = m_leftTrackMm;
-    rightMm       = m_rightTrackMm;
-    leftMarker    = m_leftMarker;
-    rightMarker   = m_rightMarker;
-    autoLinear    = m_autoLinearVel;
-    turnLinear    = m_turnLinearVel;
+    teleopLinX     = m_teleopLinearX;
+    teleopAngZ     = m_teleopAngularZ;
+    enabled        = m_pidEnabled;
+    trackDetected  = m_trackDetected;
+    leftMm         = m_leftTrackMm;
+    rightMm        = m_rightTrackMm;
+    leftMarkerRaw  = m_leftMarker;
+    rightMarkerRaw = m_rightMarker;
+    autoLinear     = m_autoLinearVel;
+    turnLinear     = m_turnLinearVel;
   }
 
   geometry_msgs::msg::Twist cmd;
 
-  // ── DISABLED: IDLE / STOP / before /navigation/start → robot must not move ──
+  // ── DISABLED: robot must not move ──
   if (!enabled) {
     cmd.linear.x = 0.0;
     cmd.angular.z = 0.0;
-    m_prevTrackDetected = true;   // arm edge detector for a clean re-enable
+    m_prevTrackDetected = true;
     m_cmdVelPub->publish(cmd);
+    
+    std_msgs::msg::String stateMsg;
+    stateMsg.data = "IDLE";
+    m_navStatePub->publish(stateMsg);
     return;
   }
 
   // ── ENABLED but TRACK LOST: one all-stop, then full manual teleop ──
   if (!trackDetected) {
     if (m_prevTrackDetected) {
-      // edge true→false: single all-stop command
       cmd.linear.x = 0.0;
       cmd.angular.z = 0.0;
       m_pid.reset();
@@ -196,7 +259,6 @@ void LineFollowerNode::controlLoop()
       m_cmdVelPub->publish(cmd);
       return;
     }
-    // already stopped: full teleop pass-through for manual recovery
     cmd.linear.x  = teleopLinX;
     cmd.angular.z = teleopAngZ;
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
@@ -204,34 +266,137 @@ void LineFollowerNode::controlLoop()
     m_cmdVelPub->publish(cmd);
     return;
   }
-
-  // ── ENABLED and ON TRACK ──
   m_prevTrackDetected = true;
 
-  double diff = std::abs(leftMm - rightMm);
-  double errorMm;
-  std::string srcLabel;
+  // ── Marker pipeline: debounce → edges ──
+  rclcpp::Time now = this->now();
+  auto debounce = [&](bool raw, bool &deb, bool &cand, rclcpp::Time &since) {
+    if (raw != cand) { cand = raw; since = now; }
+    if (cand != deb && (now - since).seconds() * 1000.0 >= m_markerDebounceMs) deb = cand;
+  };
+  debounce(leftMarkerRaw,  m_leftMarkerDeb,  m_leftMarkerCand,  m_leftMarkerSince);
+  debounce(rightMarkerRaw, m_rightMarkerDeb, m_rightMarkerCand, m_rightMarkerSince);
 
-  if (diff > 20.0) {
-    if (std::abs(rightMm) > std::abs(leftMm)) {
-      errorMm = rightMm;
-      srcLabel = "DRIFT_RIGHT";
-    } else {
-      errorMm = leftMm;
-      srcLabel = "DRIFT_LEFT";
+  bool both   = m_leftMarkerDeb && m_rightMarkerDeb;
+  bool any    = m_leftMarkerDeb || m_rightMarkerDeb;
+  bool single = m_leftMarkerDeb ^ m_rightMarkerDeb;
+
+  bool bothRising   = both   && !m_prevBoth;
+  bool anyRising    = any    && !m_prevAny;
+  bool singleRising = single && !m_prevSingle;
+
+  std::string navLabel;
+  bool transition = false;
+
+  // ── State machine (mutually exclusive == structural interlock) ──
+  switch (m_navState)
+  {
+    case NavSubState::FOLLOW_LINE:
+    {
+      if (bothRising) {
+        // markers aligned within one cycle -> junction immediately
+        enterJunction();
+        navLabel = "JUNCTION_DETECTED";
+        transition = true;
+      } else {
+        // a lone marker starts the sync window; a partner within the window
+        // promotes it to a junction (handled by bothRising above), otherwise
+        // it commits to a turn once the window elapses.
+        if (singleRising && !m_singlePending) {
+          m_singlePending = true;
+          m_singlePendingStart = now;
+        }
+        if (m_singlePending &&
+            (now - m_singlePendingStart).seconds() * 1000.0 >= m_markerSyncWindowMs)
+        {
+          m_singlePending = false;
+          if (single) {
+            m_navState = NavSubState::TURN;
+            navLabel = "TURN_DETECTED";
+            transition = true;
+            RCLCPP_INFO(this->get_logger(), "TURN DETECTED (mk L=%d R=%d)",
+                        m_leftMarkerDeb ? 1 : 0, m_rightMarkerDeb ? 1 : 0);
+          }
+          // else: marker vanished within the window -> treat as flicker, ignore
+        }
+      }
+      break;
     }
-  } else {
-    errorMm = (leftMm + rightMm) / 2.0;
-    srcLabel = "STRAIGHT_AVG";
+
+    case NavSubState::JUNCTION:
+    {
+      // interlock: single/turn edges ignored while in a junction
+      if (bothRising) {
+        m_navState = NavSubState::FOLLOW_LINE;
+        navLabel = "JUNCTION_EXITED";
+        transition = true;
+        RCLCPP_INFO(this->get_logger(), "JUNCTION #%d EXITED", m_junctionCount);
+      }
+      break;
+    }
+
+    case NavSubState::TURN:
+    {
+      // interlock: both/junction edges ignored while in a turn;
+      // any fresh marker edge ends the turn.
+      if (anyRising) {
+        m_navState = NavSubState::FOLLOW_LINE;
+        navLabel = "TURN_EXITED";
+        transition = true;
+        RCLCPP_INFO(this->get_logger(), "TURN EXITED");
+      }
+      break;
+    }
   }
 
-  // Deceleration logic based on error magnitude
-  double currentTargetVel = (std::abs(errorMm) > 20.0) ? turnLinear : autoLinear;
+  if (!transition) {
+    switch (m_navState) {
+      case NavSubState::FOLLOW_LINE: navLabel = "FOLLOW_LINE"; break;
+      case NavSubState::TURN:        navLabel = "TURN";        break;
+      case NavSubState::JUNCTION:    navLabel = "JUNCTION";    break;
+    }
+  }
+
+  // update edge latches AFTER the machine has consumed this cycle's edges
+  m_prevBoth   = both;
+  m_prevAny    = any;
+  m_prevSingle = single;
+
+  std_msgs::msg::String stateMsg;
+  stateMsg.data = navLabel;
+  m_navStatePub->publish(stateMsg);
+
+  // ── Error source + linear velocity selected purely by state ──
+  double errorMm = 0.0;
+  double currentTargetVel = autoLinear;
+  std::string srcLabel;
+
+  switch (m_navState)
+  {
+    case NavSubState::FOLLOW_LINE:
+      errorMm = (leftMm + rightMm) / 2.0;
+      currentTargetVel = autoLinear;
+      srcLabel = "MIDPOINT";
+      break;
+
+    case NavSubState::JUNCTION:
+      errorMm = m_junctionFollowLeft ? leftMm : rightMm;
+      currentTargetVel = turnLinear;
+      srcLabel = m_junctionFollowLeft ? "JCT_LEFT" : "JCT_RIGHT";
+      break;
+
+    case NavSubState::TURN:
+      if (std::abs(rightMm) > std::abs(leftMm)) { errorMm = rightMm; srcLabel = "TURN_RIGHT"; }
+      else                                      { errorMm = leftMm;  srcLabel = "TURN_LEFT";  }
+      currentTargetVel = turnLinear;
+      break;
+  }
 
   RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                       "Src:%-12s err=%.1f L=%.1f R=%.1f diff=%.1f mk[L=%d R=%d] vel=%.2f",
-                       srcLabel.c_str(), errorMm, leftMm, rightMm, diff,
-                       leftMarker ? 1 : 0, rightMarker ? 1 : 0, currentTargetVel);
+                       "[%-11s] jc=%d src=%-10s err=%.1f L=%.1f R=%.1f mk[L=%d R=%d] vel=%.2f",
+                       navLabel.c_str(), m_junctionCount, srcLabel.c_str(),
+                       errorMm, leftMm, rightMm,
+                       m_leftMarkerDeb ? 1 : 0, m_rightMarkerDeb ? 1 : 0, currentTargetVel);
 
   double rawErrorMm = errorMm;
   if (std::abs(errorMm) < m_errorDeadband) errorMm = 0.0;
@@ -241,7 +406,6 @@ void LineFollowerNode::controlLoop()
   double pidCorrection = m_pid.compute(errorRad, dt);
   pidCorrection = std::clamp(pidCorrection, -m_maxAngular, m_maxAngular);
 
-  // Command: auto cruise (or decelerated) (+teleop trim) ; PID yaw (+teleop trim)
   cmd.linear.x  = currentTargetVel + teleopLinX;
   cmd.angular.z = pidCorrection + teleopAngZ;
 
@@ -280,8 +444,9 @@ void LineFollowerNode::srvEnable(const std::shared_ptr<std_srvs::srv::SetBool::R
       m_pid.reset();
       m_peakError = 0.0;
       m_errorHistory.clear();
+      resetNavStateMachine();          // counter -> 0, state -> FOLLOW_LINE
     }
-    m_prevTrackDetected = true;   // clean edge state whenever enable toggles
+    m_prevTrackDetected = true;        // clean edge state whenever enable toggles
   }
   res->success = true;
   res->message = m_pidEnabled ? "PID ENABLED" : "PID DISABLED (robot stopped)";
@@ -304,9 +469,9 @@ rcl_interfaces::msg::SetParametersResult LineFollowerNode::paramCallback(
       m_pid.setGains(pp, pi, pd);
       RCLCPP_INFO(this->get_logger(), "PID gains: P=%.6f I=%.6f D=%.6f", pp, pi, pd);
     }
-    if (p.get_name() == "sensor_offset_m")        m_sensorOffsetM   = p.as_double();
-    if (p.get_name() == "max_angular_correction") m_maxAngular      = p.as_double();
-    if (p.get_name() == "error_deadband_mm")      m_errorDeadband   = p.as_double();
+    if (p.get_name() == "sensor_offset_m")        m_sensorOffsetM     = p.as_double();
+    if (p.get_name() == "max_angular_correction") m_maxAngular        = p.as_double();
+    if (p.get_name() == "error_deadband_mm")      m_errorDeadband     = p.as_double();
     if (p.get_name() == "auto_linear_velocity") {
       m_autoLinearVel = p.as_double();
       RCLCPP_INFO(this->get_logger(), "Auto-linear velocity: %.3f m/s", m_autoLinearVel);
@@ -315,9 +480,11 @@ rcl_interfaces::msg::SetParametersResult LineFollowerNode::paramCallback(
       m_turnLinearVel = p.as_double();
       RCLCPP_INFO(this->get_logger(), "Turn-linear velocity: %.3f m/s", m_turnLinearVel);
     }
-    if (p.get_name() == "max_linear_velocity")    m_maxLinear       = p.as_double();
-    if (p.get_name() == "max_angular_velocity")   m_maxAngularVel   = p.as_double();
-    if (p.get_name() == "divergence_limit_mm")    m_divergenceLimit = p.as_double();
+    if (p.get_name() == "max_linear_velocity")    m_maxLinear         = p.as_double();
+    if (p.get_name() == "max_angular_velocity")   m_maxAngularVel     = p.as_double();
+    if (p.get_name() == "divergence_limit_mm")    m_divergenceLimit   = p.as_double();
+    if (p.get_name() == "marker_debounce_ms")     m_markerDebounceMs  = p.as_double();
+    if (p.get_name() == "marker_sync_window_ms")  m_markerSyncWindowMs = p.as_double();
   }
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;

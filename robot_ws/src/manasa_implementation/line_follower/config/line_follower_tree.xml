@@ -6,11 +6,9 @@
                 <Sequence>
                     <IsNavigationStarted is_started="{is_started}"/>
                     <SetLineFollowerState enable="true"/>
-                    <PublishNavState state_str="FOLLOW_LINE"/>
                 </Sequence>
                 <Sequence>
                     <SetLineFollowerState enable="false"/>
-                    <PublishNavState state_str="IDLE"/>
                 </Sequence>
             </Fallback>
         </Sequence>

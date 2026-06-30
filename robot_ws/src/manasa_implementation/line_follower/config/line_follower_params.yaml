@@ -17,8 +17,14 @@ line_follower:
     error_deadband_mm: 1.0
     control_rate_hz: 50.0
     pid_enabled: true
-    auto_linear_velocity: 0.4
-    turn_linear_velocity: 0.2
+    
+    # State-based linear velocities
+    auto_linear_velocity: 0.4    # FOLLOW_LINE (straight)
+    turn_linear_velocity: 0.2    # TURN and JUNCTION
+
+    # Marker pipeline
+    marker_debounce_ms: 40.0       # raw marker must hold this long to flip (flicker reject)
+    marker_sync_window_ms: 50.0    # lone-marker grace period to pair into a junction
 
 navigation_bt_node:
   ros__parameters:
